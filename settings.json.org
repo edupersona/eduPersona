@@ -1,0 +1,96 @@
+{
+    "DTAP": "dev",
+    "storage_secret": "Abra-32039-SKDJA",
+    "log_level": "DEBUG",
+    "console_logging": true,
+    "tenants": {
+        "uva": {
+            "scim": {
+                "scim_enabled": false,
+                "scim_base_url": "https:yourdomain.com",
+                "bearer_token": "scim-demo-token-abc123xyz789",
+                "provision_groups": true
+            },
+            "admins": [
+                {
+                    "user": "4def352ee37f9e409f6d031d7e2bc6208e94d156",
+                    "authz": ["invite", "group_admin"]
+                }
+            ],
+            "fallback_admins": [
+                {
+                    "user": "your_name_here",
+                    "password": "your_password",
+                    "authz": ["invite", "group_admin"]
+                }
+            ],
+            "oidc": {
+                "eduid": {
+                    "CLIENT_ID": "edupersona.nl",
+                    "CLIENT_SECRET": "your_client_secret",
+                    "DOTWELLKNOWN": "https://connect.test.surfconext.nl/.well-known/openid-configuration",
+                    "REDIRECT_URI": "your_callback_url",
+                    "login_hint": "https://login.test.eduid.nl",
+                    "force_login": true
+                },
+                "institutional": {
+                    "CLIENT_ID": "edupersona.nl",
+                    "CLIENT_SECRET": "your_client_secret",
+                    "DOTWELLKNOWN": "https://connect.test.surfconext.nl/.well-known/openid-configuration",
+                    "REDIRECT_URI": "your_callback_url",
+                    "login_hint": "https://idp.diy.surfconext.nl",
+                    "force_login": true
+                },
+                "admin": {
+                    "CLIENT_ID": "edupersona.nl",
+                    "CLIENT_SECRET": "your_client_secret",
+                    "DOTWELLKNOWN": "https://connect.test.surfconext.nl/.well-known/openid-configuration",
+                    "REDIRECT_URI": "your_callback_url",
+                    "login_hint": "https://idp.diy.surfconext.nl",
+                    "auto_provision_users": false,
+                    "force_login": true
+                }
+            },
+            "steps": [
+                {
+                    "class": "VerifyInviteStep",
+                    "config": {
+                        "completed_key": "code_matched",
+                        "title": "Stap 1. Kopieer en plak hier de code die u heeft ontvangen",
+                        "completed_text": "✓ Code ontvangen en bevestigd",
+                        "disabled_text": null
+                    }
+                },
+                {
+                    "class": "VerifyEduIDStep",
+                    "config": {
+                        "completed_key": "eduid_login",
+                        "title": "Stap 2. Inloggen met test-eduID",
+                        "completed_text": "✓ Ingelogd met (test-)eduID",
+                        "disabled_text": "Voltooi eerst stap 1"
+                    }
+                },
+                {
+                    "class": "VerifyInstitutionalStep",
+                    "config": {
+                        "completed_key": "mfa_verified",
+                        "title": "Stap 3. Inloggen met (dummy) instellingsaccount",
+                        "completed_text": "✓ Institutioneel ingelogd (test-IDP)",
+                        "disabled_text": "Voltooi eerst stap 2"
+                    }
+                },
+                {
+                    "class": "LinkApplicationStep",
+                    "config": {
+                        "completed_key": "completed",
+                        "title": "Stap 4. Toegang naar de applicatie",
+                        "completed_text": "✓ Uw eduID is nu gekoppeld!",
+                        "disabled_text": "Voltooi eerst de vorige stappen",
+                        "default_link_url": "https://canvas.uva.nl/",
+                        "default_link_text": "Canvas (UvA)"
+                    }
+                }
+            ]
+        }
+    }
+}

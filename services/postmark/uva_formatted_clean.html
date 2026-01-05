@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="nl" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:v="urn:schemas-microsoft-com:vml">
+ <head>
+  <meta charset="utf-8"/>
+  <meta content="IE=edge" http-equiv="X-UA-Compatible"/>
+  <meta content="width=device-width,initial-scale=1" name="viewport"/>
+  <meta content="telephone=no, date=no, address=no, email=no" name="format-detection"/>
+  <meta name="x-apple-disable-message-reformatting"/>
+  <link href="https://www.uva.nl/webfiles/1681281633900/_favicon/apple-touch-icon-180x180.png" rel="shortcut icon" type="image/x-icon"/>
+  <meta content="light dark" name="color-scheme"/>
+  <meta content="light dark only" name="supported-color-schemes"/>
+  <base target="_blank"/>
+  <title>
+   {title}
+  </title>
+  <style>
+   /* CSS Variables */
+   :root {
+     color-scheme: light dark;
+     supported-color-schemes: light dark;
+     --color-primary: #BC0031;
+     --color-text: #1F1D21;
+     --color-white: #ffffff;
+     --color-bg-light: #F5F5F5;
+     --color-bg-container: #ffffff;
+     --color-bg-footer: #E6E6E6;
+     --color-gray: #B3B3B3;
+     --color-dark-bg: #2D2D2D;
+     --color-dark-container: #1F1D21;
+     --color-dark-text: #D5D5D5;
+     --font-serif: Georgia, 'Times New Roman', serif;
+     --font-sans: 'Source Sans Pro', Arial, sans-serif;
+   }
+  </style>
+  <style>
+   @import url('https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600;700&display=swap');
+  </style>
+  <!-- Reset Styles -->
+  <style>
+   * {box-sizing: border-box}
+   body, .body, .wrapper {width: 100%;height: 100%;margin: 0 !important;padding: 0 !important;}
+   .align-center-deskop {text-align: center !important}
+   body, div, td, th, ul, ol, li, h1, h2, h3, h4, h5, h6, p {margin: 0;padding: 0;font: inherit;font-weight: normal;font-style: normal;-webkit-text-size-adjust: none;-ms-text-size-adjust: none;}
+   table {border-spacing: 0;border-collapse: collapse;border: 0}
+   td, th {text-align: left;vertical-align: top}
+   img {-ms-interpolation-mode: bicubic;vertical-align: middle;height: auto;line-height: 100%;border: 0}
+   ul, ol, li {margin: 5px 0 5px 5px}
+   ul, ol {padding: 0 0 0 10px}
+   a, a:link, a:visited, a:hover {text-decoration: underline;color: var(--color-primary);}
+   a.phonenumber {pointer-events: none;cursor: default}
+   #outlook a {padding: 0}
+   .button:hover {background: #9fcd5d!important;border-color: #9fcd5d!important;transition: all .3s ease-in-out;}
+   .button:hover a {background: #9fcd5d!important;color: #2e2e2e !important;transition: all .3s ease-in-out;}
+  </style>
+  <!-- Specific iOS Date/Phonenumber Reset Styles -->
+  <style>
+   a[x-apple-data-detectors] {color: inherit !important;text-decoration: none !important;font-size: inherit !important;font-family: inherit !important;font-weight: inherit !important;line-height: inherit !important;}
+  </style>
+  <!-- Specific Gmail Styles, including Date/Phonenumber/Links Reset -->
+  <style>
+   u+.body a {color: var(--color-primary);text-decoration: inherit}
+   @media only screen and (max-width: 639px) {
+     u+.body, div>u+.body {width: 100vw !important;min-width: 100vw !important;margin: 0 !important;padding: 0 !important}
+     div>u+.body {width: inherit !important;min-width: inherit !important;}
+   }
+  </style>
+  <!-- Specific Yahoo!Mail Targeting -->
+  <style>
+   .& .wrapper, .& .yahoo-fix-height {display: grid}
+  </style>
+  <!-- Specific Samsung Mail App Targeting -->
+  <style>
+   @media screen and (-webkit-min-device-pixel-ratio: 0) {
+     #MessageViewBody, #MessageWebViewDiv {margin: 0 !important;zoom: 1 !important}
+   }
+  </style>
+  <!-- Specific Outlook App Targeting -->
+  <style>
+   body[data-outlook-cycle] {min-width: 100vw !important;margin: 0 !important;padding: 0 !important;}
+   body[data-outlook-cycle] .outlook-overflow-scaling, body[data-outlook-cycle] .wrapper {width: 100vw !important;min-width: 100vw !important;height: auto !important;display: block !important;transform: scale(1) !important}
+  </style>
+  <!-- Typography Classes -->
+  <style>
+   .title-main {
+     font-family: var(--font-serif);
+     font-size: 32px;
+     line-height: 1.2;
+     font-weight: 400;
+     color: var(--color-text);
+   }
+   .heading-section {
+     font-family: var(--font-serif);
+     font-size: 24px;
+     line-height: 29px;
+     color: var(--color-text);
+   }
+   .body-text {
+     font-family: var(--font-serif);
+     font-size: 17px;
+     line-height: 28px;
+     color: var(--color-text);
+     font-weight: 400;
+   }
+   .link-text {
+     font-family: var(--font-sans);
+     font-size: 16px;
+     line-height: 20px;
+     color: var(--color-primary);
+   }
+   .footer-text {
+     font-family: var(--font-sans);
+     font-size: 14px;
+     line-height: 18px;
+     color: var(--color-text);
+   }
+   .small-text {
+     font-family: var(--font-sans);
+     font-size: 12px;
+     line-height: 16px;
+     color: var(--color-text);
+   }
+  </style>
+  <!-- Dark Mode Styles -->
+  <style type="text/css">
+   .dark-img { display: none !important; }
+   @media (prefers-color-scheme: dark) {
+     a, a:link, a:visited, a:hover {text-decoration: underline;color: var(--color-white);}
+     .dark-bg {background-color: var(--color-dark-bg) !important;}
+     .dark-container {background-color: var(--color-dark-container) !important;}
+     .dark-textwhite {color: var(--color-white) !important;}
+     .dark-img {display:block !important;width: 100% !important;max-height:inherit !important;max-width:inherit !important;visibility:inherit !important;}
+     .light-img {display: none !important;}
+     [data-ogsc] a, [data-ogsc] a:link, [data-ogsc] a:visited, [data-ogsc] a:hover {text-decoration: underline !important;color: var(--color-white) !important;}
+     [data-ogsc] .dark-bg {background-color: var(--color-dark-bg) !important;}
+     [data-ogsc] .dark-container {background-color: var(--color-dark-container) !important;}
+     [data-ogsc] .dark-textwhite {color: var(--color-white) !important;}
+     [data-ogsc] .dark-img {display:block !important;width: auto !important;max-height:inherit !important;max-width:inherit !important;visibility:inherit !important;}
+     [data-ogsc] .light-img {display: none !important;}
+   }
+  </style>
+ </head>
+ <body bgcolor="#F5F5F5" class="body dark-bg">
+  <div aria-label="" aria-roledescription="email" class="wrapper" lang="nl" role="article">
+   <img alt="" border="0" height="1" src="https://cdn.uva.nl/0/5/1537/51/3dk6qrzuD0aFTt7-ekp4CDlp55F5LLt6c8JQCOxHTzIUPVTKRwJkLZeSNDDDvxpvUP40zDBiD_zNLwz9BXx56fVJA9KeBDpFQ88tl6EmwJCihs8jgsrv9Onccef2PQC7uRPsyt8WB4scuiWumoygUvoYjN7YjA" style="height:1px !important;width:1px !important;border: 0 !important;margin: 0 !important;padding: 0 !important" width="1"/>
+   <center>
+    <table align="center" class="dark-bg w100pc" role="presentation" style="background-color: #F5F5F5; width:100%; margin: 0 auto">
+     <tr>
+      <td class="dark-bg" style="width:20px; background-color:#F5F5F5;" width="20">
+      </td>
+      <td>
+       <!--Start Header-->
+       <table align="center" border="0" cellpadding="0" cellspacing="0" class="dark-bg" width="100%">
+        <tr>
+         <td align="center" height="100%" style="" valign="top" width="100%">
+          <table align="center" border="0" cellpadding="0" cellspacing="0" class="w100pc dark-container" style="max-width:640px; width:640px; background:#ffffff;" width="640">
+           <tr>
+            <td style="text-align: left; vertical-align: top; font-size: 0;">
+             <table border="0" cellpadding="0" cellspacing="0" width="100%">
+              <tr>
+               <td align="left" style="">
+                <table align="left" border="0" cellpadding="0" cellspacing="0" width="100%">
+                 <tr>
+                  <td align="left" class="dark-container" style="padding: 16px; background:#ffffff;">
+                    <img alt="Universiteit van Amsterdam" class="light-img" height="" src="https://cdn.msdp1.com/public/UvA/4a989b3eb6db7ade863bf6b6c7d9aca4/uvalogo_standaard_nl_644x64.jpg" style="width: 322px; max-width: 100%;display:block;" width="322"/>
+                    <!--[if !mso]><!-->
+                    <div align="" class="dark-img" style="display:none; overflow:hidden; float:left; width:0px; max-height:0px; max-width:0px; line-height:0px; visibility:hidden;">
+                     <img alt="Universiteit van Amsterdam" border="0" class="mw100pc" height="" src="https://cdn.msdp1.com/public/UvA/a79b857428de68a3a1ee121ed68ec5ab/UvA_NL_DARK.png" style="color: #ffffff;  text-decoration: none; margin: 0 auto; padding: 0;" width="322"/>
+                    </div>
+                    <!--<![endif]-->
+                  </td>
+                 </tr>
+                 <tr>
+                  <td align="left" height="8" style="background-color:#BC0031;border-collapse:collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; mso-line-height-rule: exactly; line-height: 8px;" valign="top" width="100%">
+                   <!--[if gte mso 15]>&nbsp;<![endif]-->
+                  </td>
+                 </tr>
+                 <tr>
+                  <td align="left" class="dark-container" style="padding: 16px; background-color:#ffffff">
+                   <h2 class="dark-textwhite title-main" style="mso-line-height-alt: 32px;">
+                    {title}
+                   </h2>
+                  </td>
+                 </tr>
+                </table>
+               </td>
+              </tr>
+             </table>
+            </td>
+           </tr>
+          </table>
+         </td>
+        </tr>
+       </table>
+       <!--End Header-->
+      </td>
+      <td class="dark-bg" style="width:20px; background-color:#F5F5F5;" width="20">
+      </td>
+     </tr>
+    </table>
+
+    
+    <table align="center" class="dark-bg w100pc" role="presentation" style="background-color: #F5F5F5; width: 100%; margin: 0 auto">
+     <tr>
+      <td class="dark-bg" style="width:20px; background-color:#F5F5F5;" width="20">
+      </td>
+      <td>
+       <!--Single message-->
+       <table align="center" border="0" cellpadding="0" cellspacing="0" class="dark-bg" width="100%">
+        <tr>
+         <td align="center" height="100%" style="" valign="top" width="100%">
+          <table align="center" border="0" cellpadding="0" cellspacing="0" class="w100pc dark-container" style="max-width:640px; width:640px;background-color:#ffffff; " width="640">
+           <tr>
+            <td style="text-align: left; vertical-align: top; font-size: 0;padding:0 16px;">
+             <table border="0" cellpadding="0" cellspacing="0" width="100%">
+              <tr>
+               <td align="left" class="" style="">
+                <table cellpadding="0" cellspacing="0" style="" width="100%">
+                 <tr>
+                  <td align="left" class="" style="">
+                   <table align="left" border="0" cellpadding="0" cellspacing="0" width="100%">
+                    <tr>
+                     <td align="left" class="dark-textwhite body-text" style="padding: 0 0 8px 0;">
+                      <h2 class="dark-textwhite heading-section">
+                       {heading}
+                      </h2>
+                     </td>
+                    </tr>
+                    <tr>
+                        <td align="left" class="dark-textwhite body-text" style="padding: 0 0 16px 0;">{content}</td>
+                    </tr>
+                    <tr>
+                     <td align="left" class="dark-textwhite link-text" style="mso-line-height-alt: 20px; padding: 0 0 16px 0;">
+                      <a class="w100pc dark-textwhite" href="http://localhost/" style="text-decoration: none">
+                       {lees_meer}
+                       <span style="font-family: Calibri, sans-serif;">
+                        →
+                       </span>
+                      </a>
+                     </td>
+                    </tr>
+                    <tr>
+                     <td align="left" style="padding: 0 0 16px 0;">
+                      <table border="0" cellpadding="0" cellspacing="0" class="button" style="background-color: #BC0031; border: 1px solid #BC0031; border-radius: 4px;">
+                       <tr>
+                        <td align="center" style="padding: 12px 24px;">
+                         <a href="http://localhost/" style="color: #ffffff; font-family: 'Source Sans Pro', Arial, sans-serif; font-size: 16px; font-weight: 600; text-decoration: none; display: inline-block;">
+                          {button_text}
+                         </a>
+                        </td>
+                       </tr>
+                      </table>
+                     </td>
+                    </tr>
+                   </table>
+                  </td>
+                 </tr>
+                </table>
+               </td>
+              </tr>
+             </table>
+            </td>
+           </tr>
+          </table>
+         </td>
+        </tr>
+       </table>
+       <!--Start Divider-->
+       <table align="center" border="0" cellpadding="0" cellspacing="0" class="dark-bg" width="100%">
+        <tr>
+         <td align="center" height="100%" style="" valign="top" width="100%">
+          <table align="center" border="0" cellpadding="0" cellspacing="0" class="w100pc" width="100%">
+           <tr>
+            <td>
+             <table align="center" border="0" cellpadding="0" cellspacing="0" class="w100pc dark-container" style="max-width:640px; width:640px; background:#ffffff;" width="640">
+              <tr>
+               <td align="center" style="padding-top: 0;padding-left: 16px;padding-right:16px;" valign="top" width="100%">
+                <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%">
+                 <tr>
+                  <td height="16" style="height: 16px; mso-line-height-rule: exactly; line-height: 16px; font-size: 16px; display: block;">
+                  </td>
+                 </tr>
+                 <tr>
+                  <td bgcolor="#B3B3B3" height="1" style="height: 1px; mso-line-height-rule: exactly; line-height: 1px; font-size: 1px; display: block;">
+                  </td>
+                 </tr>
+                 <tr>
+                  <td height="16" style="height: 16px; mso-line-height-rule: exactly; line-height: 16px; font-size: 16px; display: block;">
+                  </td>
+                 </tr>
+                </table>
+               </td>
+              </tr>
+             </table>
+            </td>
+           </tr>
+          </table>
+         </td>
+        </tr>
+       </table>
+       <!--End Divider-->
+       <!--End message-->
+      </td>
+      <td class="dark-bg" style="width:20px; background-color:#F5F5F5;" width="20">
+      </td>
+     </tr>
+    </table>
+
+    <table align="center" class="dark-bg w100pc" role="presentation" style="background-color: #F5F5F5; width: 100%; margin: 0 auto">
+     <tr>
+      <td class="dark-bg" style="width:20px; background-color:#F5F5F5;" width="20">
+      </td>
+      <td>
+       <!-- start Footer -->
+       <table align="center" border="0" cellpadding="0" cellspacing="0" class="dark-bg" width="100%">
+        <tr>
+         <td align="center" height="100%" style="" valign="top" width="100%">
+          <table align="center" border="0" cellpadding="0" cellspacing="0" class="w100pc dark-container" style="max-width:640px; width:640px; background-color:#E6E6E6; " width="640">
+           <tr>
+            <td style="text-align: center; vertical-align: top; font-size: 0;padding:0 0 20px 0;">
+             <table border="0" cellpadding="0" cellspacing="0" width="100%">
+              <tr>
+               <td align="center">
+                <table align="left" border="0" cellpadding="0" cellspacing="0">
+                 <tr>
+                  <td class="dark-textwhite footer-text" style="padding: 24px 16px;">
+                    {footer}
+                  </td>
+                 </tr>
+                </table>
+               </td>
+              </tr>
+             </table>
+            </td>
+           </tr>
+          </table>
+         </td>
+        </tr>
+       </table>
+       <!-- eind Footer -->
+      </td>
+      <td class="dark-bg" style="width:20px; background-color:#F5F5F5;" width="20">
+      </td>
+     </tr>
+     <tr>
+      <td class="dark-bg" style="width:20px; background-color:#F5F5F5;" width="20">
+      </td>
+      <td class="dark-bg" height="20" style="height:20px; background-color:#F5F5F5;">
+      </td>
+      <td class="dark-bg" style="width:20px; background-color:#F5F5F5;" width="20">
+      </td>
+     </tr>
+    </table>
+   </center>
+  </div>
+ </body>
+</html>

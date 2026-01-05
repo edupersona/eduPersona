@@ -1,0 +1,5 @@
+nicegui==3.*
+PyJWT
+pytz
+httpx
+scim2-client[httpx]
