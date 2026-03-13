@@ -1,0 +1,10 @@
+nicegui==3.*
+PyJWT
+pytz
+httpx
+scim2-client[httpx]
+scim2-models
+aiosmtplib
+# ng_loba
+tortoise-orm
+click

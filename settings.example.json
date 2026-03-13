@@ -1,0 +1,117 @@
+{
+    "DTAP": "dev",
+    "storage_secret": "your-storage-secret-here",
+    "log_level": "DEBUG",
+    "console_logging": true,
+    "base_url": "http://localhost:8090",
+    "smtp_server": "localhost",
+    "smtp_port": 25,
+    "error_notification_from": "server@edupersona.nl",
+    "error_notification_to": ["admin@your-domain.com"],
+    "postmark": {
+        "token": "your-postmark-token-here",
+        "message_stream": "your-message-stream-name"
+    },
+    "invitation_expiration_days": 30,
+    "cleanup_api_key": "your-cleanup-api-key-here",
+
+    "tenants": {
+        "uva": {
+            "theme": {
+                "primary_color": "rgb(59, 130, 246)",
+                "secondary_color": "#26a69a",
+                "accent_color": "#9c27b0",
+                "positive_color": "#21ba45"
+            },
+            "scim": {
+                "scim_enabled": false,
+                "scim_base_url": "http://localhost:8000",
+                "bearer_token": "your-scim-bearer-token",
+                "provision_groups": true
+            },
+            "admins": [
+                {
+                    "user": "your-user-id-hash-here",
+                    "authz": ["invitations", "groups"]
+                }
+            ],
+            "fallback_admins": [
+                {
+                    "user": "your_username",
+                    "password": "your_password",
+                    "authz": ["invitations", "groups"]
+                }
+            ],
+            "oidc": {
+                "eduid": {
+                    "label": "eduID",
+                    "CLIENT_ID": "your-client-id",
+                    "CLIENT_SECRET": "your-client-secret",
+                    "DOTWELLKNOWN": "https://connect.test.surfconext.nl/.well-known/openid-configuration",
+                    "REDIRECT_URI": "http://localhost:8090/oidc_callback",
+                    "login_hint": "https://login.test.eduid.nl",
+                    "force_login": true
+                },
+                "institutional": {
+                    "label": "instellingsaccount",
+                    "CLIENT_ID": "your-client-id",
+                    "CLIENT_SECRET": "your-client-secret",
+                    "DOTWELLKNOWN": "https://connect.test.surfconext.nl/.well-known/openid-configuration",
+                    "REDIRECT_URI": "http://localhost:8090/oidc_callback",
+                    "login_hint": "https://idp.diy.surfconext.nl",
+                    "force_login": true
+                },
+                "admin": {
+                    "label": "admin-account (via test eduID)",
+                    "CLIENT_ID": "your-client-id",
+                    "CLIENT_SECRET": "your-client-secret",
+                    "DOTWELLKNOWN": "https://connect.test.surfconext.nl/.well-known/openid-configuration",
+                    "REDIRECT_URI": "http://localhost:8090/oidc_callback",
+                    "login_hint": "https://idp.diy.surfconext.nl",
+                    "auto_provision_users": false,
+                    "force_login": true
+                }
+            },
+            "steps": [
+                {
+                    "class": "VerifyInviteStep",
+                    "config": {
+                        "completed_key": "code_matched",
+                        "title": "Stap 1. Kopieer en plak hier de code die je hebt ontvangen",
+                        "completed_text": "✓ Code ontvangen en bevestigd",
+                        "disabled_text": null
+                    }
+                },
+                {
+                    "class": "VerifyEduIDStep",
+                    "config": {
+                        "completed_key": "eduid_login",
+                        "title": "Stap 2. Inloggen met test-eduID",
+                        "completed_text": "✓ Ingelogd met (test-)eduID",
+                        "disabled_text": "Voltooi eerst stap 1"
+                    }
+                },
+                {
+                    "class": "VerifyInstitutionalStep",
+                    "config": {
+                        "completed_key": "mfa_verified",
+                        "title": "Stap 3. Inloggen met (dummy) instellingsaccount",
+                        "completed_text": "✓ Institutioneel ingelogd (test-IDP)",
+                        "disabled_text": "Voltooi eerst stap 2"
+                    }
+                },
+                {
+                    "class": "LinkApplicationStep",
+                    "config": {
+                        "completed_key": "completed",
+                        "title": "Stap 4. Toegang naar de applicatie",
+                        "completed_text": "✓ Uw eduID is nu gekoppeld!",
+                        "disabled_text": "Voltooi eerst de vorige stappen",
+                        "default_link_url": "https://canvas.uva.nl/",
+                        "default_link_text": "Canvas (UvA)"
+                    }
+                }
+            ]
+        }
+    }
+}
