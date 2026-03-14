@@ -15,7 +15,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from datetime import date, datetime
 from tortoise import Tortoise
-from ng_loba.models.models import (Guest, Role, RoleAssignment, Invitation, InvitationRoleAssignment, GuestAttribute)
+from models.models import (Guest, Role, RoleAssignment, Invitation, InvitationRoleAssignment, GuestAttribute)
 
 HELP = """Usage: db_io.py COMMAND FILE [OPTIONS]
 
@@ -202,7 +202,7 @@ DB_PATH = Path(__file__).resolve().parent.parent / "edupersona.db"
 async def init_db():
     await Tortoise.init(
         db_url=f"sqlite://{DB_PATH}",
-        modules={"models": ["ng_loba.models.models"]}
+        modules={"models": ["models.models"]}
     )
 
 

@@ -426,7 +426,7 @@ async def test_bulk_sync_to_scim(scim_http_client, test_tenant):
     """bulk_sync should provision roles, guests with accepted invitations, and role assignments."""
     from services.storage.scim_observer import bulk_sync_to_scim
     from services.storage.storage import get_role_store, get_guest_store, get_role_assignment_store, get_invitation_store
-    from ng_loba.models.models import InvitationRoleAssignment
+    from models.models import InvitationRoleAssignment
 
     # Setup: create role, guest, role assignment, and accepted invitation
     role_store = get_role_store(test_tenant)

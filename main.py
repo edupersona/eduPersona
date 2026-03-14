@@ -64,7 +64,7 @@ def run(fastapi_app) -> None:
     init_db(
         fastapi_app,
         db_url='sqlite://edupersona.db',
-        modules={"models": ["ng_loba.models.models"]}
+        modules={"models": ["models.models"]}
     )
     # ui.run_with(fastapi_app, root=root_fn, storage_secret=STORAGE_SECRET, title='eduPersona')
     ui.run_with(fastapi_app, storage_secret=STORAGE_SECRET, title='eduPersona')

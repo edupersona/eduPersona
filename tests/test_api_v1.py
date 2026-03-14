@@ -5,7 +5,7 @@ Uses fixtures from conftest.py: test_tenant, api_client, sample_guest, sample_ro
 Note: sample_guest and sample_role fixtures return dicts (from stores), not model instances.
 """
 import pytest
-from ng_loba.models.models import Guest, Role, RoleAssignment, Invitation, InvitationRoleAssignment
+from models.models import Guest, Role, RoleAssignment, Invitation, InvitationRoleAssignment
 
 
 class TestGuestsAPI:

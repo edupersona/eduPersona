@@ -397,7 +397,7 @@ async def bulk_sync_to_scim(tenant: str = "uva") -> dict:
         get_invitation_store,
         get_role_assignment_store,
     )
-    from ng_loba.models.models import InvitationRoleAssignment
+    from models.models import InvitationRoleAssignment
 
     results = {
         'guests': {'synced': 0, 'failed': 0},

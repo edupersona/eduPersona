@@ -9,7 +9,7 @@ from ng_loba.crud import (
     page_init, none_as_text
 )
 from ng_loba.crud.fields import build_form_field
-from ng_loba.models.models import RoleAssignment
+from models.models import RoleAssignment
 from ng_loba.utils import logger
 from services.auth.dependencies import require_invite_auth
 from services.i18n import _

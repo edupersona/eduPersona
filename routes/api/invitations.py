@@ -19,7 +19,7 @@ from services.storage.storage import (
     get_role_assignment_store,
     create_invitation,
 )
-from ng_loba.models.models import InvitationRoleAssignment
+from models.models import InvitationRoleAssignment
 from .common import (
     api_response, api_error, validate_tenant_or_raise,
     apply_pagination, log_api_call,

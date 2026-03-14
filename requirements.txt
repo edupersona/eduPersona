@@ -7,4 +7,4 @@ scim2-models
 aiosmtplib
 # ng_loba
 tortoise-orm
-click
+-e file://Users/peter/Code/pk_repos/ng_loba

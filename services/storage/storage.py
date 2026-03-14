@@ -6,7 +6,7 @@ from datetime import date
 
 from tortoise.functions import Count, Max
 
-from ng_loba.models.models import Role, Guest, GuestAttribute, RoleAssignment, Invitation, InvitationRoleAssignment
+from models.models import Role, Guest, GuestAttribute, RoleAssignment, Invitation, InvitationRoleAssignment
 from ng_loba.store import store_registry
 from ng_loba.store.multitenancy import MultitenantTortoiseStore, set_valid_tenants
 from ng_loba.store.orm import TortoiseStore

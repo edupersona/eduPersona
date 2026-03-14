@@ -17,7 +17,7 @@ from services.storage.storage import (
     create_role_assignment,
     create_invitation,
 )
-from ng_loba.models.models import Invitation
+from models.models import Invitation
 from ng_loba.utils.helpers import now_utc
 
 

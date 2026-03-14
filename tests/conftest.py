@@ -52,7 +52,7 @@ async def reset_database():
     """Reset database before each test using in-memory SQLite"""
     await Tortoise.init(
         db_url='sqlite://:memory:',
-        modules={"models": ["ng_loba.models.models"]}
+        modules={"models": ["models.models"]}
     )
     await Tortoise.generate_schemas()
     yield

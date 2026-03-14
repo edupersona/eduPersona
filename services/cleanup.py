@@ -4,7 +4,7 @@ Triggered via API endpoint by external scheduler/cron.
 """
 from datetime import date, timedelta
 
-from ng_loba.models.models import Role, RoleAssignment, Invitation, InvitationRoleAssignment
+from models.models import Role, RoleAssignment, Invitation, InvitationRoleAssignment
 from ng_loba.utils import logger
 from ng_loba.utils.helpers import now_utc
 from services.settings import config
