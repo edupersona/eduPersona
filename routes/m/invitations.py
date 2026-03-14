@@ -72,7 +72,7 @@ async def render_invitation_details(invitation: dict):
         with ui.column().classes('detail-column'):
             ui.label(_('Invitation Details')).classes('detail-section-label')
             ui.label(f"{_('Email')}: {invitation.get('invitation_email', '-')}")
-            ui.label(f"{_('Invited at')}: {none_as_text(invitation.get('invited_at'))}").classes('detail-text-sm')
+            ui.label(f"{_('Invited at')}: {none_as_text(invitation.get('invited_at', ''))}").classes('detail-text-sm')
             if invitation.get('code'):
                 ui.label(f"{_('Code')}: {invitation.get('code')}").classes('detail-text-sm')
 
@@ -88,7 +88,7 @@ async def render_invitation_details(invitation: dict):
     if invitation.get('personal_message'):
         ui.separator()
         ui.label(_('Personal Message')).classes('detail-section-label')
-        ui.label(invitation.get('personal_message')).classes('detail-text-sm')
+        ui.label(invitation.get('personal_message', '')).classes('detail-text-sm')
 
 
 # Form columns for invitation details (used in new invitation dialog)
