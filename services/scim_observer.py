@@ -260,7 +260,7 @@ class SCIMObserver:
             scim_id = self.scim_client.create_or_update_role(item)
             if scim_id:
                 # Update role with scim_id
-                from services.storage.storage import get_role_store
+                from domain.stores import get_role_store
                 role_store = get_role_store(self.tenant)
                 await role_store.update_item(item["id"], {"scim_id": scim_id})
 
@@ -279,10 +279,7 @@ class SCIMObserver:
         if not self.scim_client:
             return
 
-        from services.storage.storage import (
-            get_role_store,
-            get_guest_store,
-        )
+        from domain.stores import get_role_store, get_guest_store
 
         guest_store = get_guest_store(self.tenant)
         role_store = get_role_store(self.tenant)
@@ -322,7 +319,7 @@ class SCIMObserver:
         if not self.scim_client:
             return
 
-        from services.storage.storage import get_role_store, get_guest_store
+        from domain.stores import get_role_store, get_guest_store
 
         guest_store = get_guest_store(self.tenant)
         role_store = get_role_store(self.tenant)
@@ -362,7 +359,7 @@ def initialize_scim_observer(tenant: str):
     """Initialize and attach SCIM observer to stores"""
     global scim_observer
 
-    from services.storage.storage import get_role_store, get_guest_store
+    from domain.stores import get_role_store, get_guest_store
 
     scim_observer = SCIMObserver(tenant)
 
@@ -390,14 +387,13 @@ async def bulk_sync_to_scim(tenant: str = "uva") -> dict:
     Returns:
         dict with sync statistics and any error message
     """
-    from services.settings import get_tenant_config
-    from services.storage.storage import (
+    from domain.models import InvitationRoleAssignment
+    from domain.stores import (
         get_role_store,
         get_guest_store,
         get_invitation_store,
         get_role_assignment_store,
     )
-    from models.models import InvitationRoleAssignment
 
     results = {
         'guests': {'synced': 0, 'failed': 0},

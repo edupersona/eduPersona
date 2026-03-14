@@ -64,14 +64,14 @@ def scim_enabled_config():
             "provision_groups": True
         }
     }
-    with patch("services.storage.scim_observer.get_tenant_config", return_value=mock_config):
+    with patch("services.scim_observer.get_tenant_config", return_value=mock_config):
         yield mock_config
 
 
 @pytest.fixture
 def scim_observer(scim_enabled_config, scim_http_client, test_tenant):
     """Create SCIMObserver with real in-memory SCIM backend."""
-    from services.storage.scim_observer import SCIMObserver
+    from services.scim_observer import SCIMObserver
 
     with patch("httpx.Client", return_value=scim_http_client):
         observer = SCIMObserver(test_tenant)
@@ -81,7 +81,7 @@ def scim_observer(scim_enabled_config, scim_http_client, test_tenant):
 @pytest.fixture
 async def guest_without_scim_id(test_tenant):
     """Create a guest without scim_id for testing."""
-    from services.storage.storage import get_guest_store
+    from domain.stores import get_guest_store
 
     guest_store = get_guest_store(test_tenant)
     guest = await guest_store.create_item({
@@ -97,7 +97,7 @@ async def guest_without_scim_id(test_tenant):
 @pytest.fixture
 async def guest_with_scim_id(test_tenant, scim_observer):
     """Create a guest WITH scim_id for testing."""
-    from services.storage.storage import get_guest_store
+    from domain.stores import get_guest_store
 
     guest_store = get_guest_store(test_tenant)
 
@@ -122,7 +122,7 @@ async def guest_with_scim_id(test_tenant, scim_observer):
 @pytest.fixture
 async def role_without_scim_id(test_tenant):
     """Create a role without scim_id for testing."""
-    from services.storage.storage import get_role_store
+    from domain.stores import get_role_store
 
     role_store = get_role_store(test_tenant)
     role = await role_store.create_item({
@@ -140,7 +140,7 @@ async def role_without_scim_id(test_tenant):
 @pytest.fixture
 async def role_with_scim_id(test_tenant, scim_observer):
     """Create a role WITH scim_id for testing."""
-    from services.storage.storage import get_role_store
+    from domain.stores import get_role_store
 
     role_store = get_role_store(test_tenant)
 
@@ -241,7 +241,7 @@ async def test_on_guest_event_delete_without_scim_id(scim_observer, guest_withou
 async def test_on_role_event_create_updates_store(scim_observer, test_tenant):
     """Role create event should provision AND update store with scim_id."""
     from ng_loba.store.base import StoreEvent
-    from services.storage.storage import get_role_store
+    from domain.stores import get_role_store
 
     role_store = get_role_store(test_tenant)
 
@@ -316,7 +316,7 @@ async def test_on_role_event_delete_logs_only(scim_observer, role_with_scim_id):
 @pytest.mark.asyncio
 async def test_provision_guest_on_first_acceptance(scim_observer, guest_without_scim_id, role_with_scim_id, test_tenant):
     """First acceptance should provision guest to SCIM and add to role."""
-    from services.storage.storage import get_guest_store
+    from domain.stores import get_guest_store
 
     guest_store = get_guest_store(test_tenant)
 
@@ -338,7 +338,7 @@ async def test_provision_guest_on_first_acceptance(scim_observer, guest_without_
 @pytest.mark.asyncio
 async def test_provision_guest_already_provisioned(scim_observer, guest_with_scim_id, role_with_scim_id, test_tenant):
     """Already provisioned guest should skip user creation but still add to role."""
-    from services.storage.storage import get_guest_store
+    from domain.stores import get_guest_store
 
     guest_store = get_guest_store(test_tenant)
     original_scim_id = guest_with_scim_id["scim_id"]
@@ -412,10 +412,10 @@ async def test_cleanup_guest_without_scim_id(scim_observer, guest_without_scim_i
 @pytest.mark.asyncio
 async def test_bulk_sync_disabled_when_not_configured(test_tenant):
     """bulk_sync_to_scim returns error when SCIM disabled."""
-    from services.storage.scim_observer import bulk_sync_to_scim
+    from services.scim_observer import bulk_sync_to_scim
 
     mock_config = {"scim": {"scim_enabled": False}}
-    with patch("services.storage.scim_observer.get_tenant_config", return_value=mock_config):
+    with patch("services.scim_observer.get_tenant_config", return_value=mock_config):
         results = await bulk_sync_to_scim(test_tenant)
         assert results["error"] is not None
         assert "not configured" in results["error"]
@@ -424,9 +424,9 @@ async def test_bulk_sync_disabled_when_not_configured(test_tenant):
 @pytest.mark.asyncio
 async def test_bulk_sync_to_scim(scim_http_client, test_tenant):
     """bulk_sync should provision roles, guests with accepted invitations, and role assignments."""
-    from services.storage.scim_observer import bulk_sync_to_scim
-    from services.storage.storage import get_role_store, get_guest_store, get_role_assignment_store, get_invitation_store
-    from models.models import InvitationRoleAssignment
+    from services.scim_observer import bulk_sync_to_scim
+    from domain.stores import get_role_store, get_guest_store, get_role_assignment_store, get_invitation_store
+    from domain.models import InvitationRoleAssignment
 
     # Setup: create role, guest, role assignment, and accepted invitation
     role_store = get_role_store(test_tenant)
@@ -476,7 +476,7 @@ async def test_bulk_sync_to_scim(scim_http_client, test_tenant):
         role_assignment_id=role_assignment["id"],
     )
 
-    # Run bulk sync with config patch at the right location (bulk_sync imports from services.settings)
+    # Run bulk sync with config patch at import location (scim_observer imports get_tenant_config)
     mock_config = {
         "scim": {
             "scim_enabled": True,
@@ -484,7 +484,7 @@ async def test_bulk_sync_to_scim(scim_http_client, test_tenant):
             "bearer_token": "test-token",
         }
     }
-    with patch("services.settings.get_tenant_config", return_value=mock_config):
+    with patch("services.scim_observer.get_tenant_config", return_value=mock_config):
         with patch("httpx.Client", return_value=scim_http_client):
             results = await bulk_sync_to_scim(test_tenant)
 
@@ -508,7 +508,7 @@ async def test_bulk_sync_to_scim(scim_http_client, test_tenant):
 @pytest.mark.asyncio
 async def test_observer_initializes_when_enabled(scim_enabled_config, scim_http_client, test_tenant):
     """SCIMObserver initializes client when SCIM is enabled."""
-    from services.storage.scim_observer import SCIMObserver
+    from services.scim_observer import SCIMObserver
 
     with patch("httpx.Client", return_value=scim_http_client):
         observer = SCIMObserver(test_tenant)
@@ -518,9 +518,9 @@ async def test_observer_initializes_when_enabled(scim_enabled_config, scim_http_
 @pytest.mark.asyncio
 async def test_observer_disabled_when_not_configured(test_tenant):
     """SCIMObserver has no client when SCIM is disabled."""
-    from services.storage.scim_observer import SCIMObserver
+    from services.scim_observer import SCIMObserver
 
     mock_config = {"scim": {"scim_enabled": False}}
-    with patch("services.storage.scim_observer.get_tenant_config", return_value=mock_config):
+    with patch("services.scim_observer.get_tenant_config", return_value=mock_config):
         observer = SCIMObserver(test_tenant)
         assert observer.scim_client is None

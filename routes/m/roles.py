@@ -9,11 +9,9 @@ from ng_loba.utils import logger
 from services.auth.dependencies import require_role_admin_auth
 from services.i18n import _
 from services.tenant import get_tenant_from_session
-from services.storage.scim_observer import bulk_sync_to_scim
-from services.storage.storage import (
-    get_role_store, get_role_assignment_store, get_guest_store,
-    create_role_assignment, update_role_assignment
-)
+from services.scim_observer import bulk_sync_to_scim
+from domain.stores import get_role_store, get_role_assignment_store, get_guest_store
+from domain.invitation_flow import create_role_assignment, update_role_assignment
 from services.theme import frame
 
 

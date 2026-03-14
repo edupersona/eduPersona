@@ -12,7 +12,7 @@ from ng_loba.utils import logger, setup_logging
 from services.auth.oidc import init_edupersona_oidc
 from services.exception_handlers import register_exception_handlers
 from services.settings import config
-from services.storage.storage import initialize_multitenancy
+from domain.stores import initialize_multitenancy
 
 DTAP, STORAGE_SECRET, LOG_LEVEL, CONSOLE_LOGGING = (
     config.get('DTAP', 'dev'),
@@ -43,30 +43,14 @@ ui.tabs.default_props('no-caps')
 ui.tab_panels.default_props('animated=false')
 
 
-# to be explored later:
-def root_fn():
-    ui.sub_pages({'/': main, '/other': other}, root_path='/SPA')
-    ui.context.client.sub_pages_router.on_path_changed(
-        lambda path: ui.notify(f'Navigated to {path}')
-    )
-
-def main():
-    ui.label('Main page content')
-    ui.link('Go to other page', '/SPA/other')
-
-def other():
-    ui.label('Another page content')
-    ui.link('Go to main page', '/SPA')
-
 # call this to run in production (from uvicorn)
 def run(fastapi_app) -> None:
     # Initialize Tortoise ORM with SQLite database
     init_db(
         fastapi_app,
         db_url='sqlite://edupersona.db',
-        modules={"models": ["models.models"]}
+        modules={"models": ["domain.models"]}
     )
-    # ui.run_with(fastapi_app, root=root_fn, storage_secret=STORAGE_SECRET, title='eduPersona')
     ui.run_with(fastapi_app, storage_secret=STORAGE_SECRET, title='eduPersona')
 
 

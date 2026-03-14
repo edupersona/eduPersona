@@ -13,13 +13,13 @@ from pydantic import BaseModel
 
 from . import api_router
 
-from services.storage.storage import (
+from domain.stores import (
     get_invitation_store,
     get_guest_store,
     get_role_assignment_store,
-    create_invitation,
 )
-from models.models import InvitationRoleAssignment
+from domain.invitation_flow import create_invitation
+from domain.models import InvitationRoleAssignment
 from .common import (
     api_response, api_error, validate_tenant_or_raise,
     apply_pagination, log_api_call,
@@ -204,7 +204,8 @@ async def update_invitation(tenant: str, invitation_id: int, data: InvitationUpd
         if "status" in update_data:
             valid_statuses = ["pending", "accepted", "expired"]
             if update_data["status"] not in valid_statuses:
-                raise api_error("VALIDATION_ERROR", f"Invalid status. Must be one of: {valid_statuses}", status_code=400)
+                raise api_error("VALIDATION_ERROR",
+                                f"Invalid status. Must be one of: {valid_statuses}", status_code=400)
 
         updated = await inv_store.update_item(invitation_id, update_data)
         if not updated:

@@ -30,7 +30,7 @@ from pydantic import BaseModel
 
 from . import api_router
 
-from services.storage.storage import get_role_store
+from domain.stores import get_role_store
 from .common import api_response, api_error, validate_tenant_or_raise, log_api_call
 
 

@@ -8,12 +8,11 @@ from pydantic import BaseModel
 
 from . import api_router
 
-from services.storage.storage import (
+from domain.stores import (
     get_guest_store,
     get_role_store,
-    create_role_assignment,
-    create_invitation,
 )
+from domain.invitation_flow import create_role_assignment, create_invitation
 from .common import api_response, api_error, validate_tenant_or_raise, log_api_call
 
 

@@ -15,7 +15,7 @@ from pydantic import BaseModel
 
 from . import api_router
 
-from services.storage.storage import (
+from domain.stores import (
     get_guest_store,
     get_guest_attribute_store,
     get_role_assignment_store,

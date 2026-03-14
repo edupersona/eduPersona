@@ -6,6 +6,9 @@ Usage:
     python db_io.py import db_export.json --tenant uva
     python db_io.py export db_export_new.json --tenant uva
 """
+from domain.models import (Guest, Role, RoleAssignment, Invitation, InvitationRoleAssignment, GuestAttribute)
+from tortoise import Tortoise
+from datetime import date, datetime
 import asyncio
 import json
 import sys
@@ -13,9 +16,6 @@ import uuid
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from datetime import date, datetime
-from tortoise import Tortoise
-from models.models import (Guest, Role, RoleAssignment, Invitation, InvitationRoleAssignment, GuestAttribute)
 
 HELP = """Usage: db_io.py COMMAND FILE [OPTIONS]
 
@@ -202,7 +202,7 @@ DB_PATH = Path(__file__).resolve().parent.parent / "edupersona.db"
 async def init_db():
     await Tortoise.init(
         db_url=f"sqlite://{DB_PATH}",
-        modules={"models": ["models.models"]}
+        modules={"models": ["domain.models"]}
     )
 
 

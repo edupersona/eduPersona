@@ -3,11 +3,13 @@ Tests for storage layer and Tortoise ORM operations.
 """
 from datetime import date, timedelta
 import pytest
-from services.storage.storage import (
+from domain.stores import (
     get_guest_store,
     get_role_store,
     get_role_assignment_store,
     get_invitation_store,
+)
+from domain.invitation_flow import (
     create_role_assignment,
     create_invitation,
     accept_invitation,

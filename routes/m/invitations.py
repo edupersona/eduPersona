@@ -9,14 +9,13 @@ from ng_loba.crud import (
     page_init, none_as_text
 )
 from ng_loba.crud.fields import build_form_field
-from models.models import RoleAssignment
+from domain.models import RoleAssignment
 from ng_loba.utils import logger
 from services.auth.dependencies import require_invite_auth
 from services.i18n import _
 from services.postmark.postmark import send_postmark_invitation, test_template
-from services.storage.storage import (
-    create_invitation,
-    create_role_assignment,
+from domain.invitation_flow import create_invitation, create_role_assignment
+from domain.stores import (
     get_guest_store,
     get_role_store,
     get_role_assignment_store,

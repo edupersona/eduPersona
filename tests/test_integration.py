@@ -8,11 +8,13 @@ from nicegui.testing import User
 @pytest.mark.integration
 async def test_full_invitation_lifecycle(test_tenant, sample_role):
     """Test complete invitation lifecycle from creation to acceptance"""
-    from services.storage.storage import (
-        create_role_assignment,
-        create_invitation,
+    from domain.stores import (
         get_guest_store,
         get_invitation_store,
+    )
+    from domain.invitation_flow import (
+        create_role_assignment,
+        create_invitation,
         accept_invitation,
     )
 

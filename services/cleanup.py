@@ -4,17 +4,17 @@ Triggered via API endpoint by external scheduler/cron.
 """
 from datetime import date, timedelta
 
-from models.models import Role, RoleAssignment, Invitation, InvitationRoleAssignment
+from domain.models import Role, RoleAssignment, Invitation, InvitationRoleAssignment
 from ng_loba.utils import logger
 from ng_loba.utils.helpers import now_utc
 from services.settings import config
-from services.storage.storage import (
+from domain.stores import (
     get_role_store,
     get_role_assignment_store,
     get_invitation_store,
     get_guest_store,
 )
-from services.storage.scim_observer import get_scim_observer
+from services.scim_observer import get_scim_observer
 from services.tenant import get_available_tenants
 
 

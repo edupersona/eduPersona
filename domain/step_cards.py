@@ -4,7 +4,8 @@ from nicegui import app, ui
 from ng_loba.utils import logger
 from services.i18n import _
 from services.oidc_mt.multitenant import start_oidc_login
-from services.storage.storage import accept_invitation, get_invitation_store, get_guest_store, get_role_store, get_guest_attribute_store
+from domain.invitation_flow import accept_invitation
+from domain.stores import get_invitation_store, get_guest_store, get_role_store, get_guest_attribute_store
 
 def expandable_info(valdict: dict) -> None:
     if valdict:
@@ -21,21 +22,6 @@ userinfo_mapping = {
     'affiliation': ['schac_home_organization', 'eduperson_affiliation'],
     'authentication': ['acr']
 }
-
-# replacements = {
-#     'eduperson_principal_name': 'eppn',
-#     'urn:oasis:names:tc:SAML:2.0:ac:classes:': '',
-# }
-
-# def map_userinfo( userinfo: dict ):
-#     ui2 = {}
-#     for heading, keys in userinfo_mapping.items():
-#         ui2[heading] = {}
-#         for key in keys:
-#             if key in userinfo:
-
-#                 ui2[heading][key] = userinfo[key]
-
 
 async def update_guest_from_userinfo(tenant: str, invite_code: str, userinfo: dict, step_key: str) -> None:
     """Store OIDC userinfo in guest.attributes[step_key]

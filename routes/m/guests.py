@@ -11,10 +11,10 @@ from ng_loba.utils import logger
 from services.auth.dependencies import require_guests_auth
 from services.i18n import _
 from services.tenant import get_tenant_from_session
-from services.storage.storage import (
+from domain.stores import (
     get_guest_store, get_guest_attribute_store, get_role_assignment_store, get_role_store,
-    create_role_assignment, update_role_assignment
 )
+from domain.invitation_flow import create_role_assignment, update_role_assignment
 from services.theme import frame
 
 

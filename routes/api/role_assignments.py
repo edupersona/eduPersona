@@ -12,14 +12,13 @@ from pydantic import BaseModel
 
 from . import api_router
 
-from services.storage.storage import (
+from domain.stores import (
     get_role_assignment_store,
     get_guest_store,
     get_role_store,
-    create_role_assignment,
-    update_role_assignment,
 )
-from models.models import InvitationRoleAssignment
+from domain.invitation_flow import create_role_assignment, update_role_assignment
+from domain.models import InvitationRoleAssignment
 from .common import (
     api_response, api_error, validate_tenant_or_raise,
     apply_pagination, log_api_call,

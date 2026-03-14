@@ -169,7 +169,8 @@ async def send_postmark_invitation(tenant: str, code: str | None = None) -> bool
     Returns:
         True if email was sent successfully
     """
-    from services.storage.storage import get_invitation_with_roles, get_invitation_store
+    from domain.invitation_flow import get_invitation_with_roles
+    from domain.stores import get_invitation_store
 
     logger.info(f"Sending Postmark invitation for tenant: {tenant}")
 
@@ -204,7 +205,7 @@ async def send_postmark_invitation(tenant: str, code: str | None = None) -> bool
 
 async def send_test_invitation(tenant: str, code: str) -> bool:
     """Send a test invitation email via SMTP."""
-    from services.storage.storage import get_invitation_with_roles
+    from domain.invitation_flow import get_invitation_with_roles
     from services.smtp_mail import sendmail_async
 
     logger.info(f"Starting test invitation email for tenant: {tenant}")
@@ -241,7 +242,8 @@ async def send_test_invitation(tenant: str, code: str) -> bool:
 
 async def test_template(tenant: str = "uva") -> bool:
     """Generate test HTML and text files from the first invitation in the database."""
-    from services.storage.storage import get_invitation_store, get_invitation_with_roles
+    from domain.stores import get_invitation_store
+    from domain.invitation_flow import get_invitation_with_roles
 
     logger.info(f"Generating test template files for tenant: {tenant}")
 

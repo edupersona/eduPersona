@@ -2,12 +2,12 @@
 
 from nicegui import app, ui
 
-from components.step_cards import Steps
+from domain.step_cards import Steps
 from ng_loba.utils import logger
 from services.i18n import _
 from services.session_manager import initialize_state
 from services.settings import get_tenant_config
-from services.storage.storage import get_invitation_with_roles
+from domain.invitation_flow import get_invitation_with_roles
 from services.tenant import store_tenant_in_session, validate_tenant
 from services.theme import accept_frame
 
