@@ -10,7 +10,7 @@ from email.mime.text import MIMEText
 import httpx
 
 from services.settings import config
-from ng_loba.utils import logger
+from ng_store.utils import logger
 
 
 def map_invitation_context(invitation: dict, base_url: str) -> dict:

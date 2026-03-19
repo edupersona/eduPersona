@@ -3,7 +3,7 @@
 from nicegui import app, ui
 
 from domain.step_cards import Steps
-from ng_loba.utils import logger
+from ng_store.utils import logger
 from services.i18n import _
 from services.session_manager import initialize_state
 from services.settings import get_tenant_config

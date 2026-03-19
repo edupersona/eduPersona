@@ -3,7 +3,7 @@ edupersona-specific OIDC interfacing.
 Adapter layer between oidc_mt and edupersona application.
 """
 
-from ng_loba.utils import logger
+from ng_store.utils import logger
 from services.auth.completion import complete_admin_authentication
 from services.oidc_mt.multitenant import initialize_oidc, load_oidc_config
 from services.oidc_mt.oidc_callback import register_oidc_routes

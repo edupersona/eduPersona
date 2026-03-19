@@ -4,13 +4,13 @@
 from fastapi import Depends
 from nicegui import ui
 
-from ng_loba.crud import (
+from ng_crud import (
     Column, CrudDialog, TableConfig, ViewStack,
     page_init, none_as_text
 )
-from ng_loba.crud.fields import build_form_field
+from ng_crud.fields import build_form_field
 from domain.models import RoleAssignment
-from ng_loba.utils import logger
+from ng_store.utils import logger
 from services.auth.dependencies import require_invite_auth
 from services.i18n import _
 from services.postmark.postmark import send_postmark_invitation, test_template

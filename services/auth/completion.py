@@ -7,7 +7,7 @@ from datetime import datetime
 
 from nicegui import app
 
-from ng_loba.utils import logger
+from ng_store.utils import logger
 from services.auth.users import get_tenant_admins, get_tenant_fallback_admins
 
 

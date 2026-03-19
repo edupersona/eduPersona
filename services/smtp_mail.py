@@ -8,7 +8,7 @@ from email.mime.text import MIMEText
 import aiosmtplib
 import smtplib
 
-from ng_loba.utils import logger
+from ng_store.utils import logger
 from services.settings import config
 
 

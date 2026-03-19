@@ -5,7 +5,7 @@ Admin login page supporting both OIDC and fallback authentication.
 from fastapi.responses import RedirectResponse
 from nicegui import Client, app, ui
 
-from ng_loba.utils import logger
+from ng_store.utils import logger
 from services.auth.completion import complete_admin_authentication
 from services.auth.oidc import create_admin_oidc_handler
 from services.auth.users import get_tenant_fallback_admins

@@ -3,7 +3,7 @@ from contextlib import contextmanager
 from nicegui import app, ui
 
 from services.settings import get_tenant_config
-from ng_loba.utils import logger
+from ng_store.utils import logger
 
 
 pages = {

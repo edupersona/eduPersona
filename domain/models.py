@@ -3,7 +3,7 @@ Tortoise ORM models for edupersona application
 """
 from datetime import date
 from tortoise import fields
-from ng_loba.models import QModel, FieldSpec, Validator, required_validator
+from ng_store.models import QModel, FieldSpec, Validator, required_validator
 
 
 class InvitationStatus:

@@ -5,9 +5,9 @@ import json
 from fastapi import Depends
 from nicegui import ui
 
-from ng_loba.crud import ActionButtonTable, Column, CrudDialog, TableConfig, ViewStack, page_init, none_as_text
-from ng_loba.crud.fields import build_form_field
-from ng_loba.utils import logger
+from ng_crud import ActionButtonTable, Column, CrudDialog, TableConfig, ViewStack, page_init, none_as_text
+from ng_crud.fields import build_form_field
+from ng_store.utils import logger
 from services.auth.dependencies import require_guests_auth
 from services.i18n import _
 from services.tenant import get_tenant_from_session

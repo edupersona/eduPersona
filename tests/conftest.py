@@ -10,7 +10,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from nicegui import app, storage, ui
 from nicegui.testing import User
 from services.settings import config
-from ng_loba.store.multitenancy import set_valid_tenants
+from ng_store.store.multitenancy import set_valid_tenants
 from services.auth.dependencies import (
     require_admin_auth,
     require_invite_auth,

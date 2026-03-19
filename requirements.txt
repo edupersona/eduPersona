@@ -5,6 +5,7 @@ httpx
 scim2-client[httpx]
 scim2-models
 aiosmtplib
-# ng_loba
+# ng_store + ng_crud (split from ng_loba)
 tortoise-orm
--e file://Users/peter/Code/pk_repos/ng_loba
+-e file:///Users/peter/Code/pk_repos/ng_store
+-e file:///Users/peter/Code/pk_repos/ng_crud

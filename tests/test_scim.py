@@ -171,7 +171,7 @@ async def role_with_scim_id(test_tenant, scim_observer):
 @pytest.mark.asyncio
 async def test_on_guest_event_create_no_provision(scim_observer, guest_without_scim_id):
     """Guest create event should NOT provision to SCIM (happens on acceptance)."""
-    from ng_loba.store.base import StoreEvent
+    from ng_store.store.base import StoreEvent
 
     event = StoreEvent(verb="create", item=guest_without_scim_id)
     await scim_observer.on_guest_event(event)
@@ -183,7 +183,7 @@ async def test_on_guest_event_create_no_provision(scim_observer, guest_without_s
 @pytest.mark.asyncio
 async def test_on_guest_event_update_with_scim_id(scim_observer, guest_with_scim_id):
     """Guest update event should sync to SCIM when guest has scim_id."""
-    from ng_loba.store.base import StoreEvent
+    from ng_store.store.base import StoreEvent
 
     original_scim_id = guest_with_scim_id["scim_id"]
     assert original_scim_id is not None
@@ -199,7 +199,7 @@ async def test_on_guest_event_update_with_scim_id(scim_observer, guest_with_scim
 @pytest.mark.asyncio
 async def test_on_guest_event_update_without_scim_id(scim_observer, guest_without_scim_id):
     """Guest update event should be skipped when guest has no scim_id."""
-    from ng_loba.store.base import StoreEvent
+    from ng_store.store.base import StoreEvent
 
     # Modify guest and trigger update event
     guest_without_scim_id["given_name"] = "Updated"
@@ -212,7 +212,7 @@ async def test_on_guest_event_update_without_scim_id(scim_observer, guest_withou
 @pytest.mark.asyncio
 async def test_on_guest_event_delete_with_scim_id(scim_observer, guest_with_scim_id):
     """Guest delete event should remove user from SCIM when guest has scim_id."""
-    from ng_loba.store.base import StoreEvent
+    from ng_store.store.base import StoreEvent
 
     assert guest_with_scim_id.get("scim_id") is not None
 
@@ -225,7 +225,7 @@ async def test_on_guest_event_delete_with_scim_id(scim_observer, guest_with_scim
 @pytest.mark.asyncio
 async def test_on_guest_event_delete_without_scim_id(scim_observer, guest_without_scim_id):
     """Guest delete event should be skipped when guest has no scim_id."""
-    from ng_loba.store.base import StoreEvent
+    from ng_store.store.base import StoreEvent
 
     event = StoreEvent(verb="delete", item=guest_without_scim_id)
 
@@ -240,7 +240,7 @@ async def test_on_guest_event_delete_without_scim_id(scim_observer, guest_withou
 @pytest.mark.asyncio
 async def test_on_role_event_create_updates_store(scim_observer, test_tenant):
     """Role create event should provision AND update store with scim_id."""
-    from ng_loba.store.base import StoreEvent
+    from ng_store.store.base import StoreEvent
     from domain.stores import get_role_store
 
     role_store = get_role_store(test_tenant)
@@ -273,7 +273,7 @@ async def test_on_role_event_create_updates_store(scim_observer, test_tenant):
 @pytest.mark.asyncio
 async def test_on_role_event_update_with_scim_id(scim_observer, role_with_scim_id):
     """Role update event should sync to SCIM when role has scim_id."""
-    from ng_loba.store.base import StoreEvent
+    from ng_store.store.base import StoreEvent
 
     assert role_with_scim_id.get("scim_id") is not None
 
@@ -288,7 +288,7 @@ async def test_on_role_event_update_with_scim_id(scim_observer, role_with_scim_i
 @pytest.mark.asyncio
 async def test_on_role_event_update_without_scim_id(scim_observer, role_without_scim_id):
     """Role update event should be skipped when role has no scim_id."""
-    from ng_loba.store.base import StoreEvent
+    from ng_store.store.base import StoreEvent
 
     # Modify role and trigger update event
     role_without_scim_id["name"] = "Updated Name"
@@ -301,7 +301,7 @@ async def test_on_role_event_update_without_scim_id(scim_observer, role_without_
 @pytest.mark.asyncio
 async def test_on_role_event_delete_logs_only(scim_observer, role_with_scim_id):
     """Role delete event should only log (no SCIM cleanup implemented)."""
-    from ng_loba.store.base import StoreEvent
+    from ng_store.store.base import StoreEvent
 
     event = StoreEvent(verb="delete", item=role_with_scim_id)
 

@@ -12,7 +12,7 @@ from fastapi import HTTPException
 
 from . import api_router
 
-from ng_loba.utils import logger
+from ng_store.utils import logger
 from services.cleanup import run_all_cleanup_tasks
 from services.settings import config
 from .common import api_response, api_error
