@@ -4,11 +4,11 @@
 from fastapi import Depends
 from nicegui import ui
 
-from ng_crud import (
-    Column, CrudDialog, TableConfig, ViewStack,
-    page_init, none_as_text
+from ng_store.components import (
+    Column, Dialog, TableConfig, ViewStack,
+    crud_init, none_as_text
 )
-from ng_crud.fields import build_form_field
+from ng_store.components.fields import build_form_field
 from domain.models import RoleAssignment
 from ng_store.utils import logger
 from services.auth.dependencies import require_invite_auth
@@ -59,24 +59,24 @@ async def render_invitation_details(invitation: dict):
     guest_name = invitation.get('calc_guest_name') or invitation.get('guest_id', '')
     status = invitation.get('status', '')
 
-    with ui.row().classes('detail-header'):
-        ui.icon('mail', size='xl').classes('detail-icon')
-        with ui.column().classes('detail-title-group'):
-            ui.label(guest_name).classes('detail-title')
+    with ui.row().classes('nc-detail-header'):
+        ui.icon('mail', size='xl').classes('nc-detail-icon')
+        with ui.column().classes('nc-detail-title-group'):
+            ui.label(guest_name).classes('nc-detail-title')
             ui.html(f'<span class="status-chip status-chip-{status}">{status}</span>')
 
     ui.separator()
 
-    with ui.row().classes('detail-columns'):
-        with ui.column().classes('detail-column'):
-            ui.label(_('Invitation Details')).classes('detail-section-label')
+    with ui.row().classes('nc-detail-columns'):
+        with ui.column().classes('nc-detail-column'):
+            ui.label(_('Invitation Details')).classes('nc-detail-section-label')
             ui.label(f"{_('Email')}: {invitation.get('invitation_email', '-')}")
-            ui.label(f"{_('Invited at')}: {none_as_text(invitation.get('invited_at', ''))}").classes('detail-text-sm')
+            ui.label(f"{_('Invited at')}: {none_as_text(invitation.get('invited_at', ''))}").classes('nc-detail-text-sm')
             if invitation.get('code'):
-                ui.label(f"{_('Code')}: {invitation.get('code')}").classes('detail-text-sm')
+                ui.label(f"{_('Code')}: {invitation.get('code')}").classes('nc-detail-text-sm')
 
-        with ui.column().classes('detail-column'):
-            ui.label(_('Roles')).classes('detail-section-label')
+        with ui.column().classes('nc-detail-column'):
+            ui.label(_('Roles')).classes('nc-detail-section-label')
             role_names = invitation.get('role_names', '')
             if role_names:
                 for role in role_names.split(', '):
@@ -86,8 +86,8 @@ async def render_invitation_details(invitation: dict):
 
     if invitation.get('personal_message'):
         ui.separator()
-        ui.label(_('Personal Message')).classes('detail-section-label')
-        ui.label(invitation.get('personal_message', '')).classes('detail-text-sm')
+        ui.label(_('Personal Message')).classes('nc-detail-section-label')
+        ui.label(invitation.get('personal_message', '')).classes('nc-detail-text-sm')
 
 
 # Form columns for invitation details (used in new invitation dialog)
@@ -152,7 +152,7 @@ async def new_invitation_dialog(tenant: str, roles: list[dict], on_created=None)
         await load_guest_role_assignments()
         roles_section.refresh()  # type: ignore
 
-    with CrudDialog() as dlg:
+    with Dialog() as dlg:
         async def add_role():
             """Add new role assignment for selected guest."""
             if not state['new_role_id'] or not state['guest_id']:
@@ -220,7 +220,7 @@ async def new_invitation_dialog(tenant: str, roles: list[dict], on_created=None)
                 ui.label(_("Select a guest to see their role assignments")).classes('text-caption')
                 return
 
-            ui.label(_("Select roles to include")).classes('detail-section-label')
+            ui.label(_("Select roles to include")).classes('nc-detail-section-label')
 
             ras = state['role_assignments']
             if ras:
@@ -244,7 +244,7 @@ async def new_invitation_dialog(tenant: str, roles: list[dict], on_created=None)
 
             # Invitation details
             ui.separator()
-            ui.label(_("Invitation details")).classes('detail-section-label')
+            ui.label(_("Invitation details")).classes('nc-detail-section-label')
             for col in INVITATION_COLUMNS:
                 build_form_field(col, state)
 
@@ -261,7 +261,7 @@ async def new_invitation_dialog(tenant: str, roles: list[dict], on_created=None)
 @ui.page('/{tenant}/m/invitations')
 async def invitations_page(tenant: str = Depends(require_invite_auth)):
     logger.debug(f"invitations page accessed by tenant: {tenant}")
-    page_init()
+    crud_init()
 
     invitation_store = get_invitation_store(tenant)
     role_store = get_role_store(tenant)

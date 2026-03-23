@@ -5,8 +5,8 @@ import json
 from fastapi import Depends
 from nicegui import ui
 
-from ng_crud import ActionButtonTable, Column, CrudDialog, TableConfig, ViewStack, page_init, none_as_text
-from ng_crud.fields import build_form_field
+from ng_store.components import DataTable, Column, Dialog, TableConfig, ViewStack, crud_init, none_as_text
+from ng_store.components.fields import build_form_field
 from ng_store.utils import logger
 from services.auth.dependencies import require_guests_auth
 from services.i18n import _
@@ -210,7 +210,7 @@ async def _assign_role_dialog(tenant: str, guest: dict, table):
         except Exception as e:
             dlg._notify(str(e), type="negative")
 
-    with CrudDialog() as dlg:
+    with Dialog() as dlg:
         ui.label(_("Assign Role to {name}", name=guest.get("display_name")
                  or guest.get("user_id", ""))).classes('dialog-header')
         ui.select(
@@ -231,7 +231,7 @@ async def _edit_assignment_dialog(tenant: str, row: dict):
         "end_date": row.get("end_date") or "",
     }
 
-    with CrudDialog() as dlg:
+    with Dialog() as dlg:
         async def handle_save():
             try:
                 await update_role_assignment(
@@ -277,7 +277,7 @@ async def render_guest_role_assignments(guest: dict, tenant: str):
     async def handle_revoke(row: dict):
         await _revoke_assignment(row, store)
 
-    table = ActionButtonTable(
+    table = DataTable(
         state={},
         data_source=store,
         config=get_role_assignment_config(),
@@ -296,7 +296,7 @@ async def render_guest_role_assignments(guest: dict, tenant: str):
 
 @ui.page('/{tenant}/m/guests')
 async def guests_page(tenant: str = Depends(require_guests_auth), id: int | None = None):
-    page_init()
+    crud_init()
 
     with frame('guests', tenant):
         guest_store = get_guest_store(tenant)

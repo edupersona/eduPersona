@@ -3,8 +3,8 @@
 from fastapi import Depends
 from nicegui import html, ui
 
-from ng_crud import ActionButtonTable, Column, CrudDialog, CrudTabs, TableConfig, ViewStack, page_init, none_as_text
-from ng_crud.fields import build_form_field
+from ng_store.components import DataTable, Column, Dialog, Tabs, TableConfig, ViewStack, crud_init, none_as_text
+from ng_store.components.fields import build_form_field
 from ng_store.utils import logger
 from services.auth.dependencies import require_role_admin_auth
 from services.i18n import _
@@ -75,32 +75,32 @@ def get_roles_config_detail() -> TableConfig:
 async def render_role_details(role: dict):
     MAX_LEN_URL = 40
 
-    with ui.row().classes('detail-header'):
+    with ui.row().classes('nc-detail-header'):
         tenant = role.get('tenant')
         logo = role.get('logo_file_name')
         if tenant and logo:
-            ui.image(f'/static/{tenant}/logos/{logo}').classes('detail-image')
-        with ui.column().classes('detail-title-group'):
-            ui.label(role.get('name', '')).classes('detail-title')
-            ui.label(role.get('org_name', '')).classes('detail-subtitle')
+            ui.image(f'/static/{tenant}/logos/{logo}').classes('nc-detail-image')
+        with ui.column().classes('nc-detail-title-group'):
+            ui.label(role.get('name', '')).classes('nc-detail-title')
+            ui.label(role.get('org_name', '')).classes('nc-detail-subtitle')
     ui.separator()
-    with ui.row().classes('detail-columns'):
-        with ui.column().classes('detail-column'):
-            ui.label(_('Dates')).classes('detail-section-label')
+    with ui.row().classes('nc-detail-columns'):
+        with ui.column().classes('nc-detail-column'):
+            ui.label(_('Dates')).classes('nc-detail-section-label')
             ui.label(f"{_('Default start')}: {none_as_text(role.get('default_start_date', ''))}")
             ui.label(f"{_('Default end')}: {none_as_text(role.get('default_end_date', ''))}")
             ui.label(f"{_('Role end')}: {none_as_text(role.get('role_end_date', ''))}")
-        with ui.column().classes('detail-column'):
-            ui.label(_('Details')).classes('detail-section-label')
+        with ui.column().classes('nc-detail-column'):
+            ui.label(_('Details')).classes('nc-detail-section-label')
             ui.label(role.get('role_details', '-') or '-')
-            ui.label(f"{_('Scope')}: {role.get('scope', '-') or '-'}").classes('detail-text-sm')
-        with ui.column().classes('detail-column'):
-            ui.label(_('Application')).classes('detail-section-label')
+            ui.label(f"{_('Scope')}: {role.get('scope', '-') or '-'}").classes('nc-detail-text-sm')
+        with ui.column().classes('nc-detail-column'):
+            ui.label(_('Application')).classes('nc-detail-section-label')
             ui.label(role.get('redirect_text', '-') or '-')
             if (url := role.get('redirect_url')):
                 if len(url) > MAX_LEN_URL:
                     url = url[:MAX_LEN_URL] + '...'
-                ui.link(url, role['redirect_url']).classes('detail-text-sm')
+                ui.link(url, role['redirect_url']).classes('nc-detail-text-sm')
 
 
 def _go_to_guest(row: dict):
@@ -147,7 +147,7 @@ async def _assign_guest_dialog(tenant: str, role: dict, table):
     guest_options = {g["id"]: g.get("display_name") or g.get("user_id", "-") for g in available_guests}
     state = {"guest_id": None, "start_date": "", "end_date": ""}
 
-    with CrudDialog() as dlg:
+    with Dialog() as dlg:
         async def handle_assign():
             if not state["guest_id"]:
                 dlg._notify(_("Please select a guest"), type="warning")
@@ -183,7 +183,7 @@ async def _edit_assignment_dialog(tenant: str, row: dict):
         "end_date": row.get("end_date") or "",
     }
 
-    with CrudDialog() as dlg:
+    with Dialog() as dlg:
         async def handle_save():
             try:
                 await update_role_assignment(
@@ -223,7 +223,7 @@ async def render_role_tabs(role: dict, tenant: str):
         async def handle_revoke(row: dict):
             await _revoke_assignment(row, store)
 
-        table = ActionButtonTable(
+        table = DataTable(
             state={},
             data_source=store,
             config=get_role_guests_config(),
@@ -242,7 +242,7 @@ async def render_role_tabs(role: dict, tenant: str):
     async def admins_panel():
         ui.label(_("Admin functions coming soon"))
 
-    tabs = CrudTabs([
+    tabs = Tabs([
         ("guests", _("Guests"), guests_panel),
         ("admins", _("Admins"), admins_panel),
     ])
@@ -252,7 +252,7 @@ async def render_role_tabs(role: dict, tenant: str):
 @ui.page('/{tenant}/m/roles')
 async def roles_page(tenant: str = Depends(require_role_admin_auth), id: int | None = None):
     logger.debug(f"roles page accessed by tenant: {tenant}")
-    page_init()
+    crud_init()
 
     with frame('roles', tenant):
         role_store = get_role_store(tenant)
