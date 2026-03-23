@@ -6,8 +6,8 @@ Path-based multitenancy: tenant is extracted from URL path (e.g., /uva/accept/..
 from fastapi import HTTPException
 from nicegui import app
 
-from ng_store.utils import logger
-from ng_store.store.multitenancy import valid_tenants
+from ng_rdm.utils import logger
+from ng_rdm.store.multitenancy import valid_tenants
 
 
 DEFAULT_TENANT = "uva"

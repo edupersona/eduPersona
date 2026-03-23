@@ -3,9 +3,9 @@
 from fastapi import Depends
 from nicegui import html, ui
 
-from ng_store.components import DataTable, Column, Dialog, Tabs, TableConfig, ViewStack, crud_init, none_as_text
-from ng_store.components.fields import build_form_field
-from ng_store.utils import logger
+from ng_rdm.components import DataTable, Column, Dialog, Tabs, TableConfig, ViewStack, rdm_init, none_as_text
+from ng_rdm.components.fields import build_form_field
+from ng_rdm.utils import logger
 from services.auth.dependencies import require_role_admin_auth
 from services.i18n import _
 from services.tenant import get_tenant_from_session
@@ -252,7 +252,7 @@ async def render_role_tabs(role: dict, tenant: str):
 @ui.page('/{tenant}/m/roles')
 async def roles_page(tenant: str = Depends(require_role_admin_auth), id: int | None = None):
     logger.debug(f"roles page accessed by tenant: {tenant}")
-    crud_init()
+    rdm_init()
 
     with frame('roles', tenant):
         role_store = get_role_store(tenant)

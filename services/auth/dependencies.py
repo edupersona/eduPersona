@@ -9,8 +9,8 @@ from typing import Callable
 from fastapi import HTTPException, Request
 from nicegui import app
 
-from ng_store.utils import logger
-from ng_store.utils.helpers import str_to_datetime
+from ng_rdm.utils import logger
+from ng_rdm.utils.helpers import str_to_datetime
 from services.tenant import get_default_tenant
 
 # Configuration

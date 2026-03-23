@@ -5,8 +5,8 @@ Triggered via API endpoint by external scheduler/cron.
 from datetime import date, timedelta
 
 from domain.models import Role, RoleAssignment, Invitation, InvitationRoleAssignment
-from ng_store.utils import logger
-from ng_store.utils.helpers import now_utc
+from ng_rdm.utils import logger
+from ng_rdm.utils.helpers import now_utc
 from services.settings import config
 from domain.stores import (
     get_role_store,

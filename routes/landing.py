@@ -1,6 +1,6 @@
 from nicegui import ui
 
-from ng_store.utils import logger
+from ng_rdm.utils import logger
 from services.i18n import _
 from services.tenant import get_available_tenants, get_default_tenant
 

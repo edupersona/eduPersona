@@ -4,13 +4,13 @@
 from fastapi import Depends
 from nicegui import ui
 
-from ng_store.components import (
+from ng_rdm.components import (
     Column, Dialog, TableConfig, ViewStack,
-    crud_init, none_as_text
+    rdm_init, none_as_text
 )
-from ng_store.components.fields import build_form_field
+from ng_rdm.components.fields import build_form_field
 from domain.models import RoleAssignment
-from ng_store.utils import logger
+from ng_rdm.utils import logger
 from services.auth.dependencies import require_invite_auth
 from services.i18n import _
 from services.postmark.postmark import send_postmark_invitation, test_template
@@ -261,7 +261,7 @@ async def new_invitation_dialog(tenant: str, roles: list[dict], on_created=None)
 @ui.page('/{tenant}/m/invitations')
 async def invitations_page(tenant: str = Depends(require_invite_auth)):
     logger.debug(f"invitations page accessed by tenant: {tenant}")
-    crud_init()
+    rdm_init()
 
     invitation_store = get_invitation_store(tenant)
     role_store = get_role_store(tenant)

@@ -4,11 +4,11 @@ Storage layer using ng_loba TortoiseStore with SQLite backend
 from tortoise.functions import Count, Max
 
 from domain.models import Role, Guest, GuestAttribute, RoleAssignment, Invitation, InvitationRoleAssignment
-from ng_store.store import store_registry
-from ng_store.store.multitenancy import MultitenantTortoiseStore, set_valid_tenants
-from ng_store.store.orm import TortoiseStore
-from ng_store.utils import logger
-from ng_store.utils.helpers import date_to_str
+from ng_rdm.store import store_registry
+from ng_rdm.store.multitenancy import MultitenantTortoiseStore, set_valid_tenants
+from ng_rdm.store.orm import TortoiseStore
+from ng_rdm.utils import logger
+from ng_rdm.utils.helpers import date_to_str
 
 
 def _derive_guest_statuses(assignment_count: int, has_accepted: bool, has_pending: bool) -> list[str]:

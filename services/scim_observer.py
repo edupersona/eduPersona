@@ -1,8 +1,8 @@
 """
 SCIM observer for automatic provisioning when store events occur
 """
-from ng_store.store.base import StoreEvent
-from ng_store.utils import logger
+from ng_rdm.store.base import StoreEvent
+from ng_rdm.utils import logger
 from services.settings import get_tenant_config
 
 

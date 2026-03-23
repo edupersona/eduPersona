@@ -3,7 +3,7 @@ State management utilities for edupersona application.
 Provides state initialization for pages using NiceGUI tab storage.
 """
 from nicegui import app
-from ng_store.utils import logger
+from ng_rdm.utils import logger
 
 
 def initialize_state():

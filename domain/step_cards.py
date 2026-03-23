@@ -1,7 +1,7 @@
 """Step card components for the onboarding flow"""
 from nicegui import app, ui
 
-from ng_store.utils import logger
+from ng_rdm.utils import logger
 from services.i18n import _
 from services.oidc_mt.multitenant import start_oidc_login
 from domain.invitation_flow import accept_invitation

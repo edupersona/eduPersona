@@ -5,9 +5,9 @@ import json
 from fastapi import Depends
 from nicegui import ui
 
-from ng_store.components import DataTable, Column, Dialog, TableConfig, ViewStack, crud_init, none_as_text
-from ng_store.components.fields import build_form_field
-from ng_store.utils import logger
+from ng_rdm.components import DataTable, Column, Dialog, TableConfig, ViewStack, rdm_init, none_as_text
+from ng_rdm.components.fields import build_form_field
+from ng_rdm.utils import logger
 from services.auth.dependencies import require_guests_auth
 from services.i18n import _
 from services.tenant import get_tenant_from_session
@@ -296,7 +296,7 @@ async def render_guest_role_assignments(guest: dict, tenant: str):
 
 @ui.page('/{tenant}/m/guests')
 async def guests_page(tenant: str = Depends(require_guests_auth), id: int | None = None):
-    crud_init()
+    rdm_init()
 
     with frame('guests', tenant):
         guest_store = get_guest_store(tenant)

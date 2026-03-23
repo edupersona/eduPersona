@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 from nicegui import Client, ui
 from nicegui.page import page
 
-from ng_store.utils import logger
+from ng_rdm.utils import logger
 from services.settings import config
 
 

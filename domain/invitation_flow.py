@@ -11,8 +11,8 @@ from domain.stores import (
     get_role_assignment_store,
     get_invitation_store,
 )
-from ng_store.utils import logger
-from ng_store.utils.helpers import now_utc, utc_datetime_to_str
+from ng_rdm.utils import logger
+from ng_rdm.utils.helpers import now_utc, utc_datetime_to_str
 from services.i18n import _
 
 

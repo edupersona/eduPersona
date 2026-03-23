@@ -5,6 +5,6 @@ httpx
 scim2-client[httpx]
 scim2-models
 aiosmtplib
-# ng_store (includes CRUD components, formerly ng_loba)
+# ng_rdm (Reactive Database Management for NiceGUI, formerly ng_store/ng_loba)
 tortoise-orm
--e file:///Users/peter/Code/pk_repos/ng_store
+-e file:///Users/peter/Code/pk_repos/ng_rdm

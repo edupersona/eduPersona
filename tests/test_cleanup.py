@@ -17,7 +17,7 @@ from domain.stores import (
 )
 from domain.invitation_flow import create_role_assignment, create_invitation
 from domain.models import Invitation
-from ng_store.utils.helpers import now_utc
+from ng_rdm.utils.helpers import now_utc
 
 
 @pytest.mark.storage

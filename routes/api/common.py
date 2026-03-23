@@ -6,7 +6,7 @@ from typing import Any
 
 from fastapi import HTTPException, Query
 
-from ng_store.utils import logger
+from ng_rdm.utils import logger
 from services.tenant import validate_tenant
 
 

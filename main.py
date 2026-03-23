@@ -7,8 +7,8 @@ import routes.api
 from routes.api import api_router
 import routes.landing
 import routes.m  # all /m routes
-from ng_store.store.orm import close_db, init_db
-from ng_store.utils import logger, setup_logging
+from ng_rdm.store.orm import close_db, init_db
+from ng_rdm.utils import logger, setup_logging
 from services.auth.oidc import init_edupersona_oidc
 from services.exception_handlers import register_exception_handlers
 from services.settings import config
