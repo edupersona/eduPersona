@@ -59,24 +59,24 @@ async def render_invitation_details(invitation: dict):
     guest_name = invitation.get('calc_guest_name') or invitation.get('guest_id', '')
     status = invitation.get('status', '')
 
-    with ui.row().classes('nc-detail-header'):
-        ui.icon('mail', size='xl').classes('nc-detail-icon')
-        with ui.column().classes('nc-detail-title-group'):
-            ui.label(guest_name).classes('nc-detail-title')
+    with ui.row().classes('rdm-detail-header'):
+        ui.icon('mail', size='xl').classes('rdm-detail-icon')
+        with ui.column().classes('rdm-detail-title-group'):
+            ui.label(guest_name).classes('rdm-detail-title')
             ui.html(f'<span class="status-chip status-chip-{status}">{status}</span>')
 
     ui.separator()
 
-    with ui.row().classes('nc-detail-columns'):
-        with ui.column().classes('nc-detail-column'):
-            ui.label(_('Invitation Details')).classes('nc-detail-section-label')
+    with ui.row().classes('rdm-detail-columns'):
+        with ui.column().classes('rdm-detail-column'):
+            ui.label(_('Invitation Details')).classes('rdm-detail-section-label')
             ui.label(f"{_('Email')}: {invitation.get('invitation_email', '-')}")
-            ui.label(f"{_('Invited at')}: {none_as_text(invitation.get('invited_at', ''))}").classes('nc-detail-text-sm')
+            ui.label(f"{_('Invited at')}: {none_as_text(invitation.get('invited_at', ''))}").classes('rdm-detail-text-sm')
             if invitation.get('code'):
-                ui.label(f"{_('Code')}: {invitation.get('code')}").classes('nc-detail-text-sm')
+                ui.label(f"{_('Code')}: {invitation.get('code')}").classes('rdm-detail-text-sm')
 
-        with ui.column().classes('nc-detail-column'):
-            ui.label(_('Roles')).classes('nc-detail-section-label')
+        with ui.column().classes('rdm-detail-column'):
+            ui.label(_('Roles')).classes('rdm-detail-section-label')
             role_names = invitation.get('role_names', '')
             if role_names:
                 for role in role_names.split(', '):
@@ -86,8 +86,8 @@ async def render_invitation_details(invitation: dict):
 
     if invitation.get('personal_message'):
         ui.separator()
-        ui.label(_('Personal Message')).classes('nc-detail-section-label')
-        ui.label(invitation.get('personal_message', '')).classes('nc-detail-text-sm')
+        ui.label(_('Personal Message')).classes('rdm-detail-section-label')
+        ui.label(invitation.get('personal_message', '')).classes('rdm-detail-text-sm')
 
 
 # Form columns for invitation details (used in new invitation dialog)
@@ -220,7 +220,7 @@ async def new_invitation_dialog(tenant: str, roles: list[dict], on_created=None)
                 ui.label(_("Select a guest to see their role assignments")).classes('text-caption')
                 return
 
-            ui.label(_("Select roles to include")).classes('nc-detail-section-label')
+            ui.label(_("Select roles to include")).classes('rdm-detail-section-label')
 
             ras = state['role_assignments']
             if ras:
@@ -244,7 +244,7 @@ async def new_invitation_dialog(tenant: str, roles: list[dict], on_created=None)
 
             # Invitation details
             ui.separator()
-            ui.label(_("Invitation details")).classes('nc-detail-section-label')
+            ui.label(_("Invitation details")).classes('rdm-detail-section-label')
             for col in INVITATION_COLUMNS:
                 build_form_field(col, state)
 

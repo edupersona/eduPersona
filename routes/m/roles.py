@@ -3,7 +3,7 @@
 from fastapi import Depends
 from nicegui import html, ui
 
-from ng_rdm.components import DataTable, Column, Dialog, Tabs, TableConfig, ViewStack, rdm_init, none_as_text
+from ng_rdm.components import Button, DataTable, Column, Dialog, Tabs, TableConfig, ViewStack, rdm_init, none_as_text
 from ng_rdm.components.fields import build_form_field
 from ng_rdm.utils import logger
 from services.auth.dependencies import require_role_admin_auth
@@ -75,32 +75,33 @@ def get_roles_config_detail() -> TableConfig:
 async def render_role_details(role: dict):
     MAX_LEN_URL = 40
 
-    with ui.row().classes('nc-detail-header'):
+    with ui.row().classes('rdm-detail-header'):
         tenant = role.get('tenant')
         logo = role.get('logo_file_name')
         if tenant and logo:
-            ui.image(f'/static/{tenant}/logos/{logo}').classes('nc-detail-image')
-        with ui.column().classes('nc-detail-title-group'):
-            ui.label(role.get('name', '')).classes('nc-detail-title')
-            ui.label(role.get('org_name', '')).classes('nc-detail-subtitle')
+            ui.image(f'/static/{tenant}/logos/{logo}').classes('rdm-detail-image')
+        with ui.column().classes('rdm-detail-title-group'):
+            ui.label(role.get('name', '')).classes('rdm-detail-title')
+            ui.label(role.get('org_name', '')).classes('rdm-detail-subtitle')
     ui.separator()
-    with ui.row().classes('nc-detail-columns'):
-        with ui.column().classes('nc-detail-column'):
-            ui.label(_('Dates')).classes('nc-detail-section-label')
-            ui.label(f"{_('Default start')}: {none_as_text(role.get('default_start_date', ''))}")
-            ui.label(f"{_('Default end')}: {none_as_text(role.get('default_end_date', ''))}")
-            ui.label(f"{_('Role end')}: {none_as_text(role.get('role_end_date', ''))}")
-        with ui.column().classes('nc-detail-column'):
-            ui.label(_('Details')).classes('nc-detail-section-label')
-            ui.label(role.get('role_details', '-') or '-')
-            ui.label(f"{_('Scope')}: {role.get('scope', '-') or '-'}").classes('nc-detail-text-sm')
-        with ui.column().classes('nc-detail-column'):
-            ui.label(_('Application')).classes('nc-detail-section-label')
-            ui.label(role.get('redirect_text', '-') or '-')
+    with ui.row().classes('rdm-detail-columns'):
+        with ui.column().classes('rdm-detail-column'):
+            ui.label(_('Dates')).classes('rdm-detail-section-label')
+            ui.label(f"{_('Default start')}: {none_as_text(role.get('default_start_date', ''))}").classes(
+                'rdm-detail-text-sm')
+            ui.label(f"{_('Default end')}: {none_as_text(role.get('default_end_date', ''))}").classes('rdm-detail-text-sm')
+            ui.label(f"{_('Role end')}: {none_as_text(role.get('role_end_date', ''))}").classes('rdm-detail-text-sm')
+        with ui.column().classes('rdm-detail-column'):
+            ui.label(_('Details')).classes('rdm-detail-section-label')
+            ui.label(role.get('role_details', '-') or '-').classes('rdm-detail-text-sm')
+            ui.label(f"{_('Scope')}: {role.get('scope', '-') or '-'}").classes('rdm-detail-text-sm')
+        with ui.column().classes('rdm-detail-column'):
+            ui.label(_('Application')).classes('rdm-detail-section-label')
+            ui.label(role.get('redirect_text', '-') or '-').classes('rdm-detail-text-sm')
             if (url := role.get('redirect_url')):
                 if len(url) > MAX_LEN_URL:
                     url = url[:MAX_LEN_URL] + '...'
-                ui.link(url, role['redirect_url']).classes('nc-detail-text-sm')
+                ui.link(url, role['redirect_url']).classes('rdm-detail-text-sm')
 
 
 def _go_to_guest(row: dict):
@@ -223,21 +224,23 @@ async def render_role_tabs(role: dict, tenant: str):
         async def handle_revoke(row: dict):
             await _revoke_assignment(row, store)
 
-        table = DataTable(
-            state={},
-            data_source=store,
-            config=get_role_guests_config(),
-            filter_by={"role_id": role_id},
-            on_edit=handle_edit,
-            on_delete=handle_revoke,
-            edit_label=_("Edit"),
-            delete_label=_("Revoke"),
-        )
-        await table.build()     # type: ignore
+        with ui.row().classes('rdm-detail-outer'):
 
-        with ui.row().classes('content-actions'):
-            ui.button(_("Assign Role..."), icon="add",
-                      on_click=lambda: _assign_guest_dialog(tenant, role, table)).classes('btn-primary')
+            table = DataTable(
+                state={},
+                data_source=store,
+                config=get_role_guests_config(),
+                filter_by={"role_id": role_id},
+                on_edit=handle_edit,
+                on_delete=handle_revoke,
+                edit_label=_("Edit"),
+                delete_label=_("Revoke"),
+            )
+            await table.build()     # type: ignore
+
+            with ui.row().classes('rdm-detail-actions'):
+                Button(_("Assign Role..."), icon="add",
+                       on_click=lambda: _assign_guest_dialog(tenant, role, table))
 
     async def admins_panel():
         ui.label(_("Admin functions coming soon"))

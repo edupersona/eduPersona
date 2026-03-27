@@ -5,7 +5,7 @@ import json
 from fastapi import Depends
 from nicegui import ui
 
-from ng_rdm.components import DataTable, Column, Dialog, TableConfig, ViewStack, rdm_init, none_as_text
+from ng_rdm.components import Button, DataTable, Column, Dialog, TableConfig, ViewStack, rdm_init, none_as_text
 from ng_rdm.components.fields import build_form_field
 from ng_rdm.utils import logger
 from services.auth.dependencies import require_guests_auth
@@ -65,38 +65,38 @@ async def render_guest_details(guest: dict):
         f'<span class="status-chip status-chip-{s}">{_(s.replace("_", " "))}</span>'
         for s in statuses
     )
-    with ui.row().classes('detail-header'):
-        ui.icon('person', size='xl').classes('detail-icon')
-        with ui.column().classes('detail-title-group'):
-            with ui.row().classes('items-center gap-2'):
-                ui.label(guest.get('display_name') or guest.get('user_id', '')).classes('detail-title')
+    with ui.row().classes('rdm-detail-header'):
+        ui.icon('person', size='xl').classes('rdm-detail-icon')
+        with ui.column().classes('rdm-detail-title-group'):
+            with ui.row().classes('rdm-items-center gap-2'):
+                ui.label(guest.get('display_name') or guest.get('user_id', '')).classes('rdm-detail-title')
                 ui.html(chips)
-            ui.label(guest['email']).classes('detail-subtitle')
+            ui.label(guest['email']).classes('rdm-detail-subtitle')
 
     ui.separator()
 
-    with ui.row().classes('detail-columns'):
-        with ui.column().classes('detail-column'):
-            ui.label(_('Name')).classes('detail-section-label')
+    with ui.row().classes('rdm-detail-columns'):
+        with ui.column().classes('rdm-detail-column'):
+            ui.label(_('Name')).classes('rdm-detail-section-label')
             if guest.get('given_name'):
-                ui.label(f"{_('Given name')}: {guest['given_name']}")
+                ui.label(f"{_('Given name')}: {guest['given_name']}").classes('rdm-detail-text-sm')
             if guest.get('family_name'):
-                ui.label(f"{_('Family name')}: {guest['family_name']}")
+                ui.label(f"{_('Family name')}: {guest['family_name']}").classes('rdm-detail-text-sm')
 
             # if len(emails) > 1:
-            #     ui.label(f"{_('Emails')}: {', '.join(emails)}").classes('detail-text-sm')
+            #     ui.label(f"{_('Emails')}: {', '.join(emails)}").classes('rdm-detail-text-sm')
 
-        with ui.column().classes('detail-column'):
-            ui.label(_('Identity')).classes('detail-section-label')
-            ui.label(f"user_id: {guest.get('user_id', '-')}").classes('detail-text-sm')
+        with ui.column().classes('rdm-detail-column'):
+            ui.label(_('Identity')).classes('rdm-detail-section-label')
+            ui.label(f"user_id: {guest.get('user_id', '-')}").classes('rdm-detail-text-sm')
             if guest.get('scim_id'):
-                ui.label(f"scim_id: {guest['scim_id']}").classes('detail-text-sm')
+                ui.label(f"scim_id: {guest['scim_id']}").classes('rdm-detail-text-sm')
 
-        with ui.column().classes('detail-column'):
-            ui.label(_('Role Assignments')).classes('detail-section-label')
+        with ui.column().classes('rdm-detail-column'):
+            ui.label(_('Role Assignments')).classes('rdm-detail-section-label')
             count = guest.get('assignment_count', 0)
-            ui.label(f"{count} {_('active role(s)')}")
-            ui.label(f"{_('Latest end date')}: {none_as_text(guest.get('max_end_date', ''))}").classes('detail-text-sm')
+            ui.label(f"{count} {_('active role(s)')}").classes('rdm-detail-text-sm')
+            ui.label(f"{_('Latest end date')}: {none_as_text(guest.get('max_end_date', ''))}").classes('rdm-detail-text-sm')
 
     # Guest attributes (from OIDC flows)
     guest_id = guest.get('id')
@@ -106,7 +106,7 @@ async def render_guest_details(guest: dict):
         if attrs:
             ui.separator()
 
-            with ui.expansion(_('Attributes')).props('switch-toggle-side').classes('detail-section-label'):
+            with ui.expansion(_('Attributes')).props('switch-toggle-side').classes('rdm-detail-section-label'):
                 with ui.row().classes('attr-row'):
                     for attr in attrs:
                         with ui.column().classes('attr-card'):
@@ -289,9 +289,9 @@ async def render_guest_role_assignments(guest: dict, tenant: str):
     )
     await table.build()     # type: ignore
 
-    with ui.row().classes('content-actions'):
-        ui.button(_("Assign Role..."), icon="add",
-                  on_click=lambda: _assign_role_dialog(tenant, guest, table)).classes('btn-primary')
+    with ui.row().classes('rdm-detail-actions'):
+        Button(_("Assign Role..."), icon="add",
+               on_click=lambda: _assign_role_dialog(tenant, guest, table)).classes('btn-primary')
 
 
 @ui.page('/{tenant}/m/guests')

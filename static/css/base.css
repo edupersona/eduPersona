@@ -160,7 +160,7 @@ header {
    ======================================== */
 
 /* Default button styling (replaces hardcoded ui.button.default_style) */
-.q-btn {
+/* .q-btn {
     color: #3b82f6;
     font-size: 14pt;
     text-transform: none !important;
@@ -187,10 +187,9 @@ header {
   color: white !important;
 }
 
-/* POTENTIAL CLEANUP: .btn-icon duplicated in ng_loba/crud/crud.css */
 .btn-icon {
   color: rgb(156, 163, 175) !important;
-}
+} */
 
 /* ========================================
    Icons (colored)
@@ -277,7 +276,7 @@ header {
    POTENTIAL CLEANUP: .data-table, .table-header, .table-row duplicated in ng_loba/crud/crud.css
    ======================================== */
 
-.data-table {
+/* .data-table {
   width: 100%;
   font-size: 12pt;
 }
@@ -300,30 +299,15 @@ header {
   padding: 0.5rem 0;
   gap: 0;
   flex-wrap: nowrap;
-}
+} */
 
-.invitations-page {
+/* .invitations-page {
   .col-role { flex: 0 0 15%; }
   .col-email { flex: 0 0 20%; }
   .col-code { flex: 0 0 30%; }
   .col-date { flex: 0 0 17%; }
   .col-date-last { flex: 0 0 18%; }
-}
-
-/* POTENTIAL CLEANUP: .roles-page duplicated in ng_loba/crud/crud.css */
-.roles-page {
-  /* .col-org { flex: 0 0 10%; } */
-  .col-scope { flex: 0 0 10%; }
-  .col-name { flex: 0 0 35%; }
-  .col-details { flex: 0 0 25%; }
-  .col-app { flex: 0 0 20%; }
-  .col-actions { flex: 0 0 10%; display: flex; gap: 0.1rem; justify-content: flex-end; }
-  
-  .crudy-header .app {
-    padding-left: 15px;
-  }
-}
-
+} */
 
 
 /* ===== Guest Attributes (OIDC flow data) ===== */
@@ -386,13 +370,55 @@ header {
     }
 }
 
-.crud-dialog-card {
+.rdm-dialog-card {
   .detail-section-label {
     font-size: 1rem;
     font-weight: 600;
     margin-top: 10px;
   }
 }
+
+
+/****** IMPORTANT *******/
+/* nog doorvoeren in ng_rdm css */
+.rdm-tab-panel {
+    width: 100%;
+    border: 1px solid grey;
+    padding: 0;
+}
+
+.page-content {
+  row-gap: 0;
+}
+
+.rdm-tabs {
+  margin-top: 18px;
+}
+
+:root {
+  --rdm-spacing-lg: 16px;
+  --rdm-border-light: 1px solid grey;
+}
+
+.rdm-detail-actions {
+  margin-top: 0;
+  margin-left: 3px;
+    padding: var(--rdm-spacing-lg) 0;
+
+}
+
+.rdm-detail-outer {
+  row-gap: 0;
+  padding-bottom: 0;
+}
+
+.rdm-view-stack-toolbar {
+  margin-left: 3px;
+  /* padding-top: 8px; */
+}
+
+/****** IMPORTANT *******/
+
 
 /* Status chips (inline HTML/CSS badges) */
 .status-chip {
@@ -526,11 +552,11 @@ textarea.q-field__native {
 }
 
 /* Logo images in CRUD table cells */
-.crudy-row img {
+/* .crudy-row img {
   max-height: 60px;
   width: auto;
   object-fit: contain;
-}
+} */
 
 .dialog-card { width: 48rem; }
 
