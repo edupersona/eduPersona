@@ -5,8 +5,9 @@ from fastapi import Depends
 from nicegui import ui
 
 from ng_rdm.components import (
-    Column, Dialog, TableConfig, ViewStack,
-    rdm_init, none_as_text
+    Button, Column, Dialog, RowAction, TableConfig, FormConfig,
+    ViewStack, ListTable, detail_card, confirm_dialog,
+    rdm_init, none_as_text,
 )
 from ng_rdm.components.fields import build_form_field
 from domain.models import RoleAssignment
@@ -31,9 +32,9 @@ def render_status(row: dict):
     ui.html(f'<span class="status-chip status-chip-{status}">{label}</span>')
 
 
-def get_invitations_select_config() -> TableConfig:
+def get_invitations_table_config() -> TableConfig:
     return TableConfig(
-        table_columns=[
+        columns=[
             Column(name="calc_guest_name", label=_("Guest"), width_percent=22),
             Column(name="role_names", label=_("Roles"), width_percent=35),
             Column(name="invited_at", label=_("Invited"), width_percent=30, formatter=none_as_text),
@@ -41,16 +42,6 @@ def get_invitations_select_config() -> TableConfig:
         ],
         empty_message=_("No invitations found."),
         add_button=_("New invitation..."),
-    )
-
-
-def get_invitations_detail_config() -> TableConfig:
-    return TableConfig(
-        dialog_columns=[
-            Column(name="invitation_email", label=_("Invitation email"), placeholder=_("Email for this invitation")),
-            Column(name="personal_message", label=_("Personal message"),
-                   ui_type=ui.textarea, placeholder=_("Optional")),
-        ],
     )
 
 
@@ -286,32 +277,64 @@ async def invitations_page(tenant: str = Depends(require_invite_auth)):
         timestamp = int(time.time())
         ui.run_javascript(f"window.open('/static/test_output.html?t={timestamp}', '_blank', 'width=768,height=700')")
 
-    async def invitation_footer(invitation: dict):
-        """Footer with Resend and Test Template buttons."""
-        with ui.row().classes('content-actions'):
-            ui.button(_('Resend invitation'), icon='send',
-                      on_click=lambda: send_email(invitation)).classes('btn-primary')
-            ui.button(_('Test Template'), on_click=run_test_template).classes('btn-secondary')
+    custom_actions = [
+        RowAction(icon="send", label=_("Resend"), callback=send_email),
+        RowAction(label=_("Test Template"), callback=lambda _: run_test_template(), variant="secondary"),
+    ]
 
-    async def list_footer():
-        """Additional buttons in list toolbar - rendered inline with add button."""
-        ui.button(_('Accept invitation  ▶︎')).on(
-            'click', lambda: ui.navigate.to(f'/{tenant}/accept'))
+    table_config = get_invitations_table_config()
+
+    async def render_list(vs: ViewStack):
+        def render_toolbar():
+            Button(_('Accept invitation  ▶︎'),
+                   on_click=lambda: ui.navigate.to(f'/{tenant}/accept'), variant="secondary")
+
+        async def on_click(row_id):
+            items = await invitation_store.read_items(filter_by={"id": row_id})
+            if items:
+                vs.show_detail(items[0])
+
+        table = ListTable(
+            state={}, data_source=invitation_store, config=table_config,
+            on_click=on_click,
+            on_add=lambda: new_invitation_dialog(tenant, roles, on_created=vs.build.refresh),
+            render_toolbar=render_toolbar,
+        )
+        await table.build()
+
+    async def render_detail(vs: ViewStack, item: dict):
+        async def handle_delete(item):
+            if await confirm_dialog(item):
+                await invitation_store.delete_item(item)
+                vs.show_list()
+
+        await detail_card(item, render=render_invitation_details,
+                          show_edit=False, on_delete=handle_delete)
+
+        # Custom action buttons
+        from nicegui import html
+        with html.div().classes("rdm-detail-actions"):
+            for action in custom_actions:
+                variant = action.variant or "primary"
+                btn_class = f"rdm-btn rdm-btn-{variant}"
+                with html.button().classes(btn_class).on(
+                    "click", lambda _, i=item, a=action: a.callback(i) if a.callback else None
+                ):
+                    if action.icon:
+                        html.i().classes(f"bi bi-{action.icon}")
+                    if action.label:
+                        html.span(action.label)
+
+    async def render_edit(vs: ViewStack, item: dict | None):
+        pass  # invitations are not editable
 
     stack = ViewStack(
-        data_source=invitation_store,
-        select_config=get_invitations_select_config(),
-        detail_config=get_invitations_detail_config(),
-        render_detail=render_invitation_details,
         breadcrumb_root=_("Invitations"),
         item_label=lambda item: item.get("calc_guest_name") or str(item.get("id", "")),
-        show_add=True,
-        show_edit=False,
-        show_delete=True,
-        detail_footer=invitation_footer,
-        list_footer=list_footer,
-        on_add=lambda: new_invitation_dialog(tenant, roles, on_created=stack.build.refresh),
+        render_list=render_list,
+        render_detail=render_detail,
+        render_edit=render_edit,
     )
 
     with frame('invitations', tenant):
-        await stack.build()  # type: ignore
+        await stack.build()

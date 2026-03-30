@@ -5,7 +5,10 @@ import json
 from fastapi import Depends
 from nicegui import ui
 
-from ng_rdm.components import Button, DataTable, Column, Dialog, TableConfig, ViewStack, rdm_init, none_as_text
+from ng_rdm.components import (
+    ActionButtonTable, Column, Dialog, TableConfig, FormConfig,
+    ViewStack, EditCard, detail_card, ListTable, rdm_init, none_as_text,
+)
 from ng_rdm.components.fields import build_form_field
 from ng_rdm.utils import logger
 from services.auth.dependencies import require_guests_auth
@@ -28,9 +31,9 @@ def render_guest_statuses(row: dict):
     ui.html(chips)
 
 
-def get_guests_config_select() -> TableConfig:
+def get_guests_table_config() -> TableConfig:
     return TableConfig(
-        table_columns=[
+        columns=[
             Column(name="display_name", label=_("Name"), width_percent=25),
             Column(name="email", label=_("Email"), width_percent=28),
             # Column(name="assignment_count", label=_("Roles"), width_percent=8),
@@ -42,9 +45,9 @@ def get_guests_config_select() -> TableConfig:
     )
 
 
-def get_guests_config_detail() -> TableConfig:
-    return TableConfig(
-        dialog_columns=[
+def get_guests_form_config() -> FormConfig:
+    return FormConfig(
+        columns=[
             Column(name="email", label=_("Email address"),
                    placeholder=_("The mail address to send the invitation to")),
             Column(name="user_id", label=_("User ID"),
@@ -54,8 +57,8 @@ def get_guests_config_detail() -> TableConfig:
             Column(name="family_name", label=_("Family name"),
                    placeholder=_(" ")),
         ],
-        dialog_title_add=_("New Guest"),
-        dialog_title_edit=_("Edit Guest"),
+        title_add=_("New Guest"),
+        title_edit=_("Edit Guest"),
     )
 
 
@@ -168,6 +171,8 @@ def get_role_assignment_config() -> TableConfig:
             Column(name="end_date", label=_("End"), width_percent=12, formatter=none_as_text),
         ],
         empty_message=_("No role assignments"),
+        show_add_button=True,
+        add_button=_("Assign Role..."),
         show_edit_button=True,
         show_delete_button=True,
     )
@@ -277,21 +282,18 @@ async def render_guest_role_assignments(guest: dict, tenant: str):
     async def handle_revoke(row: dict):
         await _revoke_assignment(row, store)
 
-    table = DataTable(
+    table = ActionButtonTable(
         state={},
         data_source=store,
         config=get_role_assignment_config(),
         filter_by={"guest_id": guest_id},
+        on_add=lambda: _assign_role_dialog(tenant, guest, table),
         on_edit=handle_edit,
         on_delete=handle_revoke,
         edit_label=_("Edit"),
         delete_label=_("Revoke"),
     )
     await table.build()     # type: ignore
-
-    with ui.row().classes('rdm-detail-actions'):
-        Button(_("Assign Role..."), icon="add",
-               on_click=lambda: _assign_role_dialog(tenant, guest, table)).classes('btn-primary')
 
 
 @ui.page('/{tenant}/m/guests')
@@ -300,20 +302,42 @@ async def guests_page(tenant: str = Depends(require_guests_auth), id: int | None
 
     with frame('guests', tenant):
         guest_store = get_guest_store(tenant)
+        table_config = get_guests_table_config()
+        form_config = get_guests_form_config()
 
-        async def guest_detail_footer(guest: dict):
-            await render_guest_role_assignments(guest, tenant)
+        async def render_list(vs: ViewStack):
+            async def on_click(row_id):
+                items = await guest_store.read_items(filter_by={"id": row_id})
+                if items:
+                    vs.show_detail(items[0])
+            table = ListTable(
+                state={}, data_source=guest_store, config=table_config,
+                on_click=on_click, on_add=vs.show_edit_new,
+            )
+            await table.build()
+
+        async def render_detail(vs: ViewStack, item: dict):
+            await detail_card(item, render=render_guest_details,
+                              on_edit=lambda i: vs.show_edit_existing(i))
+            await render_guest_role_assignments(item, tenant)
+
+        async def render_edit(vs: ViewStack, item: dict | None):
+            edit = EditCard(
+                data_source=guest_store, config=form_config,
+                on_saved=lambda saved: vs.show_detail(saved),
+                on_cancel=lambda: vs.show_detail(item) if item else vs.show_list(),
+            )
+            edit.set_item(item)
+            await edit.build()
 
         stack = ViewStack(
-            data_source=guest_store,
-            select_config=get_guests_config_select(),
-            detail_config=get_guests_config_detail(),
-            render_detail=render_guest_details,
             breadcrumb_root=_("Guests"),
             item_label=lambda item: item.get("display_name") or item.get("user_id", ""),
-            detail_footer=guest_detail_footer,
+            render_list=render_list,
+            render_detail=render_detail,
+            render_edit=render_edit,
         )
-        await stack.build()     # type: ignore
+        await stack.build()
 
         if id is not None:
             guests = await guest_store.read_items(filter_by={"id": id})

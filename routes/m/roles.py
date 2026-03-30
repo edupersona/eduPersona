@@ -3,7 +3,10 @@
 from fastapi import Depends
 from nicegui import html, ui
 
-from ng_rdm.components import Button, DataTable, Column, Dialog, Tabs, TableConfig, ViewStack, rdm_init, none_as_text
+from ng_rdm.components import (
+    ActionButtonTable, Column, Dialog, Tabs, TableConfig, FormConfig,
+    ViewStack, EditCard, ListTable, detail_card, rdm_init, none_as_text,
+)
 from ng_rdm.components.fields import build_form_field
 from ng_rdm.utils import logger
 from services.auth.dependencies import require_role_admin_auth
@@ -24,52 +27,45 @@ def _render_app_logo(row: dict):
         ui.label(row.get('redirect_text') or '-')
 
 
-def get_roles_config_select() -> TableConfig:
-    return TableConfig(
-        table_columns=[
-            Column(name="app", label="app", width_percent=10, render=_render_app_logo),
-            Column(name="name", label=_("Role name"), width_percent=40),
-            Column(name="role_details", label=_("Details"), width_percent=45),
-            Column(name="scope", label=_("Scope"), width_percent=8),
-        ],
-        empty_message=_("No roles found"),
-        add_button=_("New Role..."),
-    )
+ROLES_TABLE_CONFIG = TableConfig(
+    columns=[
+        Column(name="app", label="app", width_percent=10, render=_render_app_logo),
+        Column(name="name", label=_("Role name"), width_percent=40),
+        Column(name="role_details", label=_("Details"), width_percent=45),
+        Column(name="scope", label=_("Scope"), width_percent=8),
+    ],
+    empty_message=_("No roles found"),
+    add_button=_("New Role..."),
+)
 
-
-def get_roles_config_detail() -> TableConfig:
-    return TableConfig(
-        dialog_columns=[
-            Column(name="name", label=_("Role name"),
-                   placeholder=_("e.g. Visiting Professor of Mathematics")),
-            Column(name="org_name", label=_("Organizational unit inviting the guest"),
-                   placeholder=_("e.g., Faculty of Physics & Mathematics")),
-            Column(name="role_details", label=_("Role details (course, term, period, code)"),
-                   placeholder=_("e.g. visiting professor term II / 2026-2027")),
-            Column(name="mail_sender_email", label=_("Sender email"),
-                   placeholder=_("Invite sender's mail address")),
-            Column(name="mail_sender_name", label=_("Sender name"),
-                   placeholder=_("e.g., Carol Johnson")),
-            # Column(name="more_info_email", label=_("For more info, mail to (optional)"),
-            #        placeholder=_("e.g., servicedesk@university.com")),
-            # Column(name="more_info_name", label=_("For more info, contact name (optional)"),
-            #        placeholder=_("e.g., Servicedesk")),
-            Column(name="redirect_text", label=_("Application name"),
-                   placeholder=_("e.g. Canvas (UvA)")),
-            Column(name="redirect_url", label=_("Application URL"),
-                   placeholder=_("https://example.com/")),
-            Column(name="default_start_date", label=_("Default start date (optional)"),
-                   placeholder=_("YYYY-MM-DD")),
-            Column(name="default_end_date", label=_("Default end date (optional)"),
-                   placeholder=_("YYYY-MM-DD")),
-            Column(name="role_end_date", label=_("Role end date (required)"),
-                   placeholder=_("YYYY-MM-DD")),
-            Column(name="scope", label=_("Scope (who can use and manage this role)"),
-                   placeholder=_("e.g. upva")),
-        ],
-        dialog_title_add=_("New Role"),
-        dialog_title_edit=_("Edit Role"),
-    )
+ROLES_FORM_CONFIG = FormConfig(
+    columns=[
+        Column(name="name", label=_("Role name"),
+               placeholder=_("e.g. Visiting Professor of Mathematics")),
+        Column(name="org_name", label=_("Organizational unit inviting the guest"),
+               placeholder=_("e.g., Faculty of Physics & Mathematics")),
+        Column(name="role_details", label=_("Role details (course, term, period, code)"),
+               placeholder=_("e.g. visiting professor term II / 2026-2027")),
+        Column(name="mail_sender_email", label=_("Sender email"),
+               placeholder=_("Invite sender's mail address")),
+        Column(name="mail_sender_name", label=_("Sender name"),
+               placeholder=_("e.g., Carol Johnson")),
+        Column(name="redirect_text", label=_("Application name"),
+               placeholder=_("e.g. Canvas (UvA)")),
+        Column(name="redirect_url", label=_("Application URL"),
+               placeholder=_("https://example.com/")),
+        Column(name="default_start_date", label=_("Default start date (optional)"),
+               placeholder=_("YYYY-MM-DD")),
+        Column(name="default_end_date", label=_("Default end date (optional)"),
+               placeholder=_("YYYY-MM-DD")),
+        Column(name="role_end_date", label=_("Role end date (required)"),
+               placeholder=_("YYYY-MM-DD")),
+        Column(name="scope", label=_("Scope (who can use and manage this role)"),
+               placeholder=_("e.g. upva")),
+    ],
+    title_add=_("New Role"),
+    title_edit=_("Edit Role"),
+)
 
 
 async def render_role_details(role: dict):
@@ -120,6 +116,8 @@ def get_role_guests_config() -> TableConfig:
             Column(name="end_date", label=_("End"), width_percent=15, formatter=none_as_text),
         ],
         empty_message=_("No guests assigned"),
+        show_add_button=True,
+        add_button=_("Assign Role..."),
         show_edit_button=True,
         show_delete_button=True,
     )
@@ -225,22 +223,18 @@ async def render_role_tabs(role: dict, tenant: str):
             await _revoke_assignment(row, store)
 
         with ui.row().classes('rdm-detail-outer'):
-
-            table = DataTable(
+            table = ActionButtonTable(
                 state={},
                 data_source=store,
                 config=get_role_guests_config(),
                 filter_by={"role_id": role_id},
+                on_add=lambda: _assign_guest_dialog(tenant, role, table),
                 on_edit=handle_edit,
                 on_delete=handle_revoke,
                 edit_label=_("Edit"),
                 delete_label=_("Revoke"),
             )
             await table.build()     # type: ignore
-
-            with ui.row().classes('rdm-detail-actions'):
-                Button(_("Assign Role..."), icon="add",
-                       on_click=lambda: _assign_guest_dialog(tenant, role, table))
 
     async def admins_panel():
         ui.label(_("Admin functions coming soon"))
@@ -260,19 +254,40 @@ async def roles_page(tenant: str = Depends(require_role_admin_auth), id: int | N
     with frame('roles', tenant):
         role_store = get_role_store(tenant)
 
-        async def role_detail_footer(role: dict):
-            await render_role_tabs(role, tenant)
+        async def render_list(vs: ViewStack):
+            async def on_click(row_id):
+                items = await role_store.read_items(filter_by={"id": row_id})
+                if items:
+                    vs.show_detail(items[0])
+            table = ListTable(
+                state={}, data_source=role_store, config=ROLES_TABLE_CONFIG,
+                on_click=on_click, on_add=vs.show_edit_new,
+            )
+            await table.build()
+
+        async def render_detail(vs: ViewStack, item: dict):
+            await detail_card(item, render=render_role_details,
+                              on_edit=lambda i: vs.show_edit_existing(i),
+                              on_delete=lambda i: vs.show_list())
+            await render_role_tabs(item, tenant)
+
+        async def render_edit(vs: ViewStack, item: dict | None):
+            edit = EditCard(
+                data_source=role_store, config=ROLES_FORM_CONFIG,
+                on_saved=lambda saved: vs.show_detail(saved),
+                on_cancel=lambda: vs.show_detail(item) if item else vs.show_list(),
+            )
+            edit.set_item(item)
+            await edit.build()
 
         stack = ViewStack(
-            data_source=role_store,
-            select_config=get_roles_config_select(),
-            detail_config=get_roles_config_detail(),
-            render_detail=render_role_details,
             breadcrumb_root=_("Roles"),
             item_label=lambda item: item.get("name", ""),
-            detail_footer=role_detail_footer,
+            render_list=render_list,
+            render_detail=render_detail,
+            render_edit=render_edit,
         )
-        await stack.build()  # type: ignore
+        await stack.build()
 
         if id is not None:
             roles = await role_store.read_items(filter_by={"id": id})
