@@ -412,9 +412,14 @@ header {
   padding-bottom: 0;
 }
 
-.rdm-view-stack-toolbar {
-  margin-left: 3px;
-  /* padding-top: 8px; */
+/* Back arrow: in left margin on desktop, above content on mobile */
+@media (min-width: 769px) {
+  .rdm-back-nav {
+    position: absolute;
+    left: -64px;
+    top: 12px;
+    margin-bottom: 0;
+  }
 }
 
 /****** IMPORTANT *******/

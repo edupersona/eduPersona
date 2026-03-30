@@ -5,7 +5,7 @@ from nicegui import html, ui
 
 from ng_rdm.components import (
     ActionButtonTable, Column, Dialog, Tabs, TableConfig, FormConfig,
-    ViewStack, EditCard, ListTable, detail_card, rdm_init, none_as_text,
+    ViewStack, EditCard, ListTable, DetailCard, rdm_init, none_as_text,
 )
 from ng_rdm.components.fields import build_form_field
 from ng_rdm.utils import logger
@@ -36,6 +36,7 @@ ROLES_TABLE_CONFIG = TableConfig(
     ],
     empty_message=_("No roles found"),
     add_button=_("New Role..."),
+    toolbar_position="bottom",
 )
 
 ROLES_FORM_CONFIG = FormConfig(
@@ -120,6 +121,7 @@ def get_role_guests_config() -> TableConfig:
         add_button=_("Assign Role..."),
         show_edit_button=True,
         show_delete_button=True,
+        toolbar_position="bottom",
     )
 
 
@@ -251,7 +253,7 @@ async def roles_page(tenant: str = Depends(require_role_admin_auth), id: int | N
     logger.debug(f"roles page accessed by tenant: {tenant}")
     rdm_init()
 
-    ui_state = {"viewstack": {}, "list_table": {}, "editcard": {}}
+    ui_state = {"viewstack": {}, "list_table": {}, "editcard": {}, "detail_card": {}}
 
     with frame('roles', tenant):
         role_store = get_role_store(tenant)
@@ -268,10 +270,19 @@ async def roles_page(tenant: str = Depends(require_role_admin_auth), id: int | N
             await table.build()
 
         async def render_detail(vs: ViewStack, item: dict):
-            await detail_card(item, render=render_role_details,
-                              on_edit=lambda i: vs.show_edit_existing(i),
-                              on_delete=lambda i: vs.show_list())
-            await render_role_tabs(item, tenant)
+            async def render_body(_: dict):
+                await render_role_tabs(item, tenant)
+
+            detail = DetailCard(
+                state=ui_state["detail_card"],
+                data_source=role_store,
+                render=render_role_details,
+                render_body=render_body,
+                on_edit=lambda i: vs.show_edit_existing(i),
+                show_delete=False,
+            )
+            detail.set_item(item)
+            await detail.build()
 
         async def render_edit(vs: ViewStack, item: dict | None):
             edit = EditCard(
@@ -285,8 +296,6 @@ async def roles_page(tenant: str = Depends(require_role_admin_auth), id: int | N
 
         stack = ViewStack(
             state=ui_state['viewstack'],
-            breadcrumb_root=_("Roles"),
-            item_label=lambda item: item.get("name", ""),
             render_list=render_list,
             render_detail=render_detail,
             render_edit=render_edit,

@@ -2,11 +2,11 @@
 # Click row to view details, with Resend and Delete actions
 
 from fastapi import Depends
-from nicegui import ui
+from nicegui import ui, html
 
 from ng_rdm.components import (
     Button, Column, Dialog, RowAction, TableConfig, FormConfig,
-    ViewStack, ListTable, detail_card, confirm_dialog,
+    ViewStack, ListTable, DetailCard,
     rdm_init, none_as_text,
 )
 from ng_rdm.components.fields import build_form_field
@@ -42,6 +42,7 @@ def get_invitations_table_config() -> TableConfig:
         ],
         empty_message=_("No invitations found."),
         add_button=_("New invitation..."),
+        toolbar_position="bottom",
     )
 
 
@@ -254,7 +255,7 @@ async def invitations_page(tenant: str = Depends(require_invite_auth)):
     logger.debug(f"invitations page accessed by tenant: {tenant}")
     rdm_init()
 
-    ui_state = {"viewstack": {}, "list_table": {}}
+    ui_state = {"viewstack": {}, "list_table": {}, "detail_card": {}}
 
     invitation_store = get_invitation_store(tenant)
     role_store = get_role_store(tenant)
@@ -305,35 +306,34 @@ async def invitations_page(tenant: str = Depends(require_invite_auth)):
         await table.build()
 
     async def render_detail(vs: ViewStack, item: dict):
-        async def handle_delete(item):
-            if await confirm_dialog(item):
-                await invitation_store.delete_item(item)
-                vs.show_list()
+        async def render_body(_: dict):
+            with html.div().classes("rdm-detail-actions"):
+                for action in custom_actions:
+                    variant = action.variant or "primary"
+                    with html.button().classes(f"rdm-btn rdm-btn-{variant}").on(
+                        "click", lambda _, i=item, a=action: a.callback(i) if a.callback else None
+                    ):
+                        if action.icon:
+                            html.i().classes(f"bi bi-{action.icon}")
+                        if action.label:
+                            html.span(action.label)
 
-        await detail_card(item, render=render_invitation_details,
-                          show_edit=False, on_delete=handle_delete)
-
-        # Custom action buttons
-        from nicegui import html
-        with html.div().classes("rdm-detail-actions"):
-            for action in custom_actions:
-                variant = action.variant or "primary"
-                btn_class = f"rdm-btn rdm-btn-{variant}"
-                with html.button().classes(btn_class).on(
-                    "click", lambda _, i=item, a=action: a.callback(i) if a.callback else None
-                ):
-                    if action.icon:
-                        html.i().classes(f"bi bi-{action.icon}")
-                    if action.label:
-                        html.span(action.label)
+        detail = DetailCard(
+            state=ui_state["detail_card"],
+            data_source=invitation_store,
+            render=render_invitation_details,
+            render_body=render_body,
+            show_edit=False,
+            on_deleted=vs.show_list,
+        )
+        detail.set_item(item)
+        await detail.build()
 
     async def render_edit(vs: ViewStack, item: dict | None):
         pass  # invitations are not editable
 
     stack = ViewStack(
         state=ui_state['viewstack'],
-        breadcrumb_root=_("Invitations"),
-        item_label=lambda item: item.get("calc_guest_name") or str(item.get("id", "")),
         render_list=render_list,
         render_detail=render_detail,
         render_edit=render_edit,

@@ -7,7 +7,7 @@ from nicegui import ui
 
 from ng_rdm.components import (
     ActionButtonTable, Column, Dialog, TableConfig, FormConfig,
-    ViewStack, EditCard, detail_card, ListTable, rdm_init, none_as_text,
+    ViewStack, EditCard, DetailCard, ListTable, rdm_init, none_as_text,
 )
 from ng_rdm.components.fields import build_form_field
 from ng_rdm.utils import logger
@@ -42,6 +42,7 @@ def get_guests_table_config() -> TableConfig:
         ],
         empty_message=_("No guests found"),
         add_button=_("New Guest..."),
+        toolbar_position="bottom",
     )
 
 
@@ -175,6 +176,7 @@ def get_role_assignment_config() -> TableConfig:
         add_button=_("Assign Role..."),
         show_edit_button=True,
         show_delete_button=True,
+        toolbar_position="bottom",
     )
 
 
@@ -300,7 +302,7 @@ async def render_guest_role_assignments(guest: dict, tenant: str):
 async def guests_page(tenant: str = Depends(require_guests_auth), id: int | None = None):
     rdm_init()
 
-    ui_state = {"viewstack": {}, "list_table": {}, "editcard": {}}
+    ui_state = {"viewstack": {}, "list_table": {}, "editcard": {}, "detail_card": {}}
 
     with frame('guests', tenant):
         guest_store = get_guest_store(tenant)
@@ -319,9 +321,18 @@ async def guests_page(tenant: str = Depends(require_guests_auth), id: int | None
             await table.build()
 
         async def render_detail(vs: ViewStack, item: dict):
-            await detail_card(item, render=render_guest_details,
-                              on_edit=lambda i: vs.show_edit_existing(i))
-            await render_guest_role_assignments(item, tenant)
+            async def render_body(_: dict):
+                await render_guest_role_assignments(item, tenant)
+
+            detail = DetailCard(
+                state=ui_state["detail_card"],
+                data_source=guest_store,
+                render=render_guest_details,
+                render_body=render_body,
+                on_edit=lambda i: vs.show_edit_existing(i),
+            )
+            detail.set_item(item)
+            await detail.build()
 
         async def render_edit(vs: ViewStack, item: dict | None):
             edit = EditCard(
@@ -335,8 +346,6 @@ async def guests_page(tenant: str = Depends(require_guests_auth), id: int | None
 
         stack = ViewStack(
             state=ui_state['viewstack'],
-            breadcrumb_root=_("Guests"),
-            item_label=lambda item: item.get("display_name") or item.get("user_id", ""),
             render_list=render_list,
             render_detail=render_detail,
             render_edit=render_edit,
