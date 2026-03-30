@@ -146,7 +146,7 @@ async def _assign_guest_dialog(tenant: str, role: dict, table):
     guest_options = {g["id"]: g.get("display_name") or g.get("user_id", "-") for g in available_guests}
     state = {"guest_id": None, "start_date": "", "end_date": ""}
 
-    with Dialog() as dlg:
+    with Dialog(state={}) as dlg:
         async def handle_assign():
             if not state["guest_id"]:
                 dlg._notify(_("Please select a guest"), type="warning")
@@ -182,7 +182,7 @@ async def _edit_assignment_dialog(tenant: str, row: dict):
         "end_date": row.get("end_date") or "",
     }
 
-    with Dialog() as dlg:
+    with Dialog(state={}) as dlg:
         async def handle_save():
             try:
                 await update_role_assignment(
@@ -239,7 +239,7 @@ async def render_role_tabs(role: dict, tenant: str):
     async def admins_panel():
         ui.label(_("Admin functions coming soon"))
 
-    tabs = Tabs([
+    tabs = Tabs(state={}, tabs=[
         ("guests", _("Guests"), guests_panel),
         ("admins", _("Admins"), admins_panel),
     ])
@@ -251,6 +251,8 @@ async def roles_page(tenant: str = Depends(require_role_admin_auth), id: int | N
     logger.debug(f"roles page accessed by tenant: {tenant}")
     rdm_init()
 
+    ui_state = {"viewstack": {}, "list_table": {}, "editcard": {}}
+
     with frame('roles', tenant):
         role_store = get_role_store(tenant)
 
@@ -260,7 +262,7 @@ async def roles_page(tenant: str = Depends(require_role_admin_auth), id: int | N
                 if items:
                     vs.show_detail(items[0])
             table = ListTable(
-                state={}, data_source=role_store, config=ROLES_TABLE_CONFIG,
+                state=ui_state['list_table'], data_source=role_store, config=ROLES_TABLE_CONFIG,
                 on_click=on_click, on_add=vs.show_edit_new,
             )
             await table.build()
@@ -273,6 +275,7 @@ async def roles_page(tenant: str = Depends(require_role_admin_auth), id: int | N
 
         async def render_edit(vs: ViewStack, item: dict | None):
             edit = EditCard(
+                state=ui_state['editcard'],
                 data_source=role_store, config=ROLES_FORM_CONFIG,
                 on_saved=lambda saved: vs.show_detail(saved),
                 on_cancel=lambda: vs.show_detail(item) if item else vs.show_list(),
@@ -281,6 +284,7 @@ async def roles_page(tenant: str = Depends(require_role_admin_auth), id: int | N
             await edit.build()
 
         stack = ViewStack(
+            state=ui_state['viewstack'],
             breadcrumb_root=_("Roles"),
             item_label=lambda item: item.get("name", ""),
             render_list=render_list,

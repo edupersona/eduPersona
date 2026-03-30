@@ -215,7 +215,7 @@ async def _assign_role_dialog(tenant: str, guest: dict, table):
         except Exception as e:
             dlg._notify(str(e), type="negative")
 
-    with Dialog() as dlg:
+    with Dialog(state={}) as dlg:
         ui.label(_("Assign Role to {name}", name=guest.get("display_name")
                  or guest.get("user_id", ""))).classes('dialog-header')
         ui.select(
@@ -236,7 +236,7 @@ async def _edit_assignment_dialog(tenant: str, row: dict):
         "end_date": row.get("end_date") or "",
     }
 
-    with Dialog() as dlg:
+    with Dialog(state={}) as dlg:
         async def handle_save():
             try:
                 await update_role_assignment(
@@ -300,6 +300,8 @@ async def render_guest_role_assignments(guest: dict, tenant: str):
 async def guests_page(tenant: str = Depends(require_guests_auth), id: int | None = None):
     rdm_init()
 
+    ui_state = {"viewstack": {}, "list_table": {}, "editcard": {}}
+
     with frame('guests', tenant):
         guest_store = get_guest_store(tenant)
         table_config = get_guests_table_config()
@@ -311,7 +313,7 @@ async def guests_page(tenant: str = Depends(require_guests_auth), id: int | None
                 if items:
                     vs.show_detail(items[0])
             table = ListTable(
-                state={}, data_source=guest_store, config=table_config,
+                state=ui_state['list_table'], data_source=guest_store, config=table_config,
                 on_click=on_click, on_add=vs.show_edit_new,
             )
             await table.build()
@@ -323,6 +325,7 @@ async def guests_page(tenant: str = Depends(require_guests_auth), id: int | None
 
         async def render_edit(vs: ViewStack, item: dict | None):
             edit = EditCard(
+                state=ui_state['editcard'],
                 data_source=guest_store, config=form_config,
                 on_saved=lambda saved: vs.show_detail(saved),
                 on_cancel=lambda: vs.show_detail(item) if item else vs.show_list(),
@@ -331,6 +334,7 @@ async def guests_page(tenant: str = Depends(require_guests_auth), id: int | None
             await edit.build()
 
         stack = ViewStack(
+            state=ui_state['viewstack'],
             breadcrumb_root=_("Guests"),
             item_label=lambda item: item.get("display_name") or item.get("user_id", ""),
             render_list=render_list,

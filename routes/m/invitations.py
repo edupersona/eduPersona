@@ -143,7 +143,7 @@ async def new_invitation_dialog(tenant: str, roles: list[dict], on_created=None)
         await load_guest_role_assignments()
         roles_section.refresh()  # type: ignore
 
-    with Dialog() as dlg:
+    with Dialog(state={}) as dlg:
         async def add_role():
             """Add new role assignment for selected guest."""
             if not state['new_role_id'] or not state['guest_id']:
@@ -254,6 +254,8 @@ async def invitations_page(tenant: str = Depends(require_invite_auth)):
     logger.debug(f"invitations page accessed by tenant: {tenant}")
     rdm_init()
 
+    ui_state = {"viewstack": {}, "list_table": {}}
+
     invitation_store = get_invitation_store(tenant)
     role_store = get_role_store(tenant)
     roles = await role_store.read_items()
@@ -295,7 +297,7 @@ async def invitations_page(tenant: str = Depends(require_invite_auth)):
                 vs.show_detail(items[0])
 
         table = ListTable(
-            state={}, data_source=invitation_store, config=table_config,
+            state=ui_state['list_table'], data_source=invitation_store, config=table_config,
             on_click=on_click,
             on_add=lambda: new_invitation_dialog(tenant, roles, on_created=vs.build.refresh),
             render_toolbar=render_toolbar,
@@ -329,6 +331,7 @@ async def invitations_page(tenant: str = Depends(require_invite_auth)):
         pass  # invitations are not editable
 
     stack = ViewStack(
+        state=ui_state['viewstack'],
         breadcrumb_root=_("Invitations"),
         item_label=lambda item: item.get("calc_guest_name") or str(item.get("id", "")),
         render_list=render_list,
