@@ -321,8 +321,8 @@ async def invitations_page(tenant: str = Depends(require_invite_auth)):
         detail = DetailCard(
             state=ui_state["detail_card"],
             data_source=invitation_store,
-            render=render_invitation_details,
-            render_body=render_body,
+            render_summary=render_invitation_details,
+            render_related=render_body,
             show_edit=False,
             on_deleted=vs.show_list,
         )

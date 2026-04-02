@@ -276,8 +276,8 @@ async def roles_page(tenant: str = Depends(require_role_admin_auth), id: int | N
             detail = DetailCard(
                 state=ui_state["detail_card"],
                 data_source=role_store,
-                render=render_role_details,
-                render_body=render_body,
+                render_summary=render_role_details,
+                render_related=render_body,
                 on_edit=lambda i: vs.show_edit_existing(i),
                 show_delete=False,
             )

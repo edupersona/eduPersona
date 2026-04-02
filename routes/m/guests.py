@@ -327,8 +327,8 @@ async def guests_page(tenant: str = Depends(require_guests_auth), id: int | None
             detail = DetailCard(
                 state=ui_state["detail_card"],
                 data_source=guest_store,
-                render=render_guest_details,
-                render_body=render_body,
+                render_summary=render_guest_details,
+                render_related=render_body,
                 on_edit=lambda i: vs.show_edit_existing(i),
             )
             detail.set_item(item)
