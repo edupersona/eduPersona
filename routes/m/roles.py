@@ -148,7 +148,7 @@ async def _assign_guest_dialog(tenant: str, role: dict, table):
     guest_options = {g["id"]: g.get("display_name") or g.get("user_id", "-") for g in available_guests}
     state = {"guest_id": None, "start_date": "", "end_date": ""}
 
-    with Dialog(state={}) as dlg:
+    with Dialog() as dlg:
         async def handle_assign():
             if not state["guest_id"]:
                 dlg._notify(_("Please select a guest"), type="warning")
@@ -184,7 +184,7 @@ async def _edit_assignment_dialog(tenant: str, row: dict):
         "end_date": row.get("end_date") or "",
     }
 
-    with Dialog(state={}) as dlg:
+    with Dialog() as dlg:
         async def handle_save():
             try:
                 await update_role_assignment(
@@ -226,7 +226,6 @@ async def render_role_tabs(role: dict, tenant: str):
 
         with ui.row().classes('rdm-detail-outer'):
             table = ActionButtonTable(
-                state={},
                 data_source=store,
                 config=get_role_guests_config(),
                 filter_by={"role_id": role_id},
@@ -241,7 +240,7 @@ async def render_role_tabs(role: dict, tenant: str):
     async def admins_panel():
         ui.label(_("Admin functions coming soon"))
 
-    tabs = Tabs(state={}, tabs=[
+    tabs = Tabs(tabs=[
         ("guests", _("Guests"), guests_panel),
         ("admins", _("Admins"), admins_panel),
     ])

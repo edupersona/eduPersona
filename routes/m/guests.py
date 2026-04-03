@@ -217,7 +217,7 @@ async def _assign_role_dialog(tenant: str, guest: dict, table):
         except Exception as e:
             dlg._notify(str(e), type="negative")
 
-    with Dialog(state={}) as dlg:
+    with Dialog() as dlg:
         ui.label(_("Assign Role to {name}", name=guest.get("display_name")
                  or guest.get("user_id", ""))).classes('dialog-header')
         ui.select(
@@ -238,7 +238,7 @@ async def _edit_assignment_dialog(tenant: str, row: dict):
         "end_date": row.get("end_date") or "",
     }
 
-    with Dialog(state={}) as dlg:
+    with Dialog() as dlg:
         async def handle_save():
             try:
                 await update_role_assignment(
@@ -285,7 +285,6 @@ async def render_guest_role_assignments(guest: dict, tenant: str):
         await _revoke_assignment(row, store)
 
     table = ActionButtonTable(
-        state={},
         data_source=store,
         config=get_role_assignment_config(),
         filter_by={"guest_id": guest_id},

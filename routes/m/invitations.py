@@ -144,7 +144,7 @@ async def new_invitation_dialog(tenant: str, roles: list[dict], on_created=None)
         await load_guest_role_assignments()
         roles_section.refresh()  # type: ignore
 
-    with Dialog(state={}) as dlg:
+    with Dialog() as dlg:
         async def add_role():
             """Add new role assignment for selected guest."""
             if not state['new_role_id'] or not state['guest_id']:
