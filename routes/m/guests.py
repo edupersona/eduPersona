@@ -7,7 +7,7 @@ from nicegui import ui
 
 from ng_rdm.components import (
     ActionButtonTable, Column, Dialog, TableConfig, FormConfig,
-    ViewStack, EditCard, DetailCard, ListTable, rdm_init, none_as_text,
+    ViewStack, EditCard, DetailCard, ListTable, rdm_init, none_as_text, Col,
 )
 from ng_rdm.components.fields import build_form_field
 from ng_rdm.utils import logger
@@ -71,7 +71,7 @@ async def render_guest_details(guest: dict):
     )
     with ui.row().classes('rdm-detail-header'):
         ui.icon('person', size='xl').classes('rdm-detail-icon')
-        with ui.column().classes('rdm-detail-title-group'):
+        with Col(classes='rdm-detail-title-group'):
             with ui.row().classes('rdm-items-center gap-2'):
                 ui.label(guest.get('display_name') or guest.get('user_id', '')).classes('rdm-detail-title')
                 ui.html(chips)
@@ -80,7 +80,7 @@ async def render_guest_details(guest: dict):
     ui.separator()
 
     with ui.row().classes('rdm-detail-columns'):
-        with ui.column().classes('rdm-detail-column'):
+        with Col(classes='rdm-detail-column'):
             ui.label(_('Name')).classes('rdm-detail-section-label')
             if guest.get('given_name'):
                 ui.label(f"{_('Given name')}: {guest['given_name']}").classes('rdm-detail-text-sm')
@@ -90,13 +90,13 @@ async def render_guest_details(guest: dict):
             # if len(emails) > 1:
             #     ui.label(f"{_('Emails')}: {', '.join(emails)}").classes('rdm-detail-text-sm')
 
-        with ui.column().classes('rdm-detail-column'):
+        with Col(classes='rdm-detail-column'):
             ui.label(_('Identity')).classes('rdm-detail-section-label')
             ui.label(f"user_id: {guest.get('user_id', '-')}").classes('rdm-detail-text-sm')
             if guest.get('scim_id'):
                 ui.label(f"scim_id: {guest['scim_id']}").classes('rdm-detail-text-sm')
 
-        with ui.column().classes('rdm-detail-column'):
+        with Col(classes='rdm-detail-column'):
             ui.label(_('Role Assignments')).classes('rdm-detail-section-label')
             count = guest.get('assignment_count', 0)
             ui.label(f"{count} {_('active role(s)')}").classes('rdm-detail-text-sm')
@@ -113,7 +113,7 @@ async def render_guest_details(guest: dict):
             with ui.expansion(_('Attributes')).props('switch-toggle-side').classes('rdm-detail-section-label'):
                 with ui.row().classes('attr-row'):
                     for attr in attrs:
-                        with ui.column().classes('attr-card'):
+                        with Col(classes='attr-card'):
                             ui.label(attr['name']).classes('attr-name')
                             try:
                                 data = json.loads(attr['value'])
@@ -291,8 +291,6 @@ async def render_guest_role_assignments(guest: dict, tenant: str):
         on_add=lambda: _assign_role_dialog(tenant, guest, table),
         on_edit=handle_edit,
         on_delete=handle_revoke,
-        edit_label=_("Edit"),
-        delete_label=_("Revoke"),
     )
     await table.build()     # type: ignore
 
@@ -301,7 +299,7 @@ async def render_guest_role_assignments(guest: dict, tenant: str):
 async def guests_page(tenant: str = Depends(require_guests_auth), id: int | None = None):
     rdm_init()
 
-    ui_state = {"viewstack": {}, "list_table": {}, "editcard": {}, "detail_card": {}}
+    ui_state = {"viewstack": {}, "editcard": {}, "detail_card": {}}
 
     with frame('guests', tenant):
         guest_store = get_guest_store(tenant)
@@ -314,7 +312,7 @@ async def guests_page(tenant: str = Depends(require_guests_auth), id: int | None
                 if items:
                     vs.show_detail(items[0])
             table = ListTable(
-                state=ui_state['list_table'], data_source=guest_store, config=table_config,
+                data_source=guest_store, config=table_config,
                 on_click=on_click, on_add=vs.show_edit_new,
             )
             await table.build()

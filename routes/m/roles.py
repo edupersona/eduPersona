@@ -5,7 +5,7 @@ from nicegui import html, ui
 
 from ng_rdm.components import (
     ActionButtonTable, Column, Dialog, Tabs, TableConfig, FormConfig,
-    ViewStack, EditCard, ListTable, DetailCard, rdm_init, none_as_text,
+    ViewStack, EditCard, ListTable, DetailCard, rdm_init, none_as_text, Col, Row,
 )
 from ng_rdm.components.fields import build_form_field
 from ng_rdm.utils import logger
@@ -72,27 +72,27 @@ ROLES_FORM_CONFIG = FormConfig(
 async def render_role_details(role: dict):
     MAX_LEN_URL = 40
 
-    with ui.row().classes('rdm-detail-header'):
+    with Row(classes='rdm-detail-header'):
         tenant = role.get('tenant')
         logo = role.get('logo_file_name')
         if tenant and logo:
             ui.image(f'/static/{tenant}/logos/{logo}').classes('rdm-detail-image')
-        with ui.column().classes('rdm-detail-title-group'):
+        with Col(classes='rdm-detail-title-group'):
             ui.label(role.get('name', '')).classes('rdm-detail-title')
             ui.label(role.get('org_name', '')).classes('rdm-detail-subtitle')
     ui.separator()
-    with ui.row().classes('rdm-detail-columns'):
-        with ui.column().classes('rdm-detail-column'):
+    with Row(classes='rdm-detail-columns'):
+        with Col(classes='rdm-detail-column'):
             ui.label(_('Dates')).classes('rdm-detail-section-label')
             ui.label(f"{_('Default start')}: {none_as_text(role.get('default_start_date', ''))}").classes(
                 'rdm-detail-text-sm')
             ui.label(f"{_('Default end')}: {none_as_text(role.get('default_end_date', ''))}").classes('rdm-detail-text-sm')
             ui.label(f"{_('Role end')}: {none_as_text(role.get('role_end_date', ''))}").classes('rdm-detail-text-sm')
-        with ui.column().classes('rdm-detail-column'):
+        with Col(classes='rdm-detail-column'):
             ui.label(_('Details')).classes('rdm-detail-section-label')
             ui.label(role.get('role_details', '-') or '-').classes('rdm-detail-text-sm')
             ui.label(f"{_('Scope')}: {role.get('scope', '-') or '-'}").classes('rdm-detail-text-sm')
-        with ui.column().classes('rdm-detail-column'):
+        with Col(classes='rdm-detail-column'):
             ui.label(_('Application')).classes('rdm-detail-section-label')
             ui.label(role.get('redirect_text', '-') or '-').classes('rdm-detail-text-sm')
             if (url := role.get('redirect_url')):
@@ -171,7 +171,7 @@ async def _assign_guest_dialog(tenant: str, role: dict, table):
         ).bind_value(state, "guest_id").classes('form-input').props('popup-content-style="z-index: 6100"')
         for col in ASSIGN_GUEST_COLUMNS:
             build_form_field(col, state)
-        with ui.row().classes('edit-card-actions'):
+        with Row(classes='edit-card-actions'):
             ui.button(_("Assign"), on_click=handle_assign).classes('btn-primary')
             ui.button(_("Cancel"), on_click=dlg.close).classes('btn-secondary')
     dlg.open()
@@ -202,7 +202,7 @@ async def _edit_assignment_dialog(tenant: str, row: dict):
             .classes('form-input').props('type=date')
         ui.input(label=_("End date"), placeholder=_("YYYY-MM-DD")).bind_value(state, "end_date") \
             .classes('form-input').props('type=date')
-        with ui.row().classes('edit-card-actions'):
+        with Row(classes='edit-card-actions'):
             ui.button(_("Save"), on_click=handle_save).classes('btn-primary')
             ui.button(_("Cancel"), on_click=dlg.close).classes('btn-secondary')
     dlg.open()
@@ -224,7 +224,7 @@ async def render_role_tabs(role: dict, tenant: str):
         async def handle_revoke(row: dict):
             await _revoke_assignment(row, store)
 
-        with ui.row().classes('rdm-detail-outer'):
+        with Row(classes='rdm-detail-outer'):
             table = ActionButtonTable(
                 data_source=store,
                 config=get_role_guests_config(),
@@ -232,8 +232,6 @@ async def render_role_tabs(role: dict, tenant: str):
                 on_add=lambda: _assign_guest_dialog(tenant, role, table),
                 on_edit=handle_edit,
                 on_delete=handle_revoke,
-                edit_label=_("Edit"),
-                delete_label=_("Revoke"),
             )
             await table.build()     # type: ignore
 
@@ -252,7 +250,7 @@ async def roles_page(tenant: str = Depends(require_role_admin_auth), id: int | N
     logger.debug(f"roles page accessed by tenant: {tenant}")
     rdm_init()
 
-    ui_state = {"viewstack": {}, "list_table": {}, "editcard": {}, "detail_card": {}}
+    ui_state = {"viewstack": {}, "editcard": {}, "detail_card": {}}
 
     with frame('roles', tenant):
         role_store = get_role_store(tenant)
@@ -263,7 +261,7 @@ async def roles_page(tenant: str = Depends(require_role_admin_auth), id: int | N
                 if items:
                     vs.show_detail(items[0])
             table = ListTable(
-                state=ui_state['list_table'], data_source=role_store, config=ROLES_TABLE_CONFIG,
+                data_source=role_store, config=ROLES_TABLE_CONFIG,
                 on_click=on_click, on_add=vs.show_edit_new,
             )
             await table.build()
@@ -317,7 +315,7 @@ def scim_sync_dialog(tenant, table):
 
         with ui.dialog() as progress_dialog, ui.card().classes('dialog-card'):
             ui.label(_('SCIM Synchronization')).classes('dialog-header')
-            with ui.column().classes('centered-content'):
+            with Col(classes='centered-content'):
                 ui.spinner('dots', size='lg')
                 ui.label(_('Synchronizing...'))
 
@@ -353,7 +351,7 @@ def scim_sync_dialog(tenant, table):
         ui.label(_('This will synchronize all existing guests, roles and memberships to the SCIM server.'))
         ui.label(_('Are you sure you want to continue?')).classes('text-warning')
 
-        with ui.row().classes('dialog-actions'):
+        with Row(classes='dialog-actions'):
             ui.button(_('Synchronize'), on_click=handle_sync).classes('btn-success')
             ui.button(_('Cancel'), on_click=handle_cancel).classes('btn-secondary')
 

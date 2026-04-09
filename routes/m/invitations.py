@@ -5,9 +5,9 @@ from fastapi import Depends
 from nicegui import ui, html
 
 from ng_rdm.components import (
-    Button, Column, Dialog, RowAction, TableConfig, FormConfig,
+    Button, Column, Dialog, RowAction, TableConfig,
     ViewStack, ListTable, DetailCard,
-    rdm_init, none_as_text,
+    rdm_init, none_as_text, Col, Row,
 )
 from ng_rdm.components.fields import build_form_field
 from domain.models import RoleAssignment
@@ -51,23 +51,23 @@ async def render_invitation_details(invitation: dict):
     guest_name = invitation.get('calc_guest_name') or invitation.get('guest_id', '')
     status = invitation.get('status', '')
 
-    with ui.row().classes('rdm-detail-header'):
+    with Row(classes='rdm-detail-header'):
         ui.icon('mail', size='xl').classes('rdm-detail-icon')
-        with ui.column().classes('rdm-detail-title-group'):
+        with Col(classes='rdm-detail-title-group'):
             ui.label(guest_name).classes('rdm-detail-title')
             ui.html(f'<span class="status-chip status-chip-{status}">{status}</span>')
 
     ui.separator()
 
-    with ui.row().classes('rdm-detail-columns'):
-        with ui.column().classes('rdm-detail-column'):
+    with Row(classes='rdm-detail-columns'):
+        with Col(classes='rdm-detail-column'):
             ui.label(_('Invitation Details')).classes('rdm-detail-section-label')
             ui.label(f"{_('Email')}: {invitation.get('invitation_email', '-')}")
             ui.label(f"{_('Invited at')}: {none_as_text(invitation.get('invited_at', ''))}").classes('rdm-detail-text-sm')
             if invitation.get('code'):
                 ui.label(f"{_('Code')}: {invitation.get('code')}").classes('rdm-detail-text-sm')
 
-        with ui.column().classes('rdm-detail-column'):
+        with Col(classes='rdm-detail-column'):
             ui.label(_('Roles')).classes('rdm-detail-section-label')
             role_names = invitation.get('role_names', '')
             if role_names:
@@ -216,7 +216,7 @@ async def new_invitation_dialog(tenant: str, roles: list[dict], on_created=None)
 
             ras = state['role_assignments']
             if ras:
-                with ui.column().classes('q-gutter-sm'):
+                with Col(classes='q-gutter-sm'):
                     for ra in ras:
                         def make_toggle(ra_id):
                             def toggle(e):
@@ -243,7 +243,7 @@ async def new_invitation_dialog(tenant: str, roles: list[dict], on_created=None)
         roles_section()
 
         # Actions
-        with ui.row().classes('edit-card-actions'):
+        with Row(classes='edit-card-actions'):
             ui.button(_("Create Invitation"), on_click=handle_create).classes('btn-primary')
             ui.button(_("Cancel"), on_click=dlg.close).classes('btn-secondary')
 
@@ -255,7 +255,7 @@ async def invitations_page(tenant: str = Depends(require_invite_auth)):
     logger.debug(f"invitations page accessed by tenant: {tenant}")
     rdm_init()
 
-    ui_state = {"viewstack": {}, "list_table": {}, "detail_card": {}}
+    ui_state = {"viewstack": {}, "detail_card": {}}
 
     invitation_store = get_invitation_store(tenant)
     role_store = get_role_store(tenant)
@@ -282,7 +282,7 @@ async def invitations_page(tenant: str = Depends(require_invite_auth)):
 
     custom_actions = [
         RowAction(icon="send", label=_("Resend"), callback=send_email),
-        RowAction(label=_("Test Template"), callback=lambda _: run_test_template(), variant="secondary"),
+        RowAction(label=_("Test Template"), callback=lambda _: run_test_template()),
     ]
 
     table_config = get_invitations_table_config()
@@ -290,7 +290,7 @@ async def invitations_page(tenant: str = Depends(require_invite_auth)):
     async def render_list(vs: ViewStack):
         def render_toolbar():
             Button(_('Accept invitation  ▶︎'),
-                   on_click=lambda: ui.navigate.to(f'/{tenant}/accept'), variant="secondary")
+                   on_click=lambda: ui.navigate.to(f'/{tenant}/accept'))
 
         async def on_click(row_id):
             items = await invitation_store.read_items(filter_by={"id": row_id})
@@ -298,9 +298,9 @@ async def invitations_page(tenant: str = Depends(require_invite_auth)):
                 vs.show_detail(items[0])
 
         table = ListTable(
-            state=ui_state['list_table'], data_source=invitation_store, config=table_config,
+            data_source=invitation_store, config=table_config,
             on_click=on_click,
-            on_add=lambda: new_invitation_dialog(tenant, roles, on_created=vs.build.refresh),
+            on_add=lambda: new_invitation_dialog(tenant, roles, on_created=vs.build.refresh),   # type: ignore
             render_toolbar=render_toolbar,
         )
         await table.build()
@@ -309,8 +309,8 @@ async def invitations_page(tenant: str = Depends(require_invite_auth)):
         async def render_body(_: dict):
             with html.div().classes("rdm-detail-actions"):
                 for action in custom_actions:
-                    variant = action.variant or "primary"
-                    with html.button().classes(f"rdm-btn rdm-btn-{variant}").on(
+                    # variant = action.variant or "primary"
+                    with html.button().classes("rdm-btn rdm-btn-variant").on(
                         "click", lambda _, i=item, a=action: a.callback(i) if a.callback else None
                     ):
                         if action.icon:

@@ -1,10 +1,9 @@
 from contextlib import contextmanager
 
+from ng_rdm.components import Col
 from nicegui import app, ui
 
 from services.settings import get_tenant_config
-from ng_rdm.utils import logger
-
 
 pages = {
     # possible menu entries, depending on authz (order: guests - roles - invitations):
@@ -99,7 +98,7 @@ def frame(page_name: str, tenant: str):
             _user_link(tenant)
 
     # Main content area
-    with ui.column().classes(f"{page_name}-page page-content"):
+    with Col(classes=f"{page_name}-page page-content"):
         # logger.debug(f"User {username} navigated to {page_name} (tenant: {tenant})")
         yield
 
@@ -124,7 +123,7 @@ def simple_frame(page_name: str, tenant: str):
     _apply_theme(page_name, tenant)
 
     # Main content area (no header, no navigation)
-    with ui.column().classes(f"{page_name}-page page-content"):
+    with Col(classes=f"{page_name}-page page-content"):
         # logger.debug(f"Page {page_name} accessed (tenant: {tenant})")
         yield
 
@@ -158,6 +157,6 @@ def accept_frame(tenant: str):
             _user_link(tenant)
 
     # Main content area
-    with ui.column().classes("accept-page page-content"):
+    with Col(classes="accept-page page-content"):
         # logger.debug(f"Accept page accessed (tenant: {tenant})")
         yield

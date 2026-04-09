@@ -1,6 +1,7 @@
 """Step card components for the onboarding flow"""
 from nicegui import app, ui
 
+from ng_rdm.components import Col, Row
 from ng_rdm.utils import logger
 from services.i18n import _
 from services.oidc_mt.multitenant import start_oidc_login
@@ -10,7 +11,7 @@ from domain.stores import get_invitation_store, get_guest_store, get_role_store,
 def expandable_info(valdict: dict) -> None:
     if valdict:
         with ui.expansion(_('View attributes'), icon='info').style('margin-top: 0.5rem;'):
-            with ui.column().style('gap: 0.25rem;'):
+            with Col(style='gap: 0.25rem;'):
                 for key, value in valdict.items():
                     if value:
                         ui.label(f'{key}: {value}').style('font-size: 0.875rem;')
@@ -100,7 +101,7 @@ class StepCard:
                 if is_enabled and not is_completed:
                     icon.on('click', self.click_handler)
 
-                with ui.column().classes('step-content'):
+                with Col(classes='step-content'):
                     ui.label(self.title).classes('step-title')
                     if is_completed:
                         self.render_completed(state)
@@ -175,13 +176,13 @@ class VerifyEduIDStep(StepCard):
 
     def render_enabled(self, state: dict) -> None:
         with ui.row():
-            with ui.column():
+            with Col():
                 ui.button(
                     _('YES! I already have a (test!) eduID'),
                     on_click=self.click_handler
                 ).style('margin-right: 1rem;')
 
-            with ui.column().style('align-items: center; gap: 8px;'):
+            with Col(style='align-items: center; gap: 8px;'):
                 ui.button(
                     _("No - I don't have a (test!) eduID yet"),
                     on_click=self.create_eduid_handler

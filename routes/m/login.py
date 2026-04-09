@@ -6,6 +6,7 @@ from fastapi.responses import RedirectResponse
 from nicegui import Client, app, ui
 
 from ng_rdm.utils import logger
+from ng_rdm.components import Col
 from services.auth.completion import complete_admin_authentication
 from services.auth.oidc import create_admin_oidc_handler
 from services.auth.users import get_tenant_fallback_admins
@@ -106,10 +107,10 @@ async def admin_login_page(client: Client, tenant: str, next_url: str | None = N
     #     await try_fallback_login()
 
     with simple_frame('login', tenant):
-        with ui.column().classes('centered-content'):
+        with Col(classes='centered-content'):
             ui.label(_('eduPersona management: login')).classes('section-heading')
 
-            with ui.column().style('gap: 2rem;'):
+            with Col(style='gap: 2rem;'):
                 # OIDC Login Card
                 with ui.card().tight().classes('login-card'):
                     ui.label('SURFconext').classes('label-heading')

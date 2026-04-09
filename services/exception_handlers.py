@@ -2,10 +2,11 @@ import traceback
 
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
+from ng_rdm.components import Col
+from ng_rdm.utils import logger
 from nicegui import Client, ui
 from nicegui.page import page
 
-from ng_rdm.utils import logger
 from services.settings import config
 
 
@@ -44,10 +45,10 @@ def build_error_page(
         icon_color = 'red-600'
 
     with Client(page(''), request=request) as client:
-        with ui.column().classes('w-full min-h-screen bg-gray-50'):
-            with ui.column().classes('mx-auto p-8'):
+        with Col(classes='w-full min-h-screen bg-gray-50'):
+            with Col(classes='mx-auto p-8'):
                 with ui.card().classes('p-8').style('width: 800px; max-width: 95vw'):
-                    with ui.column().classes('gap-4'):
+                    with Col(classes='gap-4'):
                         ui.icon(icon, size='3em').classes(f'text-{icon_color}')
                         ui.label(title).classes('text-2xl font-semibold text-gray-800')
                         ui.separator()

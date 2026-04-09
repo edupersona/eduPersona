@@ -1,5 +1,6 @@
 from nicegui import ui
 
+from ng_rdm.components import Col, Row
 from ng_rdm.utils import logger
 from services.i18n import _
 from services.tenant import get_available_tenants, get_default_tenant
@@ -16,7 +17,7 @@ def landing_page():
     default_tenant = get_default_tenant()
 
     # Main container
-    with ui.column().classes('landing-page'):
+    with Col(classes='landing-page'):
         # Layout: logo + cards (responsive via CSS)
         with ui.row().classes('landing-layout'):
             # Logo
@@ -26,14 +27,14 @@ def landing_page():
             with ui.row().classes('landing-cards'):
                 # Accept invitation card
                 with ui.card().classes('card-clickable') as accept_card:
-                    with ui.column().classes('card-content'):
+                    with Col(classes='card-content'):
                         ui.icon('mail_outline', size='3em').classes('icon-success')
                         ui.label(_('Accept invitation')).classes('card-title')
                         ui.label(_('Accept a received invitation')).classes('text-muted')
 
                 # Management card
                 with ui.card().classes('card-clickable') as beheer_card:
-                    with ui.column().classes('card-content'):
+                    with Col(classes='card-content'):
                         ui.icon('admin_panel_settings', size='3em').classes('icon-primary')
                         ui.label(_('Management')).classes('card-title')
                         ui.label(_('Manage roles and invitations')).classes('text-muted')
