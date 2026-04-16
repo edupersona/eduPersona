@@ -7,7 +7,8 @@ from nicegui import ui
 
 from ng_rdm.components import (
     ActionButtonTable, Column, Dialog, TableConfig, FormConfig,
-    ViewStack, EditCard, DetailCard, ListTable, rdm_init, none_as_text, Col,
+    ViewStack, EditCard, DetailCard, ListTable, rdm_init, none_as_text,
+    Col, Row, Separator,
 )
 from ng_rdm.components.fields import build_form_field
 from ng_rdm.utils import logger
@@ -69,17 +70,17 @@ async def render_guest_details(guest: dict):
         f'<span class="status-chip status-chip-{s}">{_(s.replace("_", " "))}</span>'
         for s in statuses
     )
-    with ui.row().classes('rdm-detail-header'):
+    with Row(classes='rdm-detail-header'):
         ui.icon('person', size='xl').classes('rdm-detail-icon')
         with Col(classes='rdm-detail-title-group'):
-            with ui.row().classes('rdm-items-center gap-2'):
+            with Row(classes='rdm-items-center gap-2'):
                 ui.label(guest.get('display_name') or guest.get('user_id', '')).classes('rdm-detail-title')
                 ui.html(chips)
             ui.label(guest['email']).classes('rdm-detail-subtitle')
 
-    ui.separator()
+    Separator()
 
-    with ui.row().classes('rdm-detail-columns'):
+    with Row(classes='rdm-detail-columns'):
         with Col(classes='rdm-detail-column'):
             ui.label(_('Name')).classes('rdm-detail-section-label')
             if guest.get('given_name'):
@@ -108,10 +109,10 @@ async def render_guest_details(guest: dict):
         attr_store = get_guest_attribute_store(guest.get('tenant', ''))
         attrs = await attr_store.read_items(filter_by={"guest_id": guest_id})
         if attrs:
-            ui.separator()
+            Separator()
 
             with ui.expansion(_('Attributes')).props('switch-toggle-side').classes('rdm-detail-section-label'):
-                with ui.row().classes('attr-row'):
+                with Row(classes='attr-row'):
                     for attr in attrs:
                         with Col(classes='attr-card'):
                             ui.label(attr['name']).classes('attr-name')
@@ -130,7 +131,7 @@ def _render_attribute_value(key: str, value):
     """Helper to render a single attribute key-value pair with truncation + tooltip."""
     MAX_LENGTH = 60
 
-    with ui.row().classes('attr-kv-row'):
+    with Row(classes='attr-kv-row'):
         ui.label(f"{key}:").classes('attr-key')
 
         if isinstance(value, bool):
@@ -149,7 +150,7 @@ def _render_attribute_value(key: str, value):
         if len(key) + len(value_str) > MAX_LENGTH:
             remaining = MAX_LENGTH - len(key)
             truncated = value_str[:max(1, remaining)] + '...'
-            with ui.row().classes('attr-kv-row'):
+            with Row(classes='attr-kv-row'):
                 ui.label(truncated).classes('attr-value')
                 ui.icon('add_circle_outline', size='xs').classes('attr-expand-icon').tooltip(value_str)
         else:
@@ -225,7 +226,7 @@ async def _assign_role_dialog(tenant: str, guest: dict, table):
         ).bind_value(state, "role_id").classes('form-input').props('popup-content-style="z-index: 6100"')
         for col in ASSIGN_ROLE_COLUMNS:
             build_form_field(col, state)
-        with ui.row().classes('edit-card-actions'):
+        with Row(classes='edit-card-actions'):
             ui.button(_("Assign"), on_click=handle_assign).classes('btn-primary')
             ui.button(_("Cancel"), on_click=dlg.close).classes('btn-secondary')
     dlg.open()
@@ -256,7 +257,7 @@ async def _edit_assignment_dialog(tenant: str, row: dict):
             .classes('form-input').props('type=date')
         ui.input(label=_("End date"), placeholder=_("YYYY-MM-DD")).bind_value(state, "end_date") \
             .classes('form-input').props('type=date')
-        with ui.row().classes('edit-card-actions'):
+        with Row(classes='edit-card-actions'):
             ui.button(_("Save"), on_click=handle_save).classes('btn-primary')
             ui.button(_("Cancel"), on_click=dlg.close).classes('btn-secondary')
     dlg.open()
@@ -327,6 +328,7 @@ async def guests_page(tenant: str = Depends(require_guests_auth), id: int | None
                 render_summary=render_guest_details,
                 render_related=render_body,
                 on_edit=lambda i: vs.show_edit_existing(i),
+                on_deleted=vs.show_list,
             )
             detail.set_item(item)
             await detail.build()

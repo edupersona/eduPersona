@@ -7,8 +7,8 @@ import routes.api
 from routes.api import api_router
 import routes.landing
 import routes.m  # all /m routes
-from ng_rdm.store.orm import close_db, init_db
-from ng_rdm.utils import logger, setup_logging
+from ng_rdm.store.orm import init_db
+from ng_rdm.utils import logger, configure_logging
 from services.auth.oidc import init_edupersona_oidc
 from services.exception_handlers import register_exception_handlers
 from services.settings import config
@@ -21,13 +21,12 @@ DTAP, STORAGE_SECRET, LOG_LEVEL, CONSOLE_LOGGING = (
     config.get('console_logging', False)
 )
 
-setup_logging(
+configure_logging(
     log_file='edupersona.log',
     level=LOG_LEVEL,
-    enable_console_logging=CONSOLE_LOGGING
+    console=CONSOLE_LOGGING
 )
 
-app.on_shutdown(close_db)
 app.add_static_files('/static', 'static')
 app.include_router(api_router)
 

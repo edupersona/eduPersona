@@ -4,7 +4,7 @@ Storage layer using ng_loba TortoiseStore with SQLite backend
 from tortoise.functions import Count, Max
 
 from domain.models import Role, Guest, GuestAttribute, RoleAssignment, Invitation, InvitationRoleAssignment
-from ng_rdm.store import store_registry
+from ng_rdm import mt_store_registry as store_registry
 from ng_rdm.store.multitenancy import MultitenantTortoiseStore, set_valid_tenants
 from ng_rdm.store.orm import TortoiseStore
 from ng_rdm.utils import logger

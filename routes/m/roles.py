@@ -224,7 +224,7 @@ async def render_role_tabs(role: dict, tenant: str):
         async def handle_revoke(row: dict):
             await _revoke_assignment(row, store)
 
-        with Row(classes='rdm-detail-outer'):
+        with Col(classes='rdm-detail-outer'):
             table = ActionButtonTable(
                 data_source=store,
                 config=get_role_guests_config(),

@@ -43,7 +43,7 @@ translations: dict[str, dict[str, str]] = {
 
         # Login (routes/m/login.py)
         'Authentication failed': 'Authenticatie mislukt',
-        'eduPersona management: login': 'eduPersona beheer: inloggen',
+        'eduPersona management': 'eduPersona beheer',
         'Invalid username or password': 'Ongeldige gebruikersnaam of wachtwoord',
         'Local account': 'Lokaal account',
         'Login': 'Inloggen',

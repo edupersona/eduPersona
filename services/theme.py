@@ -95,36 +95,12 @@ def frame(page_name: str, tenant: str):
             if app.storage.user.get("authenticated", False):
                 main_menu(page_name, tenant)
 
-            _user_link(tenant)
+            if page_name != 'login':
+                _user_link(tenant)
 
     # Main content area
     with Col(classes=f"{page_name}-page page-content"):
         # logger.debug(f"User {username} navigated to {page_name} (tenant: {tenant})")
-        yield
-
-
-@contextmanager
-def simple_frame(page_name: str, tenant: str):
-    """
-    Provides consistent styling without navigation header.
-    Use for login, accept, and other public/standalone pages.
-
-    Args:
-        page_name: Name of the page (e.g., 'login', 'accept')
-        tenant: Tenant identifier for loading tenant-specific configuration
-
-    Usage:
-        @ui.page('/{tenant}/m/login')
-        async def login_page(tenant: str):
-            with simple_frame('login', tenant):
-                # Your page content here
-    """
-
-    _apply_theme(page_name, tenant)
-
-    # Main content area (no header, no navigation)
-    with Col(classes=f"{page_name}-page page-content"):
-        # logger.debug(f"Page {page_name} accessed (tenant: {tenant})")
         yield
 
 

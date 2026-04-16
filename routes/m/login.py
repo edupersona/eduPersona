@@ -6,19 +6,22 @@ from fastapi.responses import RedirectResponse
 from nicegui import Client, app, ui
 
 from ng_rdm.utils import logger
-from ng_rdm.components import Col
+from ng_rdm.components import rdm_init
+from ng_rdm.components import Col, Separator, Button
 from services.auth.completion import complete_admin_authentication
 from services.auth.oidc import create_admin_oidc_handler
 from services.auth.users import get_tenant_fallback_admins
 from services.i18n import _
 from services.oidc_mt.multitenant import start_oidc_login
 from services.tenant import get_default_tenant, validate_tenant
-from services.theme import simple_frame
-from services.settings import config
+from services.theme import frame
 
 @ui.page('/{tenant}/m/login')
 async def admin_login_page(client: Client, tenant: str, next_url: str | None = None) -> None:
     """Admin login page supporting both OIDC and fallback authentication."""
+
+    rdm_init()
+
     # Validate tenant from path parameter
     validate_tenant(tenant)
 
@@ -32,13 +35,14 @@ async def admin_login_page(client: Client, tenant: str, next_url: str | None = N
 
     # Get tenant fallback admins
     fallback_admins = get_tenant_fallback_admins(tenant)
+    show_fallback = len(fallback_admins) > 0,
 
     # UI state for form
     ui_state = {
         "username": "",
         "password": "",
-        "show_fallback": len(fallback_admins) > 0,
-        "tenant": tenant
+        "tenant": tenant,
+        "secondary_open": False
     }
 
     async def try_oidc_login():
@@ -100,41 +104,32 @@ async def admin_login_page(client: Client, tenant: str, next_url: str | None = N
             logger.error(f"Fallback authentication failed: {e}")
             ui.notify(_('Authentication failed'), type='negative')
 
-    # if config.get('DTAP') == 'dev':
-    #     ui_state['username'] = 'peter'
-    #     ui_state['password'] = '12345'
-    #     logger.info('Auto-login peter/12345 in dev')
-    #     await try_fallback_login()
+    with frame('login', tenant):
 
-    with simple_frame('login', tenant):
         with Col(classes='centered-content'):
-            ui.label(_('eduPersona management: login')).classes('section-heading')
+            ui.label(_('eduPersona management')).classes('section-heading')
 
-            with Col(style='gap: 2rem;'):
-                # OIDC Login Card
-                with ui.card().tight().classes('login-card'):
-                    ui.label('SURFconext').classes('label-heading')
-                    ui.button(
-                        _('Login with SURFconext'),
-                        on_click=try_oidc_login
-                    ).classes('btn-primary').style('width: 100%; margin-top: 20px;')
+            with ui.card().tight().classes('login-card'):
+                # Primary: SURFconext
+                Button(
+                    _('Login with SURFconext'),
+                    on_click=try_oidc_login,
+                ).style('width:100%;')
 
-                # Fallback Login Card
-                if ui_state['show_fallback']:
-                    with ui.card().tight().classes('login-card'):
-                        ui.label(_('Local account')).classes('label-heading')
+                # Secondary: Local account
+                if show_fallback:
+                    Separator()
+                    with ui.expansion(_('Local account')).classes('expansion').bind_value(ui_state, 'secondary_open'):
                         ui.input(_('username')).bind_value(
                             ui_state, 'username'
                         ).classes('form-input').on('keydown.enter', try_fallback_login)
-
                         ui.input(_('password'), password=True).bind_value(
                             ui_state, 'password'
                         ).classes('form-input-last').on('keydown.enter', try_fallback_login)
-
-                        ui.button(
+                        Button(
                             _('Login'),
-                            on_click=try_fallback_login
-                        ).classes('btn-primary').style('width: 100%;')
+                            on_click=try_fallback_login,
+                        )
 
 
 @ui.page('/{tenant}/m/oidc_login')

@@ -3,7 +3,7 @@ Tortoise ORM models for edupersona application
 """
 from datetime import date
 from tortoise import fields
-from ng_rdm.models import QModel, FieldSpec, Validator, required_validator
+from ng_rdm.models import RdmModel, MultitenantRdmModel, FieldSpec, Validator, required_validator
 
 
 class InvitationStatus:
@@ -15,7 +15,7 @@ _email_validator = Validator(
     validator=lambda v, _: '@' in v if v else True
 )
 
-class Guest(QModel):
+class Guest(MultitenantRdmModel):
     """Guest/user entity"""
     field_specs = {
         'email': FieldSpec(validators=[_email_validator]),
@@ -24,7 +24,6 @@ class Guest(QModel):
     }
 
     id = fields.IntField(primary_key=True)
-    tenant = fields.CharField(max_length=255)
     user_id = fields.CharField(max_length=255, unique=True)         # SCIM 'userName' (required & unique)
     scim_id = fields.CharField(max_length=255, null=True)           # SCIM 'id' field ('their' resource id)
     #
@@ -43,7 +42,7 @@ class Guest(QModel):
         table = "guests"
 
 
-class GuestAttribute(QModel):
+class GuestAttribute(RdmModel):
     """Guest OIDC attributes from various authentication flows"""
     id = fields.IntField(primary_key=True)
     guest = fields.ForeignKeyField("models.Guest", related_name="attributes")
@@ -54,10 +53,9 @@ class GuestAttribute(QModel):
         table = "guest_attributes"
 
 
-class Role(QModel):
+class Role(MultitenantRdmModel):
     """Roles for organizing invitations with redirect config"""
     id = fields.IntField(primary_key=True)
-    tenant = fields.CharField(max_length=255)
     scim_id = fields.CharField(max_length=255, null=True)       # SCIM: 'id' field ('their' resource id)
     #
     name = fields.CharField(max_length=255)                     # SCIM: 'displayName', eg 'Gastdocent XYZ'
@@ -85,10 +83,9 @@ class Role(QModel):
         table = "roles"
 
 
-class RoleAssignment(QModel):
+class RoleAssignment(MultitenantRdmModel):
     """Guest-role binding with date range (no invitation/status - just the assignment)"""
     id = fields.IntField(primary_key=True)
-    tenant = fields.CharField(max_length=255)
     guest = fields.ForeignKeyField("models.Guest", related_name="role_assignments")
     role = fields.ForeignKeyField("models.Role", related_name="role_assignments")
     start_date = fields.DateField(null=True)
@@ -144,11 +141,10 @@ class RoleAssignment(QModel):
         table = "role_assignments"
 
 
-class Invitation(QModel):
+class Invitation(MultitenantRdmModel):
     """Invitation sent to a guest for one or more role assignments"""
     id = fields.IntField(primary_key=True)
     code = fields.CharField(max_length=32, unique=True, db_index=True)
-    tenant = fields.CharField(max_length=255)
     guest = fields.ForeignKeyField("models.Guest", related_name="invitations")
     personal_message = fields.TextField(null=True)
     invitation_email = fields.CharField(max_length=255)
@@ -162,7 +158,7 @@ class Invitation(QModel):
         table = "invitations"
 
 
-class InvitationRoleAssignment(QModel):
+class InvitationRoleAssignment(RdmModel):
     """Junction table linking invitations to role assignments (M:N)"""
     id = fields.IntField(primary_key=True)
     invitation = fields.ForeignKeyField("models.Invitation", related_name="invitation_role_assignments")
