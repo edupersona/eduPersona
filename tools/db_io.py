@@ -3,8 +3,8 @@
 Database import/export utility for edupersona.
 
 Usage:
-    python db_io.py import db_export.json --tenant uva
-    python db_io.py export db_export_new.json --tenant uva
+    python db_io.py import db_export.json --tenant <tenant_name>
+    python db_io.py export db_export_new.json --tenant <tenant_name>
 """
 from domain.models import (Guest, Role, RoleAssignment, Invitation, InvitationRoleAssignment, GuestAttribute)
 from tortoise import Tortoise
@@ -26,15 +26,15 @@ Commands:
   export FILE [--tenant NAME]                 Export database to JSON
 
 Options:
-  --tenant NAME   Tenant identifier (default: uva)
+  --tenant NAME   Tenant identifier
   --recreate      Drop and recreate all tables first (import only)
 """
 
-async def populate_from_json(json_file_path: str, tenant: str = "uva"):
+async def populate_from_json(json_file_path: str, tenant: str):
     with open(json_file_path) as f:
         data = json.load(f)
 
-    # Handle tenant-wrapped format ({"tenant": {"name": "uva", "guests": [...], ...}})
+    # Handle tenant-wrapped format ({"tenant": {"name": "my_tenant", "guests": [...], ...}})
     if "tenant" in data:
         tenant_data = data["tenant"]
         tenant = tenant_data.get("name", tenant)
@@ -344,7 +344,7 @@ def parse_args(args: list[str]) -> tuple[str, str, str, bool]:
         sys.exit(1)
 
     json_file = None
-    tenant = 'uva'
+    tenant = ""
     recreate = False
     i = 0
     while i < len(args):
@@ -376,7 +376,11 @@ def parse_args(args: list[str]) -> tuple[str, str, str, bool]:
 if __name__ == "__main__":
     command, json_file, tenant, recreate = parse_args(sys.argv[1:])
 
-    if command == 'import':
-        asyncio.run(import_json(json_file, tenant, recreate))
-    elif command == 'export':
-        asyncio.run(export_json(json_file, tenant))
+    if tenant:
+        if command == 'import':
+            asyncio.run(import_json(json_file, tenant, recreate))
+        elif command == 'export':
+            asyncio.run(export_json(json_file, tenant))
+    else:
+        print("Error: --tenant NAME is required\n")
+        sys.exit(1)

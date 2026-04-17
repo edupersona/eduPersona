@@ -121,7 +121,7 @@ Tests multi-component workflows:
 
 ### Database Fixtures
 - `reset_database` - Auto-resets in-memory SQLite before each test
-- `test_tenant` - Provides default test tenant ("uva")
+- `test_tenant` - Provides default test tenant ("hvh")
 
 ### Sample Data Fixtures
 - `sample_guest` - Creates a test guest

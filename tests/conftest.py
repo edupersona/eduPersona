@@ -36,7 +36,7 @@ def setup_test_environment():
     3. We need to re-register test tenants before each test
     """
     # Register test tenants (must happen before routes are accessed)
-    set_valid_tenants(['uva', 'vu'])
+    set_valid_tenants(['hvh', 'vu'])
 
     # Set storage secret for testing
     storage.Storage.secret = 'test-secret-for-pytest'
@@ -62,7 +62,7 @@ async def reset_database():
 @pytest.fixture
 def test_tenant():
     """Provide test tenant identifier"""
-    return "uva"
+    return "hvh"
 
 
 @pytest.fixture

@@ -195,14 +195,14 @@ async def test_read_with_join_fields(test_tenant, sample_role_assignment):
 @pytest.mark.storage
 async def test_multitenancy_isolation(test_tenant):
     """Test that tenants are isolated from each other"""
-    guest_store_uva = get_guest_store("uva")
+    guest_store_hvh = get_guest_store("hvh")
     guest_store_vu = get_guest_store("vu")
 
-    # Create guest in UVA tenant
-    await guest_store_uva.create_item({
-        "tenant": "uva",
-        "user_id": "uva@example.com",
-        "email": "uva@example.com",
+    # Create guest in HVH tenant
+    await guest_store_hvh.create_item({
+        "tenant": "hvh",
+        "user_id": "hvh@example.com",
+        "email": "hvh@example.com",
     })
 
     # Create guest in VU tenant
@@ -212,10 +212,10 @@ async def test_multitenancy_isolation(test_tenant):
         "email": "vu@example.com",
     })
 
-    # Verify UVA store only sees UVA guests
-    uva_guests = await guest_store_uva.read_items()
-    assert len(uva_guests) == 1
-    assert uva_guests[0]["user_id"] == "uva@example.com"
+    # Verify HVH store only sees HVH guests
+    hvh_guests = await guest_store_hvh.read_items()
+    assert len(hvh_guests) == 1
+    assert hvh_guests[0]["user_id"] == "hvh@example.com"
 
     # Verify VU store only sees VU guests
     vu_guests = await guest_store_vu.read_items()

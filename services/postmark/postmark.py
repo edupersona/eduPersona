@@ -18,7 +18,6 @@ def map_invitation_context(invitation: dict, base_url: str) -> dict:
     context = invitation.copy()
     roles = [ra.get("role", {}) for ra in invitation.get("role_assignments", [])]
 
-    context["tenant__HR"] = "UvA" if invitation.get('tenant') == 'uva' else ""
     context["accept_url"] = f"{base_url}/{invitation['tenant']}/accept/{invitation['code']}"
 
     # Role names for display

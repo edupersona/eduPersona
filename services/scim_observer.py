@@ -378,7 +378,7 @@ def get_scim_observer() -> SCIMObserver | None:
     return scim_observer
 
 
-async def bulk_sync_to_scim(tenant: str = "uva") -> dict:
+async def bulk_sync_to_scim(tenant: str) -> dict:
     """Bulk sync all existing data to SCIM server
 
     Useful for initial setup or re-syncing after SCIM server issues.
@@ -462,7 +462,7 @@ async def bulk_sync_to_scim(tenant: str = "uva") -> dict:
 
             for junction in junctions:
                 # Get role assignment
-                ra_list = await ra_store.read_items(filter_by={"id": junction.role_assignment_id})
+                ra_list = await ra_store.read_items(filter_by={"id": junction.role_assignment_id})      # type: ignore
                 if not ra_list:
                     continue
                 ra = ra_list[0]

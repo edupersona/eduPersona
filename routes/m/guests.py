@@ -25,7 +25,6 @@ from services.theme import frame
 
 def render_guest_statuses(row: dict):
     """Render guest statuses as colored chips."""
-    logger.info('rendering!!')
     statuses = row.get("guest_statuses", []) or []
     chips = ' '.join(
         f'<span class="status-chip status-chip-{s}">{s.replace("_", " ")}</span>'

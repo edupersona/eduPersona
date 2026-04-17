@@ -10,7 +10,7 @@ from ng_rdm.utils import logger
 from ng_rdm.store.multitenancy import valid_tenants
 
 
-DEFAULT_TENANT = "uva"
+DEFAULT_TENANT = "hvh"
 
 
 def validate_tenant(tenant: str) -> None:

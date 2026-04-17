@@ -48,15 +48,41 @@ eduPersona kan dus in het verlengde van de interne IDM-voorziening (derdenregist
 
 Toekomstmuziek: de link tussen instellingsaccount en eduID die hier wordt vastgelegd zou vervolgens kunnen worden gebruikt om via de <a href="https://servicedesk.surf.nl/wiki/spaces/IAM/pages/222462401/Ondersteuning+voor+applicaties+zonder+multi-identifier+functionaliteit">instellings-informatie API</a> het instellingsaccount mee te geven bij het inloggen. Dat maakt integratie van eduID in het applicatielandschap aanzienlijk eenvoudiger (vgl. anyID/keyring scenario van Aventus).
 
-### Installatie
+### Getting started
 
+Eventueel eerst een conda env of venv met Python 3.12+ maken en activeren, daarna:
 ```
 mkdir edupersona && cd $_
 git clone https://github.com/kleynjan/eduPersona.git .
-conda create -n edupersona python=3
-conda activate edupersona
 pip install -r requirements.txt
+cp settings.example.json settings.json
 ```
+Edit je settings.json, pas in elk geval het userid en wachtwoord voor tenants.hvh.fallback_admins aan.
+
+Start een lokale dev server met:
+```
+./start.sh dev
+```
+
+Ga dan met je browser naar http://localhost:8080/, klik op Beheer en log in met je fallback_admin credentials.
+
+Je hebt initieel een lege database, dus:
+1. voer een gast op
+1. voer een rol op
+1. ken de rol toe aan de gast
+1. en maak een nieuwe uitnodiging voor die gast en rol
+<br>... als je de Postmark of SMTP config hebt ingesteld kun je de invite per mail versturen ... 
+2. anders: klik op de uitnodiging en kopieer de code
+
+Je hebt nu de code waarmee een gast de onboarding kan starten:
+* ga naar http://localhost:8080/hvh/accept
+* voer de code in en volg de aangegeven stappen
+* ...
+Als je eduID en/of instellings-logins echt wilt testen zul je de benodigde OIDC client_id's en secrets moeten configureren in settings.json en het eduPersona portal registreren bij SURFconext(-test) en/of de betrokken IDP. (Dit kan óók met een dev omgeving op localhost.)
+
+De **API** is gedocumenteerd via /docs, /redoc en /openapi.json
+
+
 
 ### Configuratie
 

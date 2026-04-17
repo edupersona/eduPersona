@@ -150,7 +150,7 @@ def initialize_multitenancy() -> None:
     from services.settings import config
 
     # Extract tenant identifiers from settings
-    tenants = list(config.tenants.keys()) if hasattr(config, 'tenants') else ["uva"]
+    tenants = list(config.tenants.keys())
     set_valid_tenants(tenants)
     logger.info(f"Registered tenants: {tenants}")
 
@@ -225,6 +225,6 @@ def get_invitation_store(tenant: str) -> MultitenantTortoiseStore[Invitation]:
     return store_registry.get_store(tenant, 'invitation')  # type: ignore[return-value]
 
 
-def get_guest_attribute_store(tenant: str) -> MultitenantTortoiseStore[GuestAttribute]:
+def get_guest_attribute_store(tenant: str) -> MultitenantTortoiseStore[GuestAttribute]:  # type: ignore
     _ensure_tenant_stores(tenant)
     return store_registry.get_store(tenant, 'guest_attribute')  # type: ignore[return-value]

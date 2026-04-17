@@ -74,21 +74,21 @@ async def test_invite_roles_missing_required_fields(api_client, test_tenant):
 @pytest.mark.api
 async def test_multitenancy_in_api(api_client, sample_role):
     """Test that API respects tenant isolation via path-based routing"""
-    # Query roles for 'uva' tenant (has sample_role)
-    uva_response = await api_client.get("/uva/api/v1/roles")
-    assert uva_response.status_code == 200
-    uva_body = uva_response.json()
-    uva_roles = uva_body["data"]
+    # Query roles for 'hvh' tenant (has sample_role)
+    hvh_response = await api_client.get("/hvh/api/v1/roles")
+    assert hvh_response.status_code == 200
+    hvh_body = hvh_response.json()
+    hvh_roles = hvh_body["data"]
 
-    # Query from different tenant should not see UVA roles
+    # Query from different tenant should not see HVH roles
     vu_response = await api_client.get("/vu/api/v1/roles")
     assert vu_response.status_code == 200
     vu_body = vu_response.json()
     vu_roles = vu_body["data"]
 
-    # UVA should have our sample role, VU should not
-    uva_role_names = [g["name"] for g in uva_roles]
+    # HVH should have our sample role, VU should not
+    hvh_role_names = [g["name"] for g in hvh_roles]
     vu_role_names = [g["name"] for g in vu_roles]
 
-    assert "Test Role" in uva_role_names
+    assert "Test Role" in hvh_role_names
     assert "Test Role" not in vu_role_names

@@ -16,7 +16,7 @@
     "cleanup_api_key": "your-cleanup-api-key-here",
 
     "tenants": {
-        "uva": {
+        "hvh": {
             "theme": {
                 "primary_color": "rgb(59, 130, 246)",
                 "secondary_color": "#26a69a",
@@ -107,7 +107,7 @@
                         "title": "Stap 4. Toegang naar de applicatie",
                         "completed_text": "✓ Uw eduID is nu gekoppeld!",
                         "disabled_text": "Voltooi eerst de vorige stappen",
-                        "default_link_url": "https://canvas.uva.nl/",
+                        "default_link_url": "https://canvas.hvh.nl/",
                         "default_link_text": "Canvas (UvA)"
                     }
                 }

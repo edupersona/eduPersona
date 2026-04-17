@@ -5,6 +5,5 @@ httpx
 scim2-client[httpx]
 scim2-models
 aiosmtplib
-# ng_rdm (Reactive Database Management for NiceGUI, formerly ng_store/ng_loba)
+nicegui-rdm
 tortoise-orm
--e file:///Users/peter/Code/pk_repos/ng_rdm

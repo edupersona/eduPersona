@@ -1,5 +1,5 @@
 """Step card components for the onboarding flow"""
-from nicegui import app, ui, html
+from nicegui import app, ui
 
 from ng_rdm.components import Col, Row, Button
 from ng_rdm.utils import logger

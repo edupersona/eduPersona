@@ -48,7 +48,8 @@ def run(fastapi_app) -> None:
     init_db(
         fastapi_app,
         db_url='sqlite://edupersona.db',
-        modules={"models": ["domain.models"]}
+        modules={"models": ["domain.models"]},
+        generate_schemas=True,
     )
     ui.run_with(fastapi_app, storage_secret=STORAGE_SECRET, title='eduPersona')
 

@@ -24,7 +24,7 @@ class Guest(MultitenantRdmModel):
     }
 
     id = fields.IntField(primary_key=True)
-    user_id = fields.CharField(max_length=255, unique=True)         # SCIM 'userName' (required & unique)
+    user_id = fields.CharField(max_length=255, null=True)           # SCIM 'userName' (required & unique)
     scim_id = fields.CharField(max_length=255, null=True)           # SCIM 'id' field ('their' resource id)
     #
     given_name = fields.CharField(max_length=255, null=True)        # SCIM: 'givenName'
@@ -38,7 +38,7 @@ class Guest(MultitenantRdmModel):
     invitations: fields.ReverseRelation["Invitation"]
     attributes: fields.ReverseRelation["GuestAttribute"]
 
-    class Meta:
+    class Meta(RdmModel.Meta):  # type: ignore[reportIncompatibleVariableOverride]
         table = "guests"
 
 
@@ -49,7 +49,7 @@ class GuestAttribute(RdmModel):
     name = fields.CharField(max_length=255)  # identifies source, e.g., "eduID login", "login instelling"
     value = fields.TextField()  # JSON string with attributes, lists as "[x,y]"
 
-    class Meta:
+    class Meta(RdmModel.Meta):  # type: ignore[reportIncompatibleVariableOverride]
         table = "guest_attributes"
 
 
@@ -79,7 +79,7 @@ class Role(MultitenantRdmModel):
     #
     role_assignments: fields.ReverseRelation["RoleAssignment"]
 
-    class Meta:
+    class Meta(RdmModel.Meta):  # type: ignore[reportIncompatibleVariableOverride]
         table = "roles"
 
 
@@ -137,7 +137,7 @@ class RoleAssignment(MultitenantRdmModel):
         end_str = end_obj.isoformat() if end_obj else ''
         return (start_str, end_str)
 
-    class Meta:
+    class Meta(RdmModel.Meta):  # type: ignore[reportIncompatibleVariableOverride]
         table = "role_assignments"
 
 
@@ -154,7 +154,7 @@ class Invitation(MultitenantRdmModel):
     # Junction relation: invitation.role_assignments via InvitationRoleAssignment
     invitation_role_assignments: fields.ReverseRelation["InvitationRoleAssignment"]
 
-    class Meta:
+    class Meta(RdmModel.Meta):  # type: ignore[reportIncompatibleVariableOverride]
         table = "invitations"
 
 
@@ -164,5 +164,5 @@ class InvitationRoleAssignment(RdmModel):
     invitation = fields.ForeignKeyField("models.Invitation", related_name="invitation_role_assignments")
     role_assignment = fields.ForeignKeyField("models.RoleAssignment", related_name="invitation_role_assignments")
 
-    class Meta:
+    class Meta(RdmModel.Meta):  # type: ignore[reportIncompatibleVariableOverride]
         table = "invitation_role_assignments"

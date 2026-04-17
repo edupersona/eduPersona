@@ -286,10 +286,6 @@ async def invitations_page(tenant: str = Depends(require_invite_auth)):
     table_config = get_invitations_table_config()
 
     async def render_list(vs: ViewStack):
-        def render_toolbar():
-            Button(_('Accept invitation  ▶︎'),
-                   on_click=lambda: ui.navigate.to(f'/{tenant}/accept'))
-
         async def on_click(row_id):
             items = await invitation_store.read_items(filter_by={"id": row_id})
             if items:
@@ -299,7 +295,6 @@ async def invitations_page(tenant: str = Depends(require_invite_auth)):
             data_source=invitation_store, config=table_config,
             on_click=on_click,
             on_add=lambda: new_invitation_dialog(tenant, roles),
-            render_toolbar=render_toolbar,
         )
         await table.build_with_toolbars()
 
