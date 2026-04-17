@@ -17,7 +17,7 @@ from domain.stores import (
     get_guest_store,
     get_role_store,
 )
-from domain.invitation_flow import create_role_assignment, update_role_assignment
+from domain.assignments import create_role_assignment, update_role_assignment
 from domain.models import InvitationRoleAssignment
 from .common import (
     api_response, api_error, validate_tenant_or_raise,

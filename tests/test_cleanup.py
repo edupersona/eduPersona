@@ -15,7 +15,8 @@ from domain.stores import (
     get_role_assignment_store,
     get_invitation_store,
 )
-from domain.invitation_flow import create_role_assignment, create_invitation
+from domain.assignments import create_role_assignment
+from domain.invitations import create_invitation
 from domain.models import Invitation
 from ng_rdm.utils.helpers import now_utc
 

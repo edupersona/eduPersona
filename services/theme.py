@@ -1,6 +1,6 @@
 from contextlib import contextmanager
 
-from ng_rdm.components import Col
+from ng_rdm.components import Col, rdm_init
 from nicegui import app, ui
 
 from services.settings import get_tenant_config
@@ -10,9 +10,9 @@ pages = {
     'guests': {'path': 'm/guests', 'label': 'gasten'},
     'roles': {'path': 'm/roles', 'label': 'rollen'},
     'invitations': {'path': 'm/invitations', 'label': 'uitnodigingen'},
+    'accept': {'path': 'accept', 'label': 'accepteren'},
     # other pages:
     'login': {'path': 'm/login', 'label': 'inloggen'},
-    'accept': {'path': 'accept', 'label': 'accepteren uitnodiging'},
     'home': {'path': '/', 'label': 'home'},
 }
 
@@ -20,6 +20,7 @@ pages = {
 def main_menu(navtitle: str, tenant: str) -> None:
     """Create main navigation menu with authorization checking."""
     authz = app.storage.user.get("authz", [])
+    authz.append('accept')
 
     for key, page in pages.items():
         if key in authz:
@@ -83,6 +84,7 @@ def frame(page_name: str, tenant: str):
     """
 
     _apply_theme(page_name, tenant)
+    rdm_init()
 
     # Create header with navigation
     with ui.header():
@@ -95,7 +97,7 @@ def frame(page_name: str, tenant: str):
             if app.storage.user.get("authenticated", False):
                 main_menu(page_name, tenant)
 
-            if page_name != 'login':
+            if page_name not in ['login', 'accept']:
                 _user_link(tenant)
 
     # Main content area
@@ -104,35 +106,35 @@ def frame(page_name: str, tenant: str):
         yield
 
 
-@contextmanager
-def accept_frame(tenant: str):
-    """
-    Provides consistent page structure for /accept page with navigation header
-    but no interactive elements (no username dropdown, no clickable nav items).
+# @contextmanager
+# def accept_frame(tenant: str):
+#     """
+#     Provides consistent page structure for /accept page with navigation header
+#     but no interactive elements (no username dropdown, no clickable nav items).
 
-    Args:
-        tenant: Tenant identifier for loading tenant-specific configuration
+#     Args:
+#         tenant: Tenant identifier for loading tenant-specific configuration
 
-    Usage:
-        @ui.page('/{tenant}/accept')
-        async def accept_page(tenant: str):
-            with accept_frame(tenant):
-                # Your page content here
-    """
+#     Usage:
+#         @ui.page('/{tenant}/accept')
+#         async def accept_page(tenant: str):
+#             with accept_frame(tenant):
+#                 # Your page content here
+#     """
 
-    _apply_theme('accept', tenant)
+#     _apply_theme('accept', tenant)
 
-    # Create header with navigation (read-only)
-    with ui.header():
-        with ui.element('div').classes("header-div"):
-            ui.element('div').classes('appname-logo')
+#     # Create header with navigation (read-only)
+#     with ui.header():
+#         with ui.element('div').classes("header-div"):
+#             ui.element('div').classes('appname-logo')
 
-            # # Display "accept invitation" as dummy active nav element
-            # ui.label('accept invitation').classes("main-menu selected")
+#             # # Display "accept invitation" as dummy active nav element
+#             # ui.label('accept invitation').classes("main-menu selected")
 
-            _user_link(tenant)
+#             _user_link(tenant)
 
-    # Main content area
-    with Col(classes="accept-page page-content"):
-        # logger.debug(f"Accept page accessed (tenant: {tenant})")
-        yield
+#     # Main content area
+#     with Col(classes="accept-page page-content"):
+#         # logger.debug(f"Accept page accessed (tenant: {tenant})")
+#         yield

@@ -9,14 +9,16 @@ from domain.stores import (
     get_role_assignment_store,
     get_invitation_store,
 )
-from domain.invitation_flow import (
+from domain.assignments import (
     create_role_assignment,
-    create_invitation,
-    accept_invitation,
     assign_role,
     revoke_role,
     update_role_assignment,
     validate_assignment_end_date,
+)
+from domain.invitations import (
+    create_invitation,
+    accept_invitation,
 )
 
 

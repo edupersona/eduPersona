@@ -5,7 +5,7 @@ from nicegui import html, ui
 
 from ng_rdm.components import (
     ActionButtonTable, Column, Dialog, Tabs, TableConfig, FormConfig,
-    ViewStack, EditCard, ListTable, DetailCard, rdm_init, none_as_text, Col, Row,
+    ViewStack, EditCard, ListTable, DetailCard, none_as_text, Col, Row, Separator,
 )
 from ng_rdm.components.fields import build_form_field
 from ng_rdm.utils import logger
@@ -14,7 +14,7 @@ from services.i18n import _
 from services.tenant import get_tenant_from_session
 from services.scim_observer import bulk_sync_to_scim
 from domain.stores import get_role_store, get_role_assignment_store, get_guest_store
-from domain.invitation_flow import create_role_assignment, update_role_assignment
+from domain.assignments import create_role_assignment, update_role_assignment
 from services.theme import frame
 
 
@@ -80,8 +80,8 @@ async def render_role_details(role: dict):
         with Col(classes='rdm-detail-title-group'):
             ui.label(role.get('name', '')).classes('rdm-detail-title')
             ui.label(role.get('org_name', '')).classes('rdm-detail-subtitle')
-    ui.separator()
-    with Row(classes='rdm-detail-columns'):
+    Separator()
+    with Row(classes='rdm-detail-columns', gap='4rem'):
         with Col(classes='rdm-detail-column'):
             ui.label(_('Dates')).classes('rdm-detail-section-label')
             ui.label(f"{_('Default start')}: {none_as_text(role.get('default_start_date', ''))}").classes(
@@ -248,7 +248,6 @@ async def render_role_tabs(role: dict, tenant: str):
 @ui.page('/{tenant}/m/roles')
 async def roles_page(tenant: str = Depends(require_role_admin_auth), id: int | None = None):
     logger.debug(f"roles page accessed by tenant: {tenant}")
-    rdm_init()
 
     ui_state = {"viewstack": {}, "editcard": {}, "detail_card": {}}
 
@@ -264,7 +263,7 @@ async def roles_page(tenant: str = Depends(require_role_admin_auth), id: int | N
                 data_source=role_store, config=ROLES_TABLE_CONFIG,
                 on_click=on_click, on_add=vs.show_edit_new,
             )
-            await table.build()
+            await table.build_with_toolbars()
 
         async def render_detail(vs: ViewStack, item: dict):
             async def render_body(_: dict):

@@ -7,7 +7,7 @@ from nicegui import ui, html
 from ng_rdm.components import (
     Button, Column, Dialog, RowAction, TableConfig,
     ViewStack, ListTable, DetailCard,
-    rdm_init, none_as_text, Col, Row,
+    none_as_text, Col, Row, Separator,
 )
 from ng_rdm.components.fields import build_form_field
 from domain.models import RoleAssignment
@@ -15,7 +15,8 @@ from ng_rdm.utils import logger
 from services.auth.dependencies import require_invite_auth
 from services.i18n import _
 from services.postmark.postmark import send_postmark_invitation, test_template
-from domain.invitation_flow import create_invitation, create_role_assignment
+from domain.assignments import create_role_assignment
+from domain.invitations import create_invitation
 from domain.stores import (
     get_guest_store,
     get_role_store,
@@ -29,7 +30,7 @@ def render_status(row: dict):
     """Render status as a colored chip using HTML/CSS."""
     status = row.get("status", "") or ""
     label = _(status)
-    ui.html(f'<span class="status-chip status-chip-{status}">{label}</span>')
+    ui.html(f'<span class="status-chip status-chip-{status}">{label}</span>', sanitize=False)
 
 
 def get_invitations_table_config() -> TableConfig:
@@ -55,14 +56,14 @@ async def render_invitation_details(invitation: dict):
         ui.icon('mail', size='xl').classes('rdm-detail-icon')
         with Col(classes='rdm-detail-title-group'):
             ui.label(guest_name).classes('rdm-detail-title')
-            ui.html(f'<span class="status-chip status-chip-{status}">{status}</span>')
+            ui.html(f'<span class="status-chip status-chip-{status}">{status}</span>', sanitize=False)
 
-    ui.separator()
+    Separator()
 
     with Row(classes='rdm-detail-columns'):
         with Col(classes='rdm-detail-column'):
-            ui.label(_('Invitation Details')).classes('rdm-detail-section-label')
-            ui.label(f"{_('Email')}: {invitation.get('invitation_email', '-')}")
+            ui.label(_('Invitation Details')).classes('rdm-detail-section-label').classes('rdm-detail-text-sm')
+            ui.label(f"{_('Email')}: {invitation.get('invitation_email', '-')}").classes('rdm-detail-text-sm')
             ui.label(f"{_('Invited at')}: {none_as_text(invitation.get('invited_at', ''))}").classes('rdm-detail-text-sm')
             if invitation.get('code'):
                 ui.label(f"{_('Code')}: {invitation.get('code')}").classes('rdm-detail-text-sm')
@@ -72,14 +73,14 @@ async def render_invitation_details(invitation: dict):
             role_names = invitation.get('role_names', '')
             if role_names:
                 for role in role_names.split(', '):
-                    ui.label(f"• {role}")
+                    ui.label(f"• {role}").classes('rdm-detail-text-sm')
             else:
-                ui.label(_('No roles assigned')).classes('text-muted')
+                ui.label(_('No roles assigned')).classes('text-muted').classes('rdm-detail-text-sm')
 
     if invitation.get('personal_message'):
-        ui.separator()
+        Separator()
         ui.label(_('Personal Message')).classes('rdm-detail-section-label')
-        ui.label(invitation.get('personal_message', '')).classes('rdm-detail-text-sm')
+        ui.label(invitation.get('personal_message', ''))
 
 
 # Form columns for invitation details (used in new invitation dialog)
@@ -99,7 +100,7 @@ def _prepare_role_assignments(assignments: list[dict]) -> list[dict]:
     return assignments
 
 
-async def new_invitation_dialog(tenant: str, roles: list[dict], on_created=None):
+async def new_invitation_dialog(tenant: str, roles: list[dict]):
     """Single dialog for creating invitations: select guest, check roles, fill details."""
     guest_store = get_guest_store(tenant)
     role_assignment_store = get_role_assignment_store(tenant)
@@ -190,8 +191,6 @@ async def new_invitation_dialog(tenant: str, roles: list[dict], on_created=None)
                 )
                 dlg._notify(_('Invitation created'), type='positive')
                 dlg.close()
-                if on_created:
-                    on_created()
             except Exception as e:
                 logger.error(f"Error creating invitation: {e}")
                 dlg._notify(str(e), type='negative')
@@ -235,7 +234,7 @@ async def new_invitation_dialog(tenant: str, roles: list[dict], on_created=None)
                 ui.label(_("No role assignments for this guest")).classes('text-caption')
 
             # Invitation details
-            ui.separator()
+            Separator()
             ui.label(_("Invitation details")).classes('rdm-detail-section-label')
             for col in INVITATION_COLUMNS:
                 build_form_field(col, state)
@@ -253,7 +252,6 @@ async def new_invitation_dialog(tenant: str, roles: list[dict], on_created=None)
 @ui.page('/{tenant}/m/invitations')
 async def invitations_page(tenant: str = Depends(require_invite_auth)):
     logger.debug(f"invitations page accessed by tenant: {tenant}")
-    rdm_init()
 
     ui_state = {"viewstack": {}, "detail_card": {}}
 
@@ -281,7 +279,7 @@ async def invitations_page(tenant: str = Depends(require_invite_auth)):
         ui.run_javascript(f"window.open('/static/test_output.html?t={timestamp}', '_blank', 'width=768,height=700')")
 
     custom_actions = [
-        RowAction(icon="send", label=_("Resend"), callback=send_email),
+        RowAction(label=_("Resend"), callback=send_email),
         RowAction(label=_("Test Template"), callback=lambda _: run_test_template()),
     ]
 
@@ -300,23 +298,20 @@ async def invitations_page(tenant: str = Depends(require_invite_auth)):
         table = ListTable(
             data_source=invitation_store, config=table_config,
             on_click=on_click,
-            on_add=lambda: new_invitation_dialog(tenant, roles, on_created=vs.build.refresh),   # type: ignore
+            on_add=lambda: new_invitation_dialog(tenant, roles),
             render_toolbar=render_toolbar,
         )
-        await table.build()
+        await table.build_with_toolbars()
 
     async def render_detail(vs: ViewStack, item: dict):
         async def render_body(_: dict):
             with html.div().classes("rdm-detail-actions"):
                 for action in custom_actions:
-                    # variant = action.variant or "primary"
-                    with html.button().classes("rdm-btn rdm-btn-variant").on(
-                        "click", lambda _, i=item, a=action: a.callback(i) if a.callback else None
-                    ):
-                        if action.icon:
-                            html.i().classes(f"bi bi-{action.icon}")
-                        if action.label:
-                            html.span(action.label)
+                    Button(
+                        action.label or '',
+                        color=action.color or 'primary',
+                        on_click=lambda _, i=item, a=action: a.callback(i) if a.callback else None,
+                    )
 
         detail = DetailCard(
             state=ui_state["detail_card"],

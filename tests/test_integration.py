@@ -12,11 +12,8 @@ async def test_full_invitation_lifecycle(test_tenant, sample_role):
         get_guest_store,
         get_invitation_store,
     )
-    from domain.invitation_flow import (
-        create_role_assignment,
-        create_invitation,
-        accept_invitation,
-    )
+    from domain.assignments import create_role_assignment
+    from domain.invitations import create_invitation, accept_invitation
 
     # Step 1: Create guest first
     guest_store = get_guest_store(test_tenant)

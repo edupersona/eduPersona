@@ -4,7 +4,8 @@ Triggered via API endpoint by external scheduler/cron.
 """
 from datetime import date, timedelta
 
-from domain.models import Role, RoleAssignment, Invitation, InvitationRoleAssignment
+from domain.models import Role, RoleAssignment, Invitation
+from domain.assignments import delete_role_assignment
 from ng_rdm.utils import logger
 from ng_rdm.utils.helpers import now_utc
 from services.settings import config
@@ -42,10 +43,8 @@ async def cleanup_expired_roles(tenant: str) -> dict:
 
         for assignment in assignments:
             guest_id = assignment.guest_id  # type: ignore[attr-defined]
-            # Delete junction records first (FK constraint)
-            await InvitationRoleAssignment.filter(role_assignment_id=assignment.id).delete()
-            # Delete assignment via store (triggers observer)
-            await role_assignment_store.delete_item({"id": assignment.id})
+            # Cascade delete: junction rows + assignment (fires StoreEvent)
+            await delete_role_assignment(tenant, {"id": assignment.id})
             assignments_deleted += 1
 
             # SCIM cleanup
@@ -92,10 +91,8 @@ async def cleanup_expired_role_assignments(tenant: str) -> dict:
         guest_id = assignment.guest_id  # type: ignore[attr-defined]
         role_id = assignment.role_id  # type: ignore[attr-defined]
 
-        # Delete junction records first (FK constraint)
-        await InvitationRoleAssignment.filter(role_assignment_id=assignment.id).delete()
-        # Delete assignment via store
-        await role_assignment_store.delete_item({"id": assignment.id})
+        # Cascade delete: junction rows + assignment (fires StoreEvent)
+        await delete_role_assignment(tenant, {"id": assignment.id})
         assignments_deleted += 1
 
         # SCIM cleanup

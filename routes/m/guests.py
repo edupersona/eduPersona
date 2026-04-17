@@ -7,7 +7,7 @@ from nicegui import ui
 
 from ng_rdm.components import (
     ActionButtonTable, Column, Dialog, TableConfig, FormConfig,
-    ViewStack, EditCard, DetailCard, ListTable, rdm_init, none_as_text,
+    ViewStack, EditCard, DetailCard, ListTable, none_as_text,
     Col, Row, Separator,
 )
 from ng_rdm.components.fields import build_form_field
@@ -18,18 +18,20 @@ from services.tenant import get_tenant_from_session
 from domain.stores import (
     get_guest_store, get_guest_attribute_store, get_role_assignment_store, get_role_store,
 )
-from domain.invitation_flow import create_role_assignment, update_role_assignment
+from domain.assignments import create_role_assignment, update_role_assignment
+from domain.guests import delete_guest
 from services.theme import frame
 
 
 def render_guest_statuses(row: dict):
     """Render guest statuses as colored chips."""
+    logger.info('rendering!!')
     statuses = row.get("guest_statuses", []) or []
     chips = ' '.join(
         f'<span class="status-chip status-chip-{s}">{s.replace("_", " ")}</span>'
         for s in statuses
     )
-    ui.html(chips)
+    ui.html(chips, sanitize=False)
 
 
 def get_guests_table_config() -> TableConfig:
@@ -75,12 +77,12 @@ async def render_guest_details(guest: dict):
         with Col(classes='rdm-detail-title-group'):
             with Row(classes='rdm-items-center gap-2'):
                 ui.label(guest.get('display_name') or guest.get('user_id', '')).classes('rdm-detail-title')
-                ui.html(chips)
+                ui.html(chips, sanitize=False)
             ui.label(guest['email']).classes('rdm-detail-subtitle')
 
     Separator()
 
-    with Row(classes='rdm-detail-columns'):
+    with Row(classes='rdm-detail-columns', gap='4rem'):
         with Col(classes='rdm-detail-column'):
             ui.label(_('Name')).classes('rdm-detail-section-label')
             if guest.get('given_name'):
@@ -298,7 +300,6 @@ async def render_guest_role_assignments(guest: dict, tenant: str):
 
 @ui.page('/{tenant}/m/guests')
 async def guests_page(tenant: str = Depends(require_guests_auth), id: int | None = None):
-    rdm_init()
 
     ui_state = {"viewstack": {}, "editcard": {}, "detail_card": {}}
 
@@ -316,7 +317,7 @@ async def guests_page(tenant: str = Depends(require_guests_auth), id: int | None
                 data_source=guest_store, config=table_config,
                 on_click=on_click, on_add=vs.show_edit_new,
             )
-            await table.build()
+            await table.build_with_toolbars()
 
         async def render_detail(vs: ViewStack, item: dict):
             async def render_body(_: dict):
@@ -328,6 +329,7 @@ async def guests_page(tenant: str = Depends(require_guests_auth), id: int | None
                 render_summary=render_guest_details,
                 render_related=render_body,
                 on_edit=lambda i: vs.show_edit_existing(i),
+                on_delete=lambda i: delete_guest(tenant, i["id"]),
                 on_deleted=vs.show_list,
             )
             detail.set_item(item)

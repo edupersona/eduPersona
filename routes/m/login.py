@@ -6,7 +6,6 @@ from fastapi.responses import RedirectResponse
 from nicegui import Client, app, ui
 
 from ng_rdm.utils import logger
-from ng_rdm.components import rdm_init
 from ng_rdm.components import Col, Separator, Button
 from services.auth.completion import complete_admin_authentication
 from services.auth.oidc import create_admin_oidc_handler
@@ -19,8 +18,6 @@ from services.theme import frame
 @ui.page('/{tenant}/m/login')
 async def admin_login_page(client: Client, tenant: str, next_url: str | None = None) -> None:
     """Admin login page supporting both OIDC and fallback authentication."""
-
-    rdm_init()
 
     # Validate tenant from path parameter
     validate_tenant(tenant)

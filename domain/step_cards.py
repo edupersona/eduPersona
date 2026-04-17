@@ -1,11 +1,11 @@
 """Step card components for the onboarding flow"""
-from nicegui import app, ui
+from nicegui import app, ui, html
 
-from ng_rdm.components import Col, Row
+from ng_rdm.components import Col, Row, Button
 from ng_rdm.utils import logger
 from services.i18n import _
 from services.oidc_mt.multitenant import start_oidc_login
-from domain.invitation_flow import accept_invitation
+from domain.invitations import accept_invitation
 from domain.stores import get_invitation_store, get_guest_store, get_role_store, get_guest_attribute_store
 
 def expandable_info(valdict: dict) -> None:
@@ -94,7 +94,7 @@ class StepCard:
         status_icon = 'check_circle' if is_completed else 'radio_button_unchecked'
 
         with ui.card().classes('step-card'):
-            with ui.row().classes('step-card-row'):
+            with Row().classes('step-card-row'):
                 icon = ui.icon(status_icon, color=status_color).classes('step-icon')
 
                 # Make icon clickable if enabled
@@ -152,7 +152,7 @@ class VerifyInviteStep(StepCard):
             placeholder=_('Invitation code')
         ).classes('form-input').bind_value(self.state, 'invite_code_input')
 
-        ui.button(_('Confirm code'), on_click=self.click_handler).style('margin-top: 0.5rem;')
+        Button(_('Confirm code'), on_click=self.click_handler).style('margin-top: 0.5rem;')
 
 
 class VerifyEduIDStep(StepCard):
@@ -175,15 +175,15 @@ class VerifyEduIDStep(StepCard):
         ui.navigate.to('https://test.eduid.nl/home', new_tab=True)
 
     def render_enabled(self, state: dict) -> None:
-        with ui.row():
+        with Row().classes('button-row'):
             with Col():
-                ui.button(
+                Button(
                     _('YES! I already have a (test!) eduID'),
                     on_click=self.click_handler
                 ).style('margin-right: 1rem;')
 
             with Col(style='align-items: center; gap: 8px;'):
-                ui.button(
+                Button(
                     _("No - I don't have a (test!) eduID yet"),
                     on_click=self.create_eduid_handler
                 )
@@ -227,10 +227,13 @@ class VerifyInstitutionalStep(StepCard):
 
     def render_enabled(self, state: dict) -> None:
         ui.label(_('Log in via test-IDP to verify your institutional identity.')).classes('text-muted')
-        ui.button(
-            _('Login via (dummy) institution'),
-            on_click=self.click_handler
-        ).classes('btn-primary')
+        ui.label('Demo van willekeurige test-IDP als secundaire verificatie. Kies bijvoorbeeld voor "professor5/professor5"').classes(
+            'text-muted')
+        with Row().classes('button-row'):
+            Button(
+                _('Login via (dummy) institution'),
+                on_click=self.click_handler
+            )
 
     def render_completed(self, state: dict) -> None:
         ui.label(self.completed_text).classes('text-success').style('margin-top: 0.5rem;')

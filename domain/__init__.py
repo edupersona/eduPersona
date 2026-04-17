@@ -11,13 +11,15 @@ from .stores import (
     get_guest_store, get_role_store, get_role_assignment_store,
     get_invitation_store, get_guest_attribute_store,
 )
-from .invitation_flow import (
-    create_role_assignment, update_role_assignment,
-    create_invitation, accept_invitation,
-    assign_role, revoke_role,
-    resend_invitation, get_invitation_with_roles,
-    validate_assignment_end_date,
+from .assignments import (
+    create_role_assignment, update_role_assignment, delete_role_assignment,
+    assign_role, revoke_role, validate_assignment_end_date,
 )
+from .invitations import (
+    create_invitation, accept_invitation, delete_invitation,
+    resend_invitation, get_invitation_with_roles,
+)
+from .guests import delete_guest
 
 __all__ = [
     # Models
@@ -27,10 +29,12 @@ __all__ = [
     'initialize_multitenancy',
     'get_guest_store', 'get_role_store', 'get_role_assignment_store',
     'get_invitation_store', 'get_guest_attribute_store',
-    # Business logic
-    'create_role_assignment', 'update_role_assignment',
-    'create_invitation', 'accept_invitation',
-    'assign_role', 'revoke_role',
+    # Assignments
+    'create_role_assignment', 'update_role_assignment', 'delete_role_assignment',
+    'assign_role', 'revoke_role', 'validate_assignment_end_date',
+    # Invitations
+    'create_invitation', 'accept_invitation', 'delete_invitation',
     'resend_invitation', 'get_invitation_with_roles',
-    'validate_assignment_end_date',
+    # Guests
+    'delete_guest',
 ]

@@ -180,7 +180,7 @@ async def sample_role(test_tenant):
 @pytest.fixture
 async def sample_role_assignment(test_tenant, sample_guest, sample_role):
     """Create a sample role assignment for testing"""
-    from domain.invitation_flow import create_role_assignment
+    from domain.assignments import create_role_assignment
 
     role_assignment = await create_role_assignment(
         test_tenant,
@@ -258,7 +258,7 @@ async def authenticated_full_admin_user(user: User, test_tenant):
 @pytest.fixture
 async def sample_invitation(test_tenant, sample_role_assignment):
     """Create a sample invitation for testing (linked to role assignment)"""
-    from domain.invitation_flow import create_invitation
+    from domain.invitations import create_invitation
     from domain.stores import get_guest_store
 
     # Get guest_id from role_assignment

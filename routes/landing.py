@@ -1,6 +1,6 @@
 from nicegui import ui
 
-from ng_rdm.components import Col, Row
+from ng_rdm.components import Col, rdm_init
 from ng_rdm.utils import logger
 from services.i18n import _
 from services.tenant import get_available_tenants, get_default_tenant
@@ -10,6 +10,7 @@ from services.tenant import get_available_tenants, get_default_tenant
 def landing_page():
     """Landing page - tenant-agnostic entry point."""
     logger.debug("Landing page accessed")
+    rdm_init()
 
     ui.add_css('static/css/base.css')
     ui.page_title('eduPersona')

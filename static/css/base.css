@@ -247,6 +247,8 @@ body {
 }
 
 .rdm-detail-actions {
+  display: flex;
+  gap: var(--rdm-spacing-sm);
   margin-top: 0;
   margin-left: 3px;
   padding: var(--rdm-spacing-lg) 0;
@@ -368,7 +370,7 @@ body {
 }
 
 .accept-page {
-  .step-card {
+  .step-card { 
     width: 100%;
     max-width: 800px;
     margin-bottom: 1rem;
@@ -386,6 +388,13 @@ body {
 
     .step-content {
       flex-grow: 1;
+      .text-muted {
+        font-size: 110%;
+      }
+      .button-row {
+        margin-top: 0.6rem;
+        align-items: start;
+      }
     }
 
     .step-title {
