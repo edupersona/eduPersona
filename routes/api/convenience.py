@@ -6,7 +6,7 @@ POST /{tenant}/api/v1/quick-invite - Create guest + assignment + invitation in o
 from fastapi import HTTPException
 from pydantic import BaseModel
 
-from . import api_router
+from . import tenant_api_router as api_router
 
 from domain.stores import (
     get_guest_store,

@@ -6,12 +6,17 @@ Based on alarm app patterns adapted for eduIDM.
 from datetime import datetime, timedelta
 from typing import Callable
 
-from fastapi import HTTPException, Request
+from fastapi import HTTPException, Request, Security
+from fastapi.security import APIKeyHeader
 from nicegui import app
 
 from ng_rdm.utils import logger
 from ng_rdm.utils.helpers import str_to_datetime
+from services.settings import get_tenant_config
 from services.tenant import get_default_tenant
+
+# Declares X-API-Key in OpenAPI schema so Swagger UI shows "Authorize" button
+_api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
 # Configuration
 INACTIVITY_TIMEOUT = timedelta(hours=2)  # Admin session timeout
@@ -141,4 +146,23 @@ def require_guests_auth(request: Request) -> str:
             status_code=403,
             detail="Unauthorized: requires 'guests' permission"
         )
+    return tenant
+
+
+# API key authentication for REST API endpoints
+
+async def require_api_key(request: Request, _key: str | None = Security(_api_key_header)) -> str:
+    """Dependency requiring a valid per-tenant API key via X-API-Key header."""
+    tenant = _extract_tenant_from_path(request)
+    try:
+        tc = get_tenant_config(tenant)
+    except ValueError:
+        raise HTTPException(status_code=404, detail={"error": {"code": "NOT_FOUND", "message": f"Unknown tenant: {tenant}"}})
+
+    expected_key = tc.get("api_key", "")
+    if not expected_key:
+        raise HTTPException(status_code=403, detail={"error": {"code": "API_DISABLED", "message": "API access not configured for this tenant"}})
+    api_key = request.headers.get("x-api-key", "")
+    if not api_key or api_key != expected_key:
+        raise HTTPException(status_code=401, detail={"error": {"code": "UNAUTHORIZED", "message": "Invalid or missing API key"}})
     return tenant

@@ -3,7 +3,7 @@
     "storage_secret": "your-storage-secret-here",
     "log_level": "DEBUG",
     "console_logging": true,
-    "base_url": "http://localhost:8090",
+    "base_url": "http://localhost:8080",
     "smtp_server": "localhost",
     "smtp_port": 25,
     "error_notification_from": "server@edupersona.nl",
@@ -12,11 +12,12 @@
         "token": "your-postmark-token-here",
         "message_stream": "your-message-stream-name"
     },
-    "invitation_expiration_days": 30,
+    "invitation_expiration_days": 14,
     "cleanup_api_key": "your-cleanup-api-key-here",
 
     "tenants": {
         "hvh": {
+            "api_key": "your-tenant-api-key-here",
             "theme": {
                 "primary_color": "rgb(59, 130, 246)",
                 "secondary_color": "#26a69a",
@@ -32,14 +33,14 @@
             "admins": [
                 {
                     "user": "your-user-id-hash-here",
-                    "authz": ["invitations", "groups"]
+                    "authz": ["invitations", "guests", "roles"]
                 }
             ],
             "fallback_admins": [
                 {
                     "user": "your_username",
                     "password": "your_password",
-                    "authz": ["invitations", "groups"]
+                    "authz": ["invitations", "guests", "roles"]
                 }
             ],
             "oidc": {
@@ -48,7 +49,7 @@
                     "CLIENT_ID": "your-client-id",
                     "CLIENT_SECRET": "your-client-secret",
                     "DOTWELLKNOWN": "https://connect.test.surfconext.nl/.well-known/openid-configuration",
-                    "REDIRECT_URI": "http://localhost:8090/oidc_callback",
+                    "REDIRECT_URI": "http://localhost:8080/oidc_callback",
                     "login_hint": "https://login.test.eduid.nl",
                     "force_login": true
                 },
@@ -57,7 +58,7 @@
                     "CLIENT_ID": "your-client-id",
                     "CLIENT_SECRET": "your-client-secret",
                     "DOTWELLKNOWN": "https://connect.test.surfconext.nl/.well-known/openid-configuration",
-                    "REDIRECT_URI": "http://localhost:8090/oidc_callback",
+                    "REDIRECT_URI": "http://localhost:8080/oidc_callback",
                     "login_hint": "https://idp.diy.surfconext.nl",
                     "force_login": true
                 },
@@ -66,7 +67,7 @@
                     "CLIENT_ID": "your-client-id",
                     "CLIENT_SECRET": "your-client-secret",
                     "DOTWELLKNOWN": "https://connect.test.surfconext.nl/.well-known/openid-configuration",
-                    "REDIRECT_URI": "http://localhost:8090/oidc_callback",
+                    "REDIRECT_URI": "http://localhost:8080/oidc_callback",
                     "login_hint": "https://idp.diy.surfconext.nl",
                     "auto_provision_users": false,
                     "force_login": true
@@ -77,7 +78,7 @@
                     "class": "VerifyInviteStep",
                     "config": {
                         "completed_key": "code_matched",
-                        "title": "Stap 1. Kopieer en plak hier de code die je hebt ontvangen",
+                        "title": "Stap 1. Kopieer en plak hier de code die je per mail hebt ontvangen",
                         "completed_text": "✓ Code ontvangen en bevestigd",
                         "disabled_text": null
                     }
@@ -85,8 +86,8 @@
                 {
                     "class": "VerifyEduIDStep",
                     "config": {
-                        "completed_key": "eduid_login",
-                        "title": "Stap 2. Inloggen met test-eduID",
+                        "completed_key": "eduid login",
+                        "title": "Stap 2. Inloggen met eduID (let op: gebruik je TEST eduID)",
                         "completed_text": "✓ Ingelogd met (test-)eduID",
                         "disabled_text": "Voltooi eerst stap 1"
                     }
@@ -94,7 +95,7 @@
                 {
                     "class": "VerifyInstitutionalStep",
                     "config": {
-                        "completed_key": "mfa_verified",
+                        "completed_key": "login instelling",
                         "title": "Stap 3. Inloggen met (dummy) instellingsaccount",
                         "completed_text": "✓ Institutioneel ingelogd (test-IDP)",
                         "disabled_text": "Voltooi eerst stap 2"
@@ -107,8 +108,8 @@
                         "title": "Stap 4. Toegang naar de applicatie",
                         "completed_text": "✓ Uw eduID is nu gekoppeld!",
                         "disabled_text": "Voltooi eerst de vorige stappen",
-                        "default_link_url": "https://canvas.hvh.nl/",
-                        "default_link_text": "Canvas (UvA)"
+                        "default_link_url": "http://localhost:8080/mijn-diensten",
+                        "default_link_text": "Mijn diensten en applicaties"
                     }
                 }
             ]

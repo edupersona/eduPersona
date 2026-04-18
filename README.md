@@ -1,52 +1,36 @@
-## eduPersona: landingspagina voor matching & verificatie van eduID users
+## **eduPersona onboarding**: landingspagina voor matching & verificatie van eduID users
 
-Proof of Concept van een self-service pagina om interne accounts te verrijken met eduID-identiteit en -attributen.
+Proof of Concept van een self-service pagina om interne identiteiten te verrijken met eduID-pseudoniem (en eventueel -attributen), waarbij de verificatie naar wens kan worden ingericht en de gastgebruiker stap voor stap begeleid wordt in het 'onboarding'-proces.
 
 Werkwijze (zie ook figuur):
 
-1. Registreer de gebruiker intern (in applicatie en/of IDM/IAM) met een een interne of gast-identifier. 
+1. Maak een **gast** aan en ken een **rol** toe. Structureel zul je dat willen doen vanuit instellings-IGA/IDM, maar het kan ook (bijvoorbeeld in een PoC) interactief in eduPersona. Die rol moet ook gedefinieerd worden, uiteraard &ndash; zelfde verhaal.
+2. Maak een **uitnodiging** aan voor deze gast en rol en verzend deze: eduPersona kan SMTP stekker of Postmark gebruiken voor uitgaande mail en biedt templates die per tenant kunnen worden ingesteld -- maar uiteraard kan de verzending ook vanuit IGA/IDM plaatsvinden.  
 
-2. Maak via de API een uitnodiging aan via edupersona en onthoud de uitnodigingscode.
+3. De gast opent de link naar de self-service-pagina "/accept", of kopieert en plakt de code. Daar leiden we hem/haar door de stappen die nodig zijn om toegang te geven. Voor elke IDP (inclusief maar niet beperkt tot eduID) kunnen we controles doen op attributen (naam, mailadres e.d.) en op meegegeven ACR's (bijv. tweede factor) - en de gebruiker de goede kant opsturen als nadere verificatie of configuratie nodig is. 
 
-3. Stuur de code naar de gast, bijvoorbeeld per mail.
+4. Net als SURF Invite ondersteunt eduPersona SCIM voor de terugkoppeling van gasten en hun (geaccepteerde) rollen naar instellings-IGA/IDM (zie `settings.json`, `tenants.hvh.scim`). In de regel gebeurt dit *na afronding van de onboarding*.
 
-4. De gast opent de link naar (of voert de code in op) de self-service-pagina "/accept". Daar leiden we hem/haar door de stappen die nodig zijn om toegang te geven. In deze PoC is het stappenplan grotendeels 'fake'. 
+5. Na afronding van het stappenplan tonen we de gast een link naar zijn/haar applicaties of diensten, zodat de gast daar direct kan inloggen.
 
-5. edupersona stuurt het eduID-pseudoniem en -info naar de callback die voor de betreffende groep is geconfigureerd. De applicatie (of IDM/IAM/etc) associeert de eduID met de interne identiteit, en/of vervangt de loginnaam door de eduID EPPN.
 
-6. Na afronding van het stappenplan tonen we de gast een link naar de applicatie die met de uitnodigingsgroep is geassocieerd, zodat de gast daar direct met eduID kan inloggen.
+<br>
 
-<!-- ![eduPersona Diagram](edupersona_diagram.png) -->
+![eduPersona Diagram](docs/edupersona_diagram.png)
 
-API:
-| endpoint               | verb   |                                                            |
-|------------------------|--------|------------------------------------------------------------|
-| /api/invitations       | GET    | Ophalen alle uitnodigingen                                 |
-| /api/invitations       | POST   | Nieuwe uitnodiging: guest_id & group_name -> invitation_id | 
-| /api/groups            | GET    | Ophalen alle groepen (read only op dit moment)             |
+De link tussen instellingsaccount en eduID die hier wordt vastgelegd zou vervolgens kunnen worden gebruikt om via de <a href="https://servicedesk.surf.nl/wiki/spaces/IAM/pages/222462401/Ondersteuning+voor+applicaties+zonder+multi-identifier+functionaliteit">instellings-informatie API</a> het instellingsaccount mee te geven bij het inloggen. Dat maakt integratie van eduID in het applicatielandschap aanzienlijk eenvoudiger (vgl. anyID/keyring scenario van Aventus).
 
-Interactief:
-| URL                       |                                                                  |
-|---------------------------|------------------------------------------------------------------|
-| /accept/{invitation_id}   | Start onboarding na ontvangst van invitation_id (per mail bv.)   |
-| /m/invitations            | Bekijk uitnodigingen + interactief aanmaken van nieuwe           |
-| /m/groups                 | Beheer groepen                                                   |
-
-Voor deze PoC wordt de data opgeslagen in `(services.storage.)storage.json` en kan daar direct worden bewonderd en aangepast. Voor een productie-app ligt een database meer voor de hand.
 
 ### Relatie met SURF Invite
 
-SURF Invite is vooral te beschouwen als een *autorisatie-tool*, met als uitgangspunt dat het autorisatiepakket voor gasten kan worden bepaald op basis van Invite rollen.
+SURF Invite is vooral te beschouwen als een *autorisatie-tool*, met als uitgangspunt dat het autorisatiepakket voor gasten kan worden bepaald op basis van Invite rollen. De principiële koers vanuit SURF Access is dat de eduID identiteit centraal staat en dat *bij het inloggen* het benodigde autorisatiepakket wordt meegeleverd. 
 
-Hier kiezen we als vertrekpunt dat Invite en/of edupersona vooral als *onboarding* tool wordt gebruikt en dat de autorisaties (en mogelijk de levenscyclus van de identiteit) primair worden bepaald in de IAM-tooling van de instelling. edupersona is erop gericht om eduID betrouwbaar te koppelen aan de instellingsidentiteit.
+eduPersona heeft als vertrekpunt dat een *instellingsidentiteit* in een 'onboarding-scenario' wordt verrijkt met o.a. eduID &ndash; dus *als onderdeel van de levenscyclus*. Als de benodigde verificaties eenmaal hebben plaatsgevonden (en het betrouwbaarheidsniveau is voldoende hoog), dan is daarna bij het inloggen geen enkele afhankelijkheid meer van attributen/claims die verder worden meegeleverd.
 
-De self-service functionaliteit van eduPersona zorgt ervoor dat de *instelling* zekerheid heeft wie er precies straks met eduID inlogt en bovendien dat de externe *gebruiker* een goede 'onboarding' ervaring heeft:
+Kortom: eduPersona is een self-service pagina die ervoor zorgt dat de *instelling* zekerheid heeft wie er precies straks met eduID inlogt en bovendien dat de externe *gebruiker* een goede 'onboarding' ervaring heeft:
 
-<!-- <img src="screenshot3.png" alt="screenshot" width="550" style="float:right;"/> -->
+<img src="docs/screenshot3.png" alt="screenshot" width="650"/>
 
-eduPersona kan dus in het verlengde van de interne IDM-voorziening (derdenregistratie e.d.) worden ingezet als *alternatief* voor Invite, maar ook als *custom landingspagina* in combinatie met Invite.
-
-Toekomstmuziek: de link tussen instellingsaccount en eduID die hier wordt vastgelegd zou vervolgens kunnen worden gebruikt om via de <a href="https://servicedesk.surf.nl/wiki/spaces/IAM/pages/222462401/Ondersteuning+voor+applicaties+zonder+multi-identifier+functionaliteit">instellings-informatie API</a> het instellingsaccount mee te geven bij het inloggen. Dat maakt integratie van eduID in het applicatielandschap aanzienlijk eenvoudiger (vgl. anyID/keyring scenario van Aventus).
 
 ### Getting started
 
@@ -80,30 +64,61 @@ Je hebt nu de code waarmee een gast de onboarding kan starten:
 * ...
 Als je eduID en/of instellings-logins echt wilt testen zul je de benodigde OIDC client_id's en secrets moeten configureren in settings.json en het eduPersona portal registreren bij SURFconext(-test) en/of de betrokken IDP. (Dit kan óók met een dev omgeving op localhost.)
 
-De **API** is gedocumenteerd via /docs, /redoc en /openapi.json
+We hebben een demo-/PoC-omgeving draaien op [https://edupersona.nl/](https://edupersona.nl/) . Stuur een mail naar [peter.kleynjan@m-7.nl](mailto:peter.kleynjan@m-7.nl) als je tijdelijke admin credentials wilt hebben om e.e.a. in de praktijk te proberen.
+
+### Inrichting, features, configuratie
+
+* Het **onboarding stappenplan** is flexibel, want gedefinieerd via configuratie (settings.json: `tenants.hvh.steps`) - waarbij 'kaarten' worden gebruikt die zijn gedefinieerd in `domain/step_cards.py`.
+
+* Voor het **verzenden van de uitnodiging** wordt ondersteuning van SMTP en Postmark geboden. Mailberichten worden opgesteld via Jinja2 HTML-templates. Afzenders kunnen per rol worden geconfigureerd.
+
+* eduPersona is fundamenteel **multi-tenant**, ook als je dat niet gebruikt. De default tenant die je overal tegenkomt is 'hvh': de beruchte Hogeschool van Harderwijk. Je kunt in settings.json je eigen tenant-string als key opnemen onder de `tenants` key. 
+
+* **SCIM**: eduPersona gebruikt een store/observer-patroon om alle mutaties van gebruikers, rollen e.d. via SCIM terug te synchroniseren &ndash; meestal zal dat naar een IDM/IGA-systeem zijn.
+
+* **IDP instellingen**: de `admin` IDP (settings.json: `tenants.hvh.oidc.admin`) wordt gebruikt om in te loggen op de beheersfuncties. De overige IDP's onder de `oidc` key worden gebruikt in het stappenplan dat de gast bij onboarding moet doorlopen. Uiteraard moet je jouw eduPersona SP/RP bij elke IDP (c.q. SURFconext, Entra ID) als zodanig registreren met een client_id en client_secret.
+
+* **Meertalig**: alle strings zijn Engels met als default een vertaling naar het Nederlands actief. Andere talen kunnen worden toegevoegd in `services.i18n`.
+
+* **Cleanup**: er is een apart endpoint `/api/v1/cleanup` met een bijbehorende API-key om verlopen rollen en roltoekenningen e.d. op te ruimen. Zorg dat dit endpoint ten minste één keer per dag wordt aangeroepen, bijv. via crontab.
+
+### API
+
+eduPersona biedt een volledige API met 28+ endpoints. Naast primitieven voor guests, roles, role assignments, invitations etc worden er enkele 'convenience' API's geboden om bijvoorbeeld een 'quick invite' te kunnen doen (met alle benodigde objecten) en `create_invite_role` die een klein maar essentieel stukje van de SURF Invite API emuleert. De API is zelf-documenterend via http://localhost:8080/docs, /redoc en /openapi.json
+
+Stel in settings.json de `tenants.hvh.api_key` in als je de API wilt gaan gebruiken.
 
 
+### Architectuur
 
-### Configuratie
+* [NiceGUI](https://nicegui.io/) maakt het mogelijk om web apps te maken met alleen Python. NiceGUI maakt gebruik van FastAPI en Starlette als onderliggende infrastructuur.
 
-Kopieer `settings.json.org` naar `settings.json` en pas aan naar eigen inzicht. 
- 
-* de `admin` IDP wordt gebruikt om in te loggen op de backend (groepen en uitnodigingen)
+* [Tortoise ORM](https://tortoise.github.io) is een async ORM die o.a. PostgreSQL, MySQL/MariaDB en SQLite ondersteunt. De code base hier maakt een SQLite database aan (edupersona.db), maar als je init_db aanpast kun je ook een andere back-end gebruiken.
 
-* de overige IDP's worden gebruikt in het stappenplan (zie ook `components/step_cards.py`) dat de gast bij onboarding moet doorlopen
+* [SCIM2-models](https://scim2-models.readthedocs.io/en/latest/) en de bijbehorende libs (client, server, etc.) worden gebruikt voor SCIM support. Dit zijn Python libraries die gebruikmaken van Pydantic data modellen -- een standaard-onderdeel van de FastAPI-stack dat we ook gebruiken voor de eduPersona API.
 
-Maak de OIDC RP (client_id, client_secret) aan in het SP dashboard van SURFconext.
+* [nicegui-rdm](https://github.com/kleynjan/nicegui-rdm) is een bibliotheek om snel 'CRUD' apps te bouwen met NiceGUI. Het biedt een reactief store/observer-model dat wordt gebruikt om de user interface bij te werken zonder dat een page reload nodig is -- en de eduPersona SCIM drivers zijn als observer geregistreerd op de relevante stores. 
 
-Start de applicatie met `python main.py` en ga met je browser naar `http://localhost:8090/`
+* [Uvicorn](https://uvicorn.dev/) is de ASGI server die we gebruiken om de eduPersona app stabiel te ontsluiten. In dev richt je je browser rechtstreeks op het uvicorn proces (zie `start.sh`); in productie zul je er meestal een Nginx reverse proxy (of vergelijkbaar) voor zetten, al is het alleen maar voor de TLS/SSL-afhandeling.  
 
-### FMO
-1. Define/add groups in eduPersona via API or interactively.
-1. In eduPersona, add guest and assign to group; eduPersona sends invitation.
-1. eduPersona optionally provisions 'preliminary guest' to institution using SCIM, allowing authorization assignments etc. (eduPersona is the SCIM *client*)
-1. Guest visits eduPersona /{tenant}/accept page and follows the steps shown there (secondary logins, provide info, verification).
-1. Once onboarding is complete, eduPersona provisions final guest data to institution application or IDM (again using SCIM).
-1. Guest is shown link(s) that they can use to access their application.
-1. Optionally: use institutional information API (attribute authority) to add secondary id collected in onboarding stage to the eduID login.
+### Requirements
+
+- Python >= 3.12
+- NiceGUI >= 3.0, < 4.0
+- Tortoise ORM >= 1.0.0, < 2.0.0
+- PyJWT
+- pytz
+- httpx
+- scim2-client[httpx]
+- scim2-models
+- aiosmtplib
+- nicegui-rdm
+
+Zie requirements.txt (en requirements-test.txt als je de tests wilt kunnen draaien).
+
+### Disclaimer
+
+Let op, er wordt nog druk gesleuteld aan deze code. Onder andere is het de bedoeling om de beheersinterface (gasten, rollen) af te splitsen, zodat de 'onboarding' module zo licht mogelijk wordt. 
 
 ### License
 This project is licensed under the GNU Affero General Public License (AGPL) version 3.

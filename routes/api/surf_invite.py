@@ -28,7 +28,7 @@ from datetime import date, timedelta
 from fastapi import HTTPException
 from pydantic import BaseModel
 
-from . import api_router
+from . import tenant_api_router as api_router
 
 from domain.stores import get_role_store
 from .common import api_response, api_error, validate_tenant_or_raise, log_api_call

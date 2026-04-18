@@ -13,7 +13,7 @@ GET    /{tenant}/api/v1/guests/{id}/invitations     - Get guest's invitations
 from fastapi import HTTPException, Query
 from pydantic import BaseModel
 
-from . import api_router
+from . import tenant_api_router as api_router
 
 from domain.stores import (
     get_guest_store,

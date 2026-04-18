@@ -53,12 +53,3 @@ def run(fastapi_app) -> None:
     )
     ui.run_with(fastapi_app, storage_secret=STORAGE_SECRET, title='eduPersona')
 
-
-if __name__ in {"__main__", "__mp_main__"}:
-    if DTAP == "dev":
-        HOST = 'localhost'
-        PORT = 8090
-        logger.info(f"Starting edupersona on {HOST}:{PORT}")
-        ui.run(host=HOST, port=PORT, storage_secret=STORAGE_SECRET, title='eduPersona', show=False)
-    else:
-        print("For production use: run main_fastapi:fastapi_app from uvicorn")

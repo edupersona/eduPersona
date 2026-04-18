@@ -11,7 +11,7 @@ DELETE /{tenant}/api/v1/invitations/{id}       - Delete invitation
 from fastapi import HTTPException, Query
 from pydantic import BaseModel
 
-from . import api_router
+from . import tenant_api_router as api_router
 
 from domain.stores import (
     get_invitation_store,

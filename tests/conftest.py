@@ -67,8 +67,9 @@ def test_tenant():
 
 @pytest.fixture
 async def api_client():
-    """AsyncClient for API testing"""
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+    """AsyncClient for API testing (includes tenant API key header)."""
+    headers = {"X-API-Key": config.tenants.hvh.api_key}
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test", headers=headers) as client:
         yield client
 
 
