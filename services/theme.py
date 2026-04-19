@@ -12,6 +12,7 @@ pages = {
     'invitations': {'path': 'm/invitations', 'label': 'uitnodigingen'},
     'accept': {'path': 'accept', 'label': 'accepteren'},
     # other pages:
+    'apps': {'path': 'apps', 'label': 'mijn diensten'},
     'login': {'path': 'm/login', 'label': 'inloggen'},
     'home': {'path': '/', 'label': 'home'},
 }
@@ -20,7 +21,8 @@ pages = {
 def main_menu(navtitle: str, tenant: str) -> None:
     """Create main navigation menu with authorization checking."""
     authz = app.storage.user.get("authz", [])
-    authz.append('accept')
+    if app.storage.user.get("user_type") != "guest":
+        authz.append('accept')
 
     for key, page in pages.items():
         if key in authz:
@@ -53,15 +55,15 @@ def _apply_theme(page_name: str, tenant: str) -> dict:
 
 def _user_link(tenant: str):
     username = app.storage.user.get("username", "gast")
+    is_guest = app.storage.user.get("user_type") == "guest"
 
     # User info with dropdown menu
     with ui.label(username).classes("username"):
         ui.icon("person", color="background")
 
         with ui.menu().props(remove="no-parent-event"):
-            if app.storage.user.get("authenticated", False):
-                logout_path = f"/{tenant}/m/logout"
-                ui.menu_item("uitloggen", lambda: ui.navigate.to(logout_path))
+            if app.storage.user.get("authenticated", False) and not is_guest:
+                ui.menu_item("uitloggen", lambda: ui.navigate.to(f"/{tenant}/m/logout"))
             else:
                 login_path = f"/{tenant}/m/login"
                 ui.menu_item("inloggen", lambda: ui.navigate.to(login_path))
@@ -97,7 +99,7 @@ def frame(page_name: str, tenant: str):
             if app.storage.user.get("authenticated", False):
                 main_menu(page_name, tenant)
 
-            if page_name not in ['login', 'accept']:
+            if page_name not in ['login', 'accept'] and app.storage.user.get("user_type") != "guest":
                 _user_link(tenant)
 
     # Main content area

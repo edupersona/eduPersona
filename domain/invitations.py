@@ -1,16 +1,43 @@
 """
 Invitation lifecycle: create, accept, resend, delete (incl. junction cleanup), query with roles.
 """
+import json
 import uuid
 
-from domain.models import RoleAssignment, InvitationRoleAssignment
+from domain.models import GuestAttribute, RoleAssignment, InvitationRoleAssignment
 from domain.stores import (
+    get_guest_store,
     get_invitation_store,
     get_role_assignment_store,
     get_role_store,
 )
 from ng_rdm.utils import logger
 from ng_rdm.utils.helpers import now_utc, utc_datetime_to_str
+
+
+async def _promote_eduid_pseudonym(tenant: str, guest_id: int) -> None:
+    """Promote uids[0] from the eduID GuestAttribute to Guest.eduid_pseudonym.
+
+    Called at onboarding completion — marks the guest as reliably verified and
+    enables later login via /{tenant}/apps matching against eduid_pseudonym.
+
+    Source of truth is the single `name="eduid"` attribute row. On re-acceptance
+    the row has already been replaced by update_guest_from_userinfo, so this
+    simply overwrites with the fresh uids[0].
+    """
+    attr = await GuestAttribute.filter(guest_id=guest_id, name="eduid").first()
+    if attr is None:
+        logger.warning(f"promote_eduid_pseudonym: no eduid attribute for guest {guest_id}")
+        return
+    try:
+        uids = json.loads(attr.value).get("uids") or []
+    except (ValueError, TypeError):
+        uids = []
+    if not uids:
+        logger.warning(f"promote_eduid_pseudonym: no uids in eduid attribute for guest {guest_id}")
+        return
+    await get_guest_store(tenant).update_item(guest_id, {"eduid_pseudonym": uids[0]})
+    logger.info(f"promote_eduid_pseudonym: set for guest {guest_id}")
 
 
 async def create_invitation(
@@ -81,6 +108,9 @@ async def accept_invitation(tenant: str, code: str) -> bool:
     if not updated:
         logger.error(f"accept_invitation: failed to update invitation {invitation['id']}")
         return False
+
+    # Promote eduID pseudonym now that onboarding is fully verified
+    await _promote_eduid_pseudonym(tenant, invitation["guest_id"])
 
     # Get linked role assignments via junction table
     junctions = await InvitationRoleAssignment.filter(invitation_id=invitation["id"]).all()

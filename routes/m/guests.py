@@ -95,8 +95,12 @@ async def render_guest_details(guest: dict):
         with Col(classes='rdm-detail-column'):
             ui.label(_('Identity')).classes('rdm-detail-section-label')
             ui.label(f"user_id: {guest.get('user_id', '-')}").classes('rdm-detail-text-sm')
-            if guest.get('scim_id'):
-                ui.label(f"scim_id: {guest['scim_id']}").classes('rdm-detail-text-sm')
+            eduid_p = guest.get('eduid_pseudonym')
+            if eduid_p:
+                ui.label(f"eduid: {eduid_p}").classes('rdm-detail-text-sm')
+            scim_id = guest.get('scim_id')
+            if scim_id:
+                ui.label(f"scim_id: {scim_id}").classes('rdm-detail-text-sm')
 
         with Col(classes='rdm-detail-column'):
             ui.label(_('Role Assignments')).classes('rdm-detail-section-label')

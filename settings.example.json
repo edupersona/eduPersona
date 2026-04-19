@@ -108,7 +108,7 @@
                         "title": "Stap 4. Toegang naar de applicatie",
                         "completed_text": "✓ Uw eduID is nu gekoppeld!",
                         "disabled_text": "Voltooi eerst de vorige stappen",
-                        "default_link_url": "http://localhost:8080/mijn-diensten",
+                        "default_link_url": "http://localhost:8080/hvh/apps",
                         "default_link_text": "Mijn diensten en applicaties"
                     }
                 }

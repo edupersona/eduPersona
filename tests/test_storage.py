@@ -133,6 +133,79 @@ async def test_accept_invitation(test_tenant, sample_invitation):
 
 
 @pytest.mark.storage
+async def test_accept_invitation_promotes_eduid_pseudonym(test_tenant, sample_invitation):
+    """accept_invitation should promote uids[0] from the eduid GuestAttribute to Guest.eduid_pseudonym"""
+    import json
+    from domain.models import GuestAttribute
+    from domain.stores import get_guest_store
+
+    guest_id = (await get_invitation_store(test_tenant).read_items(
+        filter_by={"code": sample_invitation}))[0]["guest_id"]
+
+    # Step 2 stored eduID userinfo under the IdP key.
+    await GuestAttribute.create(
+        guest_id=guest_id, name="eduid",
+        value=json.dumps({"uids": ["pseudonym-xyz-123"], "sub": "sub-abc"}),
+    )
+    # Institutional step has no uids — must not be the pseudonym source.
+    await GuestAttribute.create(
+        guest_id=guest_id, name="institutional",
+        value=json.dumps({"sub": "instelling-sub"}),
+    )
+
+    guest_before = (await get_guest_store(test_tenant).read_items(filter_by={"id": guest_id}))[0]
+    assert not guest_before.get("eduid_pseudonym")
+
+    await accept_invitation(test_tenant, sample_invitation)
+
+    guest_after = (await get_guest_store(test_tenant).read_items(filter_by={"id": guest_id}))[0]
+    assert guest_after["eduid_pseudonym"] == "pseudonym-xyz-123"
+
+
+@pytest.mark.storage
+async def test_accept_invitation_no_eduid_attribute(test_tenant, sample_invitation):
+    """accept_invitation should succeed (graceful no-op for pseudonym) if no eduid attribute"""
+    result = await accept_invitation(test_tenant, sample_invitation)
+    assert result is True
+
+
+@pytest.mark.storage
+async def test_reacceptance_replaces_attributes_and_pseudonym(test_tenant, sample_invitation):
+    """Re-running update_guest_from_userinfo for the same IdP must replace, not append,
+    and promotion must reflect the latest uids[0]."""
+    from domain.models import GuestAttribute
+    from domain.step_cards import update_guest_from_userinfo
+    from domain.stores import get_guest_store
+
+    guest_id = (await get_invitation_store(test_tenant).read_items(
+        filter_by={"code": sample_invitation}))[0]["guest_id"]
+
+    await update_guest_from_userinfo(
+        test_tenant, sample_invitation,
+        {"uids": ["first-pseudo"], "given_name": "Alice"}, "eduid",
+    )
+    await update_guest_from_userinfo(
+        test_tenant, sample_invitation,
+        {"uids": ["second-pseudo"], "given_name": "Alicia"}, "eduid",
+    )
+    await update_guest_from_userinfo(
+        test_tenant, sample_invitation,
+        {"sub": "inst-sub"}, "institutional",
+    )
+
+    eduid_rows = await GuestAttribute.filter(guest_id=guest_id, name="eduid").all()
+    inst_rows = await GuestAttribute.filter(guest_id=guest_id, name="institutional").all()
+    assert len(eduid_rows) == 1
+    assert len(inst_rows) == 1
+    assert "second-pseudo" in eduid_rows[0].value
+
+    await accept_invitation(test_tenant, sample_invitation)
+
+    guest_after = (await get_guest_store(test_tenant).read_items(filter_by={"id": guest_id}))[0]
+    assert guest_after["eduid_pseudonym"] == "second-pseudo"
+
+
+@pytest.mark.storage
 async def test_assign_role(test_tenant, sample_role_assignment):
     """Test assigning a role (legacy function for SCIM provisioning)"""
     guest_id = sample_role_assignment["guest_id"]

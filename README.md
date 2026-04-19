@@ -122,3 +122,10 @@ Let op, er wordt nog druk gesleuteld aan deze code. Onder andere is het de bedoe
 
 ### License
 This project is licensed under the GNU Affero General Public License (AGPL) version 3.
+
+### TODO
+
+- 'accepteren' wordt m.i. nog steeds op de nav bar getoond
+- attributen van een bepaalde klasse moeten worden overschreven (dwz verwijderd en toegevoegd), ipv n x dezelfde attributen toevoegen
+- in eduid_pseudonym moet alleen het *eduid* uids[0] worden opgeslagen - dwz van de eduid idp, niet van de instellings-idp
+- documenteren welke rol de eduid idp speelt (inloggen op apps, registratie eduid-pseudoniem + toepassbaar in step cards)

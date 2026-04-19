@@ -30,6 +30,7 @@ class Guest(MultitenantRdmModel):
     given_name = fields.CharField(max_length=255, null=True)        # SCIM: 'givenName'
     family_name = fields.CharField(max_length=255, null=True)       # SCIM: 'familyName'
     email = fields.CharField(max_length=255)
+    eduid_pseudonym = fields.CharField(max_length=255, null=True, db_index=True)  # set at onboarding completion
     # SCIM: TO DO,
     # - map email to 'emails' (list of email strings),
     # - map names to formattedName and displayName (display_name is available as a derived field, see storage.py)
@@ -46,7 +47,7 @@ class GuestAttribute(RdmModel):
     """Guest OIDC attributes from various authentication flows"""
     id = fields.IntField(primary_key=True)
     guest = fields.ForeignKeyField("models.Guest", related_name="attributes")
-    name = fields.CharField(max_length=255)  # identifies source, e.g., "eduID login", "login instelling"
+    name = fields.CharField(max_length=255)  # source IdP key from settings.oidc, e.g., "eduid", "institutional"
     value = fields.TextField()  # JSON string with attributes, lists as "[x,y]"
 
     class Meta(RdmModel.Meta):  # type: ignore[reportIncompatibleVariableOverride]

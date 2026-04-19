@@ -72,7 +72,7 @@ body {
    ======================================== */
 
 .page-title {
-  font-size: 1.875rem;
+  font-size: 1.6rem;
   font-weight: var(--rdm-font-weight-bold);
   margin-bottom: 0.5rem;
 }
@@ -119,6 +119,10 @@ body {
    Icons (colored)
    ======================================== */
 
+.rdm-icon {
+  justify-content: flex-start;
+}
+
 .icon-success {
   color: var(--rdm-success);
 }
@@ -137,17 +141,46 @@ body {
   gap: 0.5rem;
 }
 
-/* Clickable card */
-.card-clickable {
-  width: 400px;
-  max-width: 100%;
-  padding: 2rem;
-  cursor: pointer;
-  transition: box-shadow 0.3s;
-}
-
 .card-clickable:hover {
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.role-card-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  width: 100%;
+}
+
+.role-card {
+  width: 100%;
+  max-width: 640px;
+  flex-direction: row;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+
+  &.role-card-clickable {
+    cursor: pointer;
+  }
+
+  &.role-card-inactive {
+    opacity: 0.6;
+  }
+
+  .role-card-logo {
+    width: 56px;
+    height: 56px;
+    object-fit: contain;
+    flex: 0 0 56px;
+  }
+
+  .role-card-body {
+    flex: 1;
+    min-width: 0;
+    gap: 0.1rem;
+  }
 }
 
 .dialog-header {
@@ -359,8 +392,39 @@ body {
 
   .landing-cards {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    max-width: 960px;
     gap: 1rem;
+
+    .card-clickable {
+      width: 350px;
+      max-width: 100%;
+      padding: 2rem;
+      cursor: pointer;
+      transition: box-shadow 0.3s;
+      .card-title {
+        line-height: 110%;
+      }
+      .rdm-icon {
+        justify-content: flex-start;
+        margin-bottom: 18px;
+        i {
+          font-size: 3em;
+          font-weight: 700;
+        }
+      }
+    }
+  }
+  .admin-link {
+    font-size: 18px;
+    font-weight: 500;
+    a {
+      color: var(--rdm-text-secondary);
+      text-decoration: none;
+      &:hover {
+        text-decoration: underline;
+      }
+    }
   }
 }
 
@@ -406,6 +470,16 @@ body {
 
 }
 
+.apps-page {
+  .apps-other-invites {
+    margin-top: 1rem;
+    font-size: 1.2rem;
+    text-decoration: none;
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
 
 /* ========================================
    Quasar Overrides

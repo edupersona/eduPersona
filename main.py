@@ -4,6 +4,7 @@ from nicegui import app, ui
 # register routes
 import routes.accept
 import routes.api
+import routes.apps
 from routes.api import api_router
 import routes.landing
 import routes.m  # all /m routes
@@ -12,6 +13,7 @@ from ng_rdm.utils import logger, configure_logging
 from services.auth.oidc import init_edupersona_oidc
 from services.exception_handlers import register_exception_handlers
 from services.settings import config
+from domain.migrations import run_migrations
 from domain.stores import initialize_multitenancy
 
 DTAP, STORAGE_SECRET, LOG_LEVEL, CONSOLE_LOGGING = (
@@ -51,5 +53,6 @@ def run(fastapi_app) -> None:
         modules={"models": ["domain.models"]},
         generate_schemas=True,
     )
+    app.on_startup(run_migrations)
     ui.run_with(fastapi_app, storage_secret=STORAGE_SECRET, title='eduPersona')
 

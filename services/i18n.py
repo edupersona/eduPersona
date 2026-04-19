@@ -38,8 +38,19 @@ translations: dict[str, dict[str, str]] = {
         # Landing & Navigation (routes/landing.py)
         'Accept a received invitation': 'Accepteer een ontvangen uitnodiging',
         'Accept invitation': 'Uitnodiging accepteren',
+        'Accept an invitation': 'Accepteer een uitnodiging',
+        'Access your apps': 'Jouw apps & diensten',
+        'Note: you will need an eduID for this': 'Let op: eduID nodig voor toegang',
         'Management': 'Beheer',
+        'Admin login': 'Log in als beheerder',
         'Manage roles and invitations': 'Rollen en uitnodigingen beheren',
+        "Click here if you've received an invitation": 'Klik hier als je een uitnodiging hebt ontvangen',
+        'Access your apps & services with eduID': 'Toegang naar je apps & diensten met eduID',
+        'Login with eduID': 'Inloggen met eduID',
+
+        # Apps page
+        '{name}: Your Apps & Services': '{name}: applicaties & diensten',
+        'You have unclaimed invitations for other roles — click here to accept': 'Je hebt nog uitnodigingen voor andere rollen open staan — klik hier',
 
         # Login (routes/m/login.py)
         'Authentication failed': 'Authenticatie mislukt',

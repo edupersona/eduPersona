@@ -5,8 +5,10 @@ from ng_rdm.components import Col, Row, Button
 from ng_rdm.utils import logger
 from services.i18n import _
 from services.oidc_mt.multitenant import start_oidc_login
+from services.auth.guest_auth import establish_guest_session_for_code
 from domain.invitations import accept_invitation
-from domain.stores import get_invitation_store, get_guest_store, get_role_store, get_guest_attribute_store
+from domain.models import GuestAttribute
+from domain.stores import get_invitation_store, get_guest_store, get_role_store
 
 def expandable_info(valdict: dict) -> None:
     if valdict:
@@ -24,49 +26,43 @@ userinfo_mapping = {
     'authentication': ['acr']
 }
 
-async def update_guest_from_userinfo(tenant: str, invite_code: str, userinfo: dict, step_key: str) -> None:
-    """Store OIDC userinfo in guest.attributes[step_key]
+async def update_guest_from_userinfo(tenant: str, invite_code: str, userinfo: dict, idp: str) -> None:
+    """Replace this guest's GuestAttribute row for `idp` with the new userinfo.
 
     Args:
         tenant: Tenant identifier
         invite_code: Invitation code (32-char hex string)
         userinfo: OIDC userinfo dict
-        step_key: Attribute key (e.g., "eduid_login", "login_instelling")
+        idp: IdP identifier from settings.oidc (e.g., "eduid", "institutional")
     """
     import json
 
     invitation_store = get_invitation_store(tenant)
-    guest_store = get_guest_store(tenant)
-    guest_attr_store = get_guest_attribute_store(tenant)
 
-    # Look up invitation by code
     invitations = await invitation_store.read_items(filter_by={"code": invite_code})
     if not invitations:
         logger.warning(f"update_guest_from_userinfo: invitation not found for code: {invite_code}")
         return
 
-    invitation = invitations[0]
-    guest_id = invitation["guest_id"]
+    guest_id = invitations[0]["guest_id"]
 
-    # Store userinfo as guest attribute
-    await guest_attr_store.create_item({
-        "guest_id": guest_id,
-        "name": step_key,
-        "value": json.dumps(userinfo)
-    })
+    # Replace any prior attributes from this IdP (re-acceptance must not accumulate)
+    await GuestAttribute.filter(guest_id=guest_id, name=idp).delete()
+    await GuestAttribute.create(guest_id=guest_id, name=idp, value=json.dumps(userinfo))
 
-    # Update primary guest attributes if this is eduID login (authoritative source)
-    if step_key == "eduid_login":
-        guest_updates = {}
-        if userinfo.get('given_name'):
-            guest_updates["given_name"] = userinfo['given_name']
-        if userinfo.get('family_name'):
-            guest_updates["family_name"] = userinfo['family_name']
-        # if userinfo.get('email'):
-        #     guest_updates["email"] = userinfo['email']
-
-        if guest_updates:
-            await guest_store.update_item(guest_id, guest_updates)
+    # # eduID is the authoritative source for the guest's display name
+    # guest_store = get_guest_store(tenant)
+    # if idp == "eduid":
+    #     guest_updates = {}
+    #     if userinfo.get('given_name'):
+    #         guest_updates["given_name"] = userinfo['given_name']
+    #     if userinfo.get('family_name'):
+    #         guest_updates["family_name"] = userinfo['family_name']
+    #     # if userinfo.get('email'):
+    #     #     guest_updates["email"] = userinfo['email']
+    #
+    #     if guest_updates:
+    #         await guest_store.update_item(guest_id, guest_updates)
 
 
 # Base Step Card Class
@@ -158,6 +154,8 @@ class VerifyInviteStep(StepCard):
 class VerifyEduIDStep(StepCard):
     """Step 2: Verify eduID login"""
 
+    idp = "eduid"
+
     async def click_handler(self):
         """Initiate eduID login flow"""
         if not self.tenant:
@@ -205,12 +203,13 @@ class VerifyEduIDStep(StepCard):
 
         # Update storage
         if invite_code and self.tenant:
-            # Store userinfo under step-specific key (also updates primary guest attributes)
-            await update_guest_from_userinfo(self.tenant, invite_code, userinfo, self.completed_key)
+            await update_guest_from_userinfo(self.tenant, invite_code, userinfo, self.idp)
 
 
 class VerifyInstitutionalStep(StepCard):
     """Step 3: Verify institutional account"""
+
+    idp = "institutional"
 
     async def click_handler(self):
         """Initiate institutional login flow"""
@@ -253,12 +252,15 @@ class VerifyInstitutionalStep(StepCard):
                 logger.error("Tenant not set in step card")
                 return
 
-            await update_guest_from_userinfo(self.tenant, invite_code, userinfo, self.completed_key)
+            await update_guest_from_userinfo(self.tenant, invite_code, userinfo, self.idp)
 
-            # Accept invitation and provision to SCIM
+            # Accept invitation and provision to SCIM (also promotes eduid_pseudonym)
             accepted = await accept_invitation(self.tenant, invite_code)
             if not accepted:
                 logger.error(f"Failed to accept invitation: {invite_code}")
+            else:
+                # Log the guest in so the final-step link to /apps works without re-auth
+                await establish_guest_session_for_code(self.tenant, invite_code)
 
             # Redirect URL/text already set in state from process_invite_code
 
@@ -285,6 +287,13 @@ class LinkApplicationStep(StepCard):
                     new_tab=True
                 ).classes('btn-primary') \
                     .style('padding: 0.5rem 1rem; border-radius: 0.25rem; font-size: 14pt; color:white; font-weight: 500; text-decoration: none; display: inline-block; margin-top: 0.5rem;')
+
+        # Direct link to the guest's services overview — session was established at accept time
+        if self.tenant:
+            ui.link(
+                _('Go to my services overview'),
+                f'/{self.tenant}/apps',
+            ).style('margin-top: 1rem; display: inline-block;')
 
 
 # Step Card Class Registry
