@@ -62,7 +62,7 @@ def _render_role_card(tenant: str, ra: dict, status: str) -> None:
         with card:
             logo = role.get('logo_file_name')
             if logo:
-                ui.image(f'/static/{tenant}/logos/{logo}').classes('role-card-logo')
+                ui.image(f'/static/{tenant}/logos/{logo}?v=2').classes('role-card-logo')
             with Col(classes='role-card-body'):
                 ui.label(role.get('redirect_text') or role.get('name') or '-').classes('card-title')
                 if role.get('org_name'):

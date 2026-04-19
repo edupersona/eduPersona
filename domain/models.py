@@ -63,7 +63,8 @@ class Role(MultitenantRdmModel):
     role_details = fields.CharField(max_length=255, null=True)  # subheader to explain role entitlements
     scope = fields.CharField(max_length=255, null=True)         # applicable scope for admin rights, eg 'upva'
     org_name = fields.CharField(max_length=255, null=True)      # eg, 'Universitaire PABO UvA'
-    logo_file_name = fields.CharField(max_length=255, null=True)    # location in static, eg, "uva/canvas.png"
+    # location in static/<tenant>/logos/, eg, "canvas.png"
+    logo_file_name = fields.CharField(max_length=255, null=True)
     #
     # invitation-related, later verhuizen naar een step-card...?
     mail_sender_email = fields.CharField(max_length=255)        # dit moet een @edupersona.nl mailadres zijn!

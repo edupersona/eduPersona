@@ -20,6 +20,7 @@ db_bak/
 db_test/
 **/db_export.json
 **/db_export.*.json
+!*.example.db
 
 # IDE
 .vscode/
@@ -57,7 +58,3 @@ assets_whispring/
 *.pickle
 *.pickle.*
 *.bak
-
-# Content & thumbnails
-static/trips
-static/thumbs

@@ -5,13 +5,12 @@ Proof of Concept van een self-service pagina om interne identiteiten te verrijke
 Werkwijze (zie ook figuur):
 
 1. Maak een **gast** aan en ken een **rol** toe. Structureel zul je dat willen doen vanuit instellings-IGA/IDM, maar het kan ook (bijvoorbeeld in een PoC) interactief in eduPersona. Die rol moet ook gedefinieerd worden, uiteraard &ndash; zelfde verhaal.
-2. Maak een **uitnodiging** aan voor deze gast en rol en verzend deze: eduPersona kan SMTP stekker of Postmark gebruiken voor uitgaande mail en biedt templates die per tenant kunnen worden ingesteld -- maar uiteraard kan de verzending ook vanuit IGA/IDM plaatsvinden.  
+2. Maak een **uitnodiging** aan voor deze gast en rol en verzend deze: eduPersona kan een SMTP stekker of Postmark gebruiken voor uitgaande mail en biedt templates die per tenant kunnen worden ingesteld -- maar uiteraard kan de verzending ook vanuit IGA/IDM plaatsvinden. 
+3. De gast opent de link naar de self-service-pagina **/accept**, of kopieert en plakt de code. Daar leiden we hem/haar door de stappen die nodig zijn om toegang te geven. Voor elke IDP (inclusief maar niet beperkt tot eduID) kunnen we controles doen op attributen (naam, mailadres e.d.) en op meegegeven ACR's (bijv. tweede factor) - en de gebruiker de goede kant opsturen als nadere verificatie of configuratie nodig is. 
 
-3. De gast opent de link naar de self-service-pagina "/accept", of kopieert en plakt de code. Daar leiden we hem/haar door de stappen die nodig zijn om toegang te geven. Voor elke IDP (inclusief maar niet beperkt tot eduID) kunnen we controles doen op attributen (naam, mailadres e.d.) en op meegegeven ACR's (bijv. tweede factor) - en de gebruiker de goede kant opsturen als nadere verificatie of configuratie nodig is. 
+4. Net als SURF Invite ondersteunt eduPersona **SCIM** voor de terugkoppeling van gasten en hun (geaccepteerde) rollen naar instellings-IGA/IDM (zie `settings.json`, `tenants.hvh.scim`). In de regel gebeurt dit *na afronding van de onboarding*.
 
-4. Net als SURF Invite ondersteunt eduPersona SCIM voor de terugkoppeling van gasten en hun (geaccepteerde) rollen naar instellings-IGA/IDM (zie `settings.json`, `tenants.hvh.scim`). In de regel gebeurt dit *na afronding van de onboarding*.
-
-5. Na afronding van het stappenplan komt de gast op de **/apps** pagina &ndash; een persoonlijk overzicht met alle rollen die deze gast heeft (actief, toekomstig, verlopen; óók de rollen die rechtstreeks zijn toegekend, zonder invite). Actieve rollen zijn klikbaar en leiden direct naar de applicatie. De gast kan later terugkomen op /apps en wordt dan via eduID herkend aan het pseudoniem dat bij onboarding is vastgelegd.
+5. Na afronding van het stappenplan komt de gast op de **/apps** pagina &ndash; een persoonlijk overzicht met alle rollen die deze gast heeft (actief, toekomstig, verlopen; óók de rollen die rechtstreeks zijn toegekend, zonder invite). Actieve rollen zijn klikbaar en leiden direct naar de applicatie of dienst. De gast kan later terugkomen op /apps en wordt dan via eduID herkend aan het pseudoniem dat bij onboarding is vastgelegd.
 
 <br>
 
@@ -58,9 +57,11 @@ Je hebt initieel een lege database, dus:
 2. anders: klik op de uitnodiging en kopieer de code
 
 Je hebt nu de code waarmee een gast de onboarding kan starten:
-* ga naar http://localhost:8080/hvh/accept
+* ga naar http://localhost:8080/hvh/accept<br>
+*TIP: Houd de 'admin' en 'gast' schermen gescheiden, bijvoorbeeld door verschillende browsers te gebruiken*
 * voer de code in en volg de aangegeven stappen
-* ...
+* na succesvolle afronding is het eduID-pseudoniem geregistreerd en wordt de gast doorgeleid naar zijn/haar '/apps' pagina 
+
 Als je eduID en/of instellings-logins echt wilt testen zul je de benodigde OIDC client_id's en secrets moeten configureren in settings.json en het eduPersona portal registreren bij SURFconext(-test) en/of de betrokken IDP. (Dit kan óók met een dev omgeving op localhost.)
 
 We hebben een demo-/PoC-omgeving draaien op [https://edupersona.nl/](https://edupersona.nl/) . Stuur een mail naar [peter.kleynjan@m-7.nl](mailto:peter.kleynjan@m-7.nl) als je tijdelijke admin credentials wilt hebben om e.e.a. in de praktijk te proberen.
@@ -117,9 +118,11 @@ Stel in settings.json de `tenants.hvh.api_key` in als je de API wilt gaan gebrui
 
 Zie requirements.txt (en requirements-test.txt als je de tests wilt kunnen draaien).
 
-### Disclaimer
+### Contraints
 
 Let op, er wordt nog druk gesleuteld aan deze code. Onder andere is het de bedoeling om de beheersinterface (gasten, rollen) af te splitsen, zodat de 'onboarding' module zo licht mogelijk wordt. 
+
+Aandachtspunt: eduID-pseudoniemen zijn per instelling (en desgewenst zelfs per applicatie) uniek. Om deze reden moet eduPersona (of de gebruikte eduPersona tenant) als SP/RP in dezelfde scope worden opgenomen als de instellingssystemen waarop (of waarmee) straks met eduID wordt ingelogd. 
 
 ### License
 This project is licensed under the GNU Affero General Public License (AGPL) version 3.

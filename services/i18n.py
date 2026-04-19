@@ -51,6 +51,8 @@ translations: dict[str, dict[str, str]] = {
         # Apps page
         '{name}: Your Apps & Services': '{name}: applicaties & diensten',
         'You have unclaimed invitations for other roles — click here to accept': 'Je hebt nog uitnodigingen voor andere rollen open staan — klik hier',
+        'active': 'actief',
+        'starts later': 'toekomstig',
 
         # Login (routes/m/login.py)
         'Authentication failed': 'Authenticatie mislukt',

@@ -440,3 +440,72 @@ async def test_role_end_date_no_cap_when_within_range(test_tenant, sample_guest)
     # Verify assignment end_date is unchanged
     updated_assignments = await ra_store.read_items(filter_by={"id": assignment["id"]})
     assert updated_assignments[0]["end_date"] == assignment_end
+
+
+# ---------- Role logo upload ----------
+
+def _fake_upload(name: str, data: bytes, content_type: str = 'image/png'):
+    from nicegui.elements.upload_files import SmallFileUpload
+    return SmallFileUpload(name=name, content_type=content_type, _data=data)
+
+
+@pytest.mark.storage
+async def test_save_role_logo_happy_path(test_tenant, sample_role, tmp_path, monkeypatch):
+    from services import role_logo
+    monkeypatch.setattr(role_logo, 'STATIC_ROOT', tmp_path)
+
+    saved = await role_logo.save_role_logo(
+        test_tenant, sample_role, _fake_upload('Canvas.PNG', b'fakepng')
+    )
+    assert saved == f"role{sample_role['id']}_canvas.png"
+    assert (tmp_path / test_tenant / 'logos' / saved).read_bytes() == b'fakepng'
+
+    role_store = get_role_store(test_tenant)
+    fresh = await role_store.read_item_by_id(sample_role['id'])
+    assert fresh and fresh['logo_file_name'] == saved
+
+
+@pytest.mark.storage
+async def test_save_role_logo_replace_removes_old_file(test_tenant, sample_role, tmp_path, monkeypatch):
+    from services import role_logo
+    monkeypatch.setattr(role_logo, 'STATIC_ROOT', tmp_path)
+
+    first = await role_logo.save_role_logo(
+        test_tenant, sample_role, _fake_upload('alpha.png', b'one')
+    )
+    # Re-read role so logo_file_name is populated for the replace path
+    role = await get_role_store(test_tenant).read_item_by_id(sample_role['id'])
+    assert role
+    second = await role_logo.save_role_logo(
+        test_tenant, role, _fake_upload('beta.png', b'two')
+    )
+
+    logos_dir = tmp_path / test_tenant / 'logos'
+    assert not (logos_dir / first).exists()
+    assert (logos_dir / second).read_bytes() == b'two'
+
+
+@pytest.mark.storage
+async def test_save_role_logo_rejects_bad_extension(test_tenant, sample_role, tmp_path, monkeypatch):
+    from services import role_logo
+    monkeypatch.setattr(role_logo, 'STATIC_ROOT', tmp_path)
+
+    with pytest.raises(ValueError, match="Unsupported"):
+        await role_logo.save_role_logo(
+            test_tenant, sample_role, _fake_upload('evil.exe', b'MZ', 'application/octet-stream')
+        )
+    assert not (tmp_path / test_tenant).exists()
+    fresh = await get_role_store(test_tenant).read_item_by_id(sample_role['id'])
+    assert fresh and not fresh.get('logo_file_name')
+
+
+@pytest.mark.storage
+async def test_save_role_logo_rejects_oversized(test_tenant, sample_role, tmp_path, monkeypatch):
+    from services import role_logo
+    monkeypatch.setattr(role_logo, 'STATIC_ROOT', tmp_path)
+    monkeypatch.setattr(role_logo, 'MAX_LOGO_BYTES', 10)
+
+    with pytest.raises(ValueError, match="exceeds"):
+        await role_logo.save_role_logo(
+            test_tenant, sample_role, _fake_upload('big.png', b'x' * 100)
+        )

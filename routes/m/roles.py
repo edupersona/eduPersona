@@ -2,6 +2,7 @@
 
 from fastapi import Depends
 from nicegui import html, ui
+from nicegui.events import UiEventArguments, UploadEventArguments
 
 from ng_rdm.components import (
     ActionButtonTable, Column, Dialog, Tabs, TableConfig, FormConfig,
@@ -11,6 +12,7 @@ from ng_rdm.components.fields import build_form_field
 from ng_rdm.utils import logger
 from services.auth.dependencies import require_role_admin_auth
 from services.i18n import _
+from services.role_logo import MAX_LOGO_BYTES, save_role_logo
 from services.tenant import get_tenant_from_session
 from services.scim_observer import bulk_sync_to_scim
 from domain.stores import get_role_store, get_role_assignment_store, get_guest_store
@@ -18,11 +20,42 @@ from domain.assignments import create_role_assignment, update_role_assignment
 from services.theme import frame
 
 
+def _upload_logo_dialog(tenant: str, role: dict, on_done):
+    """Open a dialog with a ui.upload bound to `save_role_logo` for this role."""
+    with ui.dialog() as dlg, ui.card().classes('dialog-card'):
+        ui.label(_("Upload logo for {name}", name=role.get('name', ''))).classes('dialog-header')
+
+        async def handle_upload(ev: UploadEventArguments):
+            try:
+                await save_role_logo(tenant, role, ev.file)
+            except Exception as e:
+                ui.notify(str(e), type='negative')
+                return
+            ui.notify(_("Logo updated"), type='positive')
+            dlg.close()
+            await on_done()
+
+        def handle_reject(_ev: UiEventArguments):
+            ui.notify(_("File rejected: too large or unsupported type"), type='negative')
+
+        ui.upload(
+            auto_upload=True,
+            max_file_size=MAX_LOGO_BYTES,
+            on_upload=handle_upload,
+            on_rejected=handle_reject,
+            label=_("Select a logo image..."),
+        ).classes('form-input')
+
+        with Row(classes='dialog-actions'):
+            ui.button(_("Cancel"), on_click=dlg.close).classes('btn-secondary')
+    dlg.open()
+
+
 def _render_app_logo(row: dict):
     tenant = row.get('tenant')
     logo = row.get('logo_file_name')
     if tenant and logo:
-        html.img(src=f'/static/{tenant}/logos/{logo}')
+        html.img(src=f'/static/{tenant}/logos/{logo}?v=2')
     else:
         ui.label(row.get('redirect_text') or '-')
 
@@ -69,17 +102,24 @@ ROLES_FORM_CONFIG = FormConfig(
 )
 
 
-async def render_role_details(role: dict):
+async def render_role_details(role: dict, tenant: str, vs: ViewStack):
     MAX_LEN_URL = 40
 
+    async def refresh_after_upload():
+        items = await get_role_store(tenant).read_items(filter_by={"id": role['id']})
+        if items:
+            vs.show_detail(items[0])
+
     with Row(classes='rdm-detail-header'):
-        tenant = role.get('tenant')
         logo = role.get('logo_file_name')
-        if tenant and logo:
-            ui.image(f'/static/{tenant}/logos/{logo}').classes('rdm-detail-image')
+        if logo:
+            ui.image(f'/static/{tenant}/logos/{logo}?v=2').classes('rdm-detail-image')
         with Col(classes='rdm-detail-title-group'):
             ui.label(role.get('name', '')).classes('rdm-detail-title')
             ui.label(role.get('org_name', '')).classes('rdm-detail-subtitle')
+        ui.button(_("Change logo..."),
+                  on_click=lambda: _upload_logo_dialog(tenant, role, refresh_after_upload)) \
+            .classes('btn-secondary')
     Separator()
     with Row(classes='rdm-detail-columns', gap='4rem'):
         with Col(classes='rdm-detail-column'):
@@ -272,7 +312,7 @@ async def roles_page(tenant: str = Depends(require_role_admin_auth), id: int | N
             detail = DetailCard(
                 state=ui_state["detail_card"],
                 data_source=role_store,
-                render_summary=render_role_details,
+                render_summary=lambda r: render_role_details(r, tenant, vs),
                 render_related=render_body,
                 on_edit=lambda i: vs.show_edit_existing(i),
                 show_delete=False,
