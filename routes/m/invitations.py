@@ -231,7 +231,7 @@ async def new_invitation_dialog(tenant: str, roles: list[dict]):
                             on_change=make_toggle(ra['id'])
                         )
             else:
-                ui.label(_("No role assignments for this guest")).classes('text-caption')
+                ui.label(_("No role assignments for this guest")).classes('invitations-text-caption')
 
             # Invitation details
             Separator()

@@ -151,7 +151,7 @@ def _go_to_guest(row: dict):
 def get_role_guests_config() -> TableConfig:
     return TableConfig(
         columns=[
-            Column(name="guest__user_id", label=_("Guest"), width_percent=26, on_click=_go_to_guest),
+            Column(name="calc_guest_name", label=_("Guest"), width_percent=26, on_click=_go_to_guest),
             Column(name="guest__email", label=_("Email"), width_percent=25),
             Column(name="start_date", label=_("Start"), width_percent=15, formatter=none_as_text),
             Column(name="end_date", label=_("End"), width_percent=15, formatter=none_as_text),
@@ -236,7 +236,7 @@ async def _edit_assignment_dialog(tenant: str, row: dict):
             except Exception as e:
                 dlg._notify(str(e), type="negative")
 
-        guest_name = row.get("guest__user_id", "")
+        guest_name = row.get("calc_guest_name", "")
         ui.label(_("Edit dates for {guest}", guest=guest_name)).classes('dialog-header')
         ui.input(label=_("Start date"), placeholder=_("YYYY-MM-DD")).bind_value(state, "start_date") \
             .classes('form-input').props('type=date')

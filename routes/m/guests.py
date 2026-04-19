@@ -75,7 +75,7 @@ async def render_guest_details(guest: dict):
         ui.icon('person', size='xl').classes('rdm-detail-icon')
         with Col(classes='rdm-detail-title-group'):
             with Row(classes='rdm-items-center gap-2'):
-                ui.label(guest.get('display_name') or guest.get('user_id', '')).classes('rdm-detail-title')
+                ui.label(guest.get('display_name', '')).classes('rdm-detail-title')
                 ui.html(chips, sanitize=False)
             ui.label(guest['email']).classes('rdm-detail-subtitle')
 

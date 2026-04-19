@@ -84,6 +84,7 @@ translations: dict[str, dict[str, str]] = {
         'Assign Role': 'Rol toekennen',
         'Assign Role to {name}': 'Rol toekennen aan {name}',
         'Assign Role...': 'Rol toekennen...',
+        'Change logo...': 'Nieuw logo...',
         'Dates are updated': 'Start- en/of einddatum bijgewerkt',
         'days': 'dagen',
         'Default duration (days) (optional)': 'default looptijd vanaf start, in dagen (optioneel)',
