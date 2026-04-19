@@ -80,7 +80,7 @@ class SCIMClient:
         # Check if user exists by external_id
         try:
             search_req = self.SearchRequest(filter=f'externalId eq "{user_id}"')  # type: ignore
-            result = self.client.query(self.User, search_request=search_req)
+            result = self.client.query(self.User, query_parameters=search_req)
             if result and hasattr(result, 'resources') and result.resources:    # type: ignore
                 existing_scim_id = result.resources[0].id       # type: ignore
                 logger.info(f"SCIM: User {user_id} exists with SCIM ID {existing_scim_id}, updating")
@@ -124,7 +124,7 @@ class SCIMClient:
         # Check if role exists by external_id (using role UUID as external_id)
         try:
             search_req = self.SearchRequest(filter=f'externalId eq "{role_id}"')  # type: ignore
-            result = self.client.query(self.Group, search_request=search_req)
+            result = self.client.query(self.Group, query_parameters=search_req)
             if result and hasattr(result, 'resources') and result.resources:    # type: ignore
                 existing_scim_id = result.resources[0].id   # type: ignore
                 logger.info(f"SCIM: Role {role_name} exists with SCIM ID {existing_scim_id}, updating")

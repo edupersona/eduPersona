@@ -31,7 +31,7 @@ async def test_landing_page(user: User):
     await user.open('/')
 
     # Should see landing page content (Dutch translations)
-    await user.should_see('Beheer')  # Dutch: Management
+    await user.should_see('Accepteer een uitnodiging')
 
 
 @pytest.mark.ui

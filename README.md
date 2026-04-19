@@ -11,8 +11,7 @@ Werkwijze (zie ook figuur):
 
 4. Net als SURF Invite ondersteunt eduPersona SCIM voor de terugkoppeling van gasten en hun (geaccepteerde) rollen naar instellings-IGA/IDM (zie `settings.json`, `tenants.hvh.scim`). In de regel gebeurt dit *na afronding van de onboarding*.
 
-5. Na afronding van het stappenplan tonen we de gast een link naar zijn/haar applicaties of diensten, zodat de gast daar direct kan inloggen.
-
+5. Na afronding van het stappenplan komt de gast op de **/apps** pagina &ndash; een persoonlijk overzicht met alle rollen die deze gast heeft (actief, toekomstig, verlopen; óók de rollen die rechtstreeks zijn toegekend, zonder invite). Actieve rollen zijn klikbaar en leiden direct naar de applicatie. De gast kan later terugkomen op /apps en wordt dan via eduID herkend aan het pseudoniem dat bij onboarding is vastgelegd.
 
 <br>
 
@@ -48,7 +47,7 @@ Start een lokale dev server met:
 ./start.sh dev
 ```
 
-Ga dan met je browser naar http://localhost:8080/, klik op Beheer en log in met je fallback_admin credentials.
+Ga dan met je browser naar http://localhost:8080/, klik op "Log in als beheerder" en log in met je fallback_admin credentials.
 
 Je hebt initieel een lege database, dus:
 1. voer een gast op
@@ -73,6 +72,8 @@ We hebben een demo-/PoC-omgeving draaien op [https://edupersona.nl/](https://edu
 * Voor het **verzenden van de uitnodiging** wordt ondersteuning van SMTP en Postmark geboden. Mailberichten worden opgesteld via Jinja2 HTML-templates. Afzenders kunnen per rol worden geconfigureerd.
 
 * eduPersona is fundamenteel **multi-tenant**, ook als je dat niet gebruikt. De default tenant die je overal tegenkomt is 'hvh': de beruchte Hogeschool van Harderwijk. Je kunt in settings.json je eigen tenant-string als key opnemen onder de `tenants` key. 
+
+* **'Mijn applicaties & diensten'** (`/{tenant}/apps`): eenmaal 'onboarded', logt een gast hier met eduID in en ziet al zijn/haar rollen. Deze toegang is gebaseerd op het eduID-pseudoniem dat bij het accepteren van de uitnodiging wordt gebruikt &ndash; dit wordt bij de gast vastgelegd.
 
 * **SCIM**: eduPersona gebruikt een store/observer-patroon om alle mutaties van gebruikers, rollen e.d. via SCIM terug te synchroniseren &ndash; meestal zal dat naar een IDM/IGA-systeem zijn.
 
@@ -122,10 +123,3 @@ Let op, er wordt nog druk gesleuteld aan deze code. Onder andere is het de bedoe
 
 ### License
 This project is licensed under the GNU Affero General Public License (AGPL) version 3.
-
-### TODO
-
-- 'accepteren' wordt m.i. nog steeds op de nav bar getoond
-- attributen van een bepaalde klasse moeten worden overschreven (dwz verwijderd en toegevoegd), ipv n x dezelfde attributen toevoegen
-- in eduid_pseudonym moet alleen het *eduid* uids[0] worden opgeslagen - dwz van de eduid idp, niet van de instellings-idp
-- documenteren welke rol de eduid idp speelt (inloggen op apps, registratie eduid-pseudoniem + toepassbaar in step cards)

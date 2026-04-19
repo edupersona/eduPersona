@@ -56,3 +56,7 @@ def run(fastapi_app) -> None:
     app.on_startup(run_migrations)
     ui.run_with(fastapi_app, storage_secret=STORAGE_SECRET, title='eduPersona')
 
+
+if __name__ in {"__main__", "__mp_main__"}:
+    ui.run(storage_secret=STORAGE_SECRET, title='eduPersona')
+
