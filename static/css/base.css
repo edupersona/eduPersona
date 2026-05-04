@@ -103,6 +103,11 @@ body {
   color: var(--rdm-text-secondary);
 }
 
+.text {
+  color: var(--rdm-text);
+  font-size: 1rem;
+}
+
 .text-success {
   color: var(--rdm-success);
 }
@@ -113,6 +118,26 @@ body {
 
 .text-warning {
   color: var(--rdm-warning);
+}
+
+/* ========================================
+   Buttons - step cards only ? to review
+   ======================================== */
+
+/* Primary action styled as a button on anchor elements (ui.link).
+   ui.button uses Quasar's own button styling and is not affected here. */
+a.btn-primary {
+  background-color: var(--rdm-primary);
+  color: var(--rdm-text-white);
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
+  font-weight: 500;
+  text-decoration: none;
+  display: inline-block;
+}
+
+a.btn-primary:hover {
+  background-color: var(--rdm-primary-hover);
 }
 
 /* ========================================
@@ -333,11 +358,18 @@ body {
 .status-chip-invited        { background: #fef3c7; color: #92400e; }
 .status-chip-verified       { background: #d1fae5; color: #065f46; }
 
-.login-page {
+.login-page, .no_account-page {
   margin: 0 auto;
   .login-card {
     width: 400px;
     padding: 1.5rem;
+
+    &.login-card-wide {
+      width: 100%;
+      .text {
+        font-size: 1.125rem;
+      }
+    }
   }
 
   .login-card label {
@@ -348,6 +380,10 @@ body {
     margin-top: 10px;
     width: 80%;
   }
+}
+
+.no_account-page {
+  
 }
 
 .q-expansion-item__label {
@@ -385,7 +421,7 @@ body {
 .landing-page {
   width: 100%;
   min-height: 100vh;
-  background-color: #f9fafb;
+  /* background-color: #f9fafb; */
   display: flex;
   align-items: center;
   padding: 2rem;
@@ -431,8 +467,9 @@ body {
     font-size: 18px;
     font-weight: 500;
     a {
-      color: var(--rdm-text-secondary);
+      color: var(--rdm-primary);
       text-decoration: none;
+      font-size: 0.95rem;
       &:hover {
         text-decoration: underline;
       }

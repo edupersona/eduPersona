@@ -33,6 +33,20 @@ def render_status(row: dict):
     ui.html(f'<span class="status-chip status-chip-{status}">{label}</span>', sanitize=False)
 
 
+async def send_invitation_email(tenant: str, invitation: dict) -> None:
+    """Send invitation email via Postmark; notify on result. Shared by Create + Resend."""
+    try:
+        ui.notify(_('Sending email...'), type='info')
+        success = await send_postmark_invitation(tenant=tenant, code=invitation.get('code'))
+        if success:
+            ui.notify(_('Email sent successfully!'), type='positive')
+        else:
+            ui.notify(_('Failed to send email'), type='negative')
+    except Exception as e:
+        logger.error(f"Error sending email: {e}")
+        ui.notify(f"{_('Error')}: {str(e)}", type='negative')
+
+
 def get_invitations_table_config() -> TableConfig:
     return TableConfig(
         columns=[
@@ -182,15 +196,15 @@ async def new_invitation_dialog(tenant: str, roles: list[dict]):
                 return
 
             try:
-                await create_invitation(
+                invitation = await create_invitation(
                     tenant,
                     guest_id=state['guest_id'],
                     role_assignment_ids=list(state['selected_ra_ids']),
                     invitation_email=invitation_email,
                     personal_message=state['personal_message'].strip(),
                 )
-                dlg._notify(_('Invitation created'), type='positive')
                 dlg.close()
+                await send_invitation_email(tenant, invitation)
             except Exception as e:
                 logger.error(f"Error creating invitation: {e}")
                 dlg._notify(str(e), type='negative')
@@ -259,18 +273,6 @@ async def invitations_page(tenant: str = Depends(require_invite_auth)):
     role_store = get_role_store(tenant)
     roles = await role_store.read_items()
 
-    async def send_email(invitation: dict):
-        try:
-            ui.notify(_('Sending email...'), type='info')
-            success = await send_postmark_invitation(tenant=tenant, code=invitation.get('code'))
-            if success:
-                ui.notify(_('Email sent successfully!'), type='positive')
-            else:
-                ui.notify(_('Failed to send email'), type='negative')
-        except Exception as e:
-            logger.error(f"Error sending email: {e}")
-            ui.notify(f"{_('Error')}: {str(e)}", type='negative')
-
     async def run_test_template():
         await test_template(tenant=tenant)
         ui.notify(_('Template test written to /static'), type='positive')
@@ -279,7 +281,8 @@ async def invitations_page(tenant: str = Depends(require_invite_auth)):
         ui.run_javascript(f"window.open('/static/test_output.html?t={timestamp}', '_blank', 'width=768,height=700')")
 
     custom_actions = [
-        RowAction(label=_("Resend"), callback=send_email),
+        RowAction(label=_("Resend"),
+                  callback=lambda inv: send_invitation_email(tenant, inv)),
         RowAction(label=_("Test Template"), callback=lambda _: run_test_template()),
     ]
 

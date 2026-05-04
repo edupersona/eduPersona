@@ -8,9 +8,7 @@ from nicegui import app
 
 from ng_rdm.utils import logger
 from ng_rdm.store.multitenancy import valid_tenants
-
-
-DEFAULT_TENANT = "hvh"
+from services.settings import config
 
 
 def validate_tenant(tenant: str) -> None:
@@ -47,12 +45,20 @@ def store_tenant_in_session(tenant: str) -> None:
 
 
 def get_default_tenant() -> str:
-    """Get default tenant for redirects and fallbacks.
+    """Default tenant for `/`, legacy redirects, and auth fallbacks.
 
-    Returns:
-        Default tenant identifier
+    If exactly one tenant is configured, use it. Otherwise prefer the
+    optional top-level `default_tenant` setting, falling back to the first
+    configured tenant.
     """
-    return DEFAULT_TENANT
+    if not valid_tenants:
+        raise RuntimeError("No tenants configured in settings.json")
+    if len(valid_tenants) == 1:
+        return valid_tenants[0]
+    configured = config.get('default_tenant', '')
+    if configured and configured in valid_tenants:
+        return configured
+    return valid_tenants[0]
 
 
 def get_available_tenants() -> list[str]:

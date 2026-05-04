@@ -286,7 +286,8 @@ class LinkApplicationStep(StepCard):
                     redirect_url,
                     new_tab=True
                 ).classes('btn-primary') \
-                    .style('padding: 0.5rem 1rem; border-radius: 0.25rem; font-size: 14pt; color:white; font-weight: 500; text-decoration: none; display: inline-block; margin-top: 0.5rem;')
+                    .style('padding: 0.5rem 1rem; border-radius: 0.25rem; font-size: 14pt; font-weight: 500; text-decoration: none; display: inline-block; margin-top: 0.5rem;')
+                # .style('padding: 0.5rem 1rem; border-radius: 0.25rem; font-size: 14pt; color:white; font-weight: 500; text-decoration: none; display: inline-block; margin-top: 0.5rem;')
 
         # Direct link to the guest's services overview — session was established at accept time
         if self.tenant:

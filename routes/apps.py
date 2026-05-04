@@ -8,7 +8,7 @@ from domain.stores import (
     get_role_assignment_store,
     get_role_store,
 )
-from ng_rdm.components import Col, Row
+from ng_rdm.components import Button, Col, Row
 from services.auth.guest_auth import create_guest_oidc_handler
 from services.i18n import _
 from services.oidc_mt.multitenant import start_oidc_login
@@ -77,33 +77,31 @@ async def apps_no_account_page(tenant: str) -> None:
     """Shown when eduID login succeeds but no matching Guest exists (or onboarding wasn't completed)."""
     validate_tenant(tenant)
 
-    with frame('login', tenant):
+    with frame('no_account', tenant):
         with Col(classes='centered-content'):
-            ui.label(_('No account found')).classes('section-heading')
-            with ui.card().tight().classes('login-card'):
-                ui.label(_(
-                    "We couldn't find an account for this eduID. "
-                    "Have you received an invitation?"
-                )).classes('text-muted')
+            ui.label(_('No services found')).classes('section-heading')
+            with ui.card().tight().classes('login-card login-card-wide'):
+                ui.label(_("Your eduID has (not yet) been registered here. Have you received an invitation?")
+                         ).classes('text')
                 with Row().classes('button-row').style('margin-top: 1rem; gap: 0.75rem;'):
-                    ui.link(_('Enter invitation code'), f'/{tenant}/accept').classes('btn-primary') \
-                        .style('padding: 0.5rem 1rem; border-radius: 0.25rem; color: white; '
-                               'text-decoration: none; display: inline-block;')
-                    ui.link(_('Try a different eduID'), f'/{tenant}/apps')
+                    Button(_('Enter invitation code'),
+                           on_click=lambda: ui.navigate.to(f'/{tenant}/accept'))
+                    Button(_('Try a different eduID'), color='secondary',
+                           on_click=lambda: ui.navigate.to(f'/{tenant}/apps?relogin=1'))
 
 
 @ui.page('/{tenant}/apps')
-async def apps_page(tenant: str) -> None:
+async def apps_page(tenant: str, relogin: int = 0) -> None:
     """Guest portal: role-assignment cards (active / future / expired) + pending invitations."""
     validate_tenant(tenant)
 
-    if not _is_guest_session() or app.storage.user.get("tenant") != tenant:
+    if relogin or not _is_guest_session() or app.storage.user.get("tenant") != tenant:
         if app.storage.user.get("authenticated"):
             app.storage.user.clear()
         await start_oidc_login(
             tenant=tenant, idp="eduid",
             callback_handler=create_guest_oidc_handler(tenant),
-            next_url=f"/{tenant}/apps", force_login=False,
+            next_url=f"/{tenant}/apps", force_login=True,
         )
         return
 
@@ -139,3 +137,5 @@ async def apps_page(tenant: str) -> None:
                 _('You have unclaimed invitations for other roles — click here to accept'),
                 f'/{tenant}/accept',
             ).classes('apps-other-invites')
+
+        ui.link(_('Use a different eduID'), f'/{tenant}/apps?relogin=1').classes('text-muted')

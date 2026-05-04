@@ -1,6 +1,6 @@
 from contextlib import contextmanager
 
-from ng_rdm.components import Col, rdm_init
+from ng_rdm.components import Col, rdm_init, set_language
 from nicegui import app, ui
 
 from services.settings import get_tenant_config
@@ -87,6 +87,7 @@ def frame(page_name: str, tenant: str):
 
     _apply_theme(page_name, tenant)
     rdm_init()
+    set_language('nl_nl')
 
     # Create header with navigation
     with ui.header():

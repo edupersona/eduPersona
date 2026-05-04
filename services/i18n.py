@@ -40,9 +40,9 @@ translations: dict[str, dict[str, str]] = {
         'Accept invitation': 'Uitnodiging accepteren',
         'Accept an invitation': 'Accepteer een uitnodiging',
         'Access your apps': 'Jouw apps & diensten',
-        'Note: you will need an eduID for this': 'Let op: eduID nodig voor toegang',
+        'Note: you will need an eduID for this': 'Je wordt doorgeleid naar eduID om in te loggen.',
         'Management': 'Beheer',
-        'Admin login': 'Log in als beheerder',
+        'Admin access': 'Toegang als beheerder',
         'Manage roles and invitations': 'Rollen en uitnodigingen beheren',
         "Click here if you've received an invitation": 'Klik hier als je een uitnodiging hebt ontvangen',
         'Access your apps & services with eduID': 'Toegang naar je apps & diensten met eduID',
@@ -217,6 +217,12 @@ translations: dict[str, dict[str, str]] = {
         'Welcome{suffix}': 'Welkom{suffix}',
         'YES! I already have a (test!) eduID': 'JA! Ik heb al een (test!) eduID',
         '✓ Your eduID is now linked!': '✓ Uw eduID is nu gekoppeld!',
+
+        # apps pages (routes/apps.py)
+        'No services found': 'Geen diensten beschikbaar',
+        'Your eduID has (not yet) been registered here. Have you received an invitation?': 'Uw eduID is hier (nog) niet bekend. Heeft u een uitnodiging ontvangen?',
+        'Enter invitation code': 'Uitnodigingscode invoeren',
+        'Try a different eduID': 'Inloggen met andere eduID',
 
         # SCIM Sync
         'Are you sure you want to continue?': 'Weet je zeker dat je wilt doorgaan?',

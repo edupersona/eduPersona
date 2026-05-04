@@ -38,6 +38,7 @@ mkdir edupersona && cd $_
 git clone https://github.com/kleynjan/eduPersona.git .
 pip install -r requirements.txt
 cp settings.example.json settings.json
+cp edupersona.example.db edupersona.db
 ```
 Edit je settings.json, pas in elk geval het userid en wachtwoord voor tenants.hvh.fallback_admins aan.
 
@@ -48,13 +49,9 @@ Start een lokale dev server met:
 
 Ga dan met je browser naar http://localhost:8080/, klik op "Log in als beheerder" en log in met je fallback_admin credentials.
 
-Je hebt initieel een lege database, dus:
-1. voer een gast op
-1. voer een rol op
-1. ken de rol toe aan de gast
-1. en maak een nieuwe uitnodiging voor die gast en rol
+Je kunt nu gasten opvoeren, rollen definiëren en toekennen, en gasten uitnodigen in hun rollen.
 <br>... als je de Postmark of SMTP config hebt ingesteld kun je de invite per mail versturen ... 
-2. anders: klik op de uitnodiging en kopieer de code
+Anders: klik op de uitnodiging en kopieer de code.
 
 Je hebt nu de code waarmee een gast de onboarding kan starten:
 * ga naar http://localhost:8080/hvh/accept<br>
