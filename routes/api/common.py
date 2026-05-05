@@ -54,4 +54,4 @@ def apply_pagination(items: list, limit: int, offset: int) -> list:
 def log_api_call(method: str, path: str, tenant: str, **kwargs):
     """Log API call with standard format."""
     extra = ", ".join(f"{k}={v}" for k, v in kwargs.items() if v is not None)
-    logger.info(f"API {method} /{tenant}/api/v1{path}" + (f" ({extra})" if extra else ""))
+    logger.info(f"API {method} /api/v1/{tenant}{path}" + (f" ({extra})" if extra else ""))

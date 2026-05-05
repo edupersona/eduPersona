@@ -217,12 +217,14 @@ translations: dict[str, dict[str, str]] = {
         'Welcome{suffix}': 'Welkom{suffix}',
         'YES! I already have a (test!) eduID': 'JA! Ik heb al een (test!) eduID',
         '✓ Your eduID is now linked!': '✓ Uw eduID is nu gekoppeld!',
+        'Go to my apps & services': 'Naar mijn apps & diensten',
 
         # apps pages (routes/apps.py)
         'No services found': 'Geen diensten beschikbaar',
         'Your eduID has (not yet) been registered here. Have you received an invitation?': 'Uw eduID is hier (nog) niet bekend. Heeft u een uitnodiging ontvangen?',
         'Enter invitation code': 'Uitnodigingscode invoeren',
-        'Try a different eduID': 'Inloggen met andere eduID',
+        'Try a different eduID': 'Inloggen met een andere eduID',
+        'Click here to use a different eduID': 'Klik hier om met een andere eduID in te loggen',
 
         # SCIM Sync
         'Are you sure you want to continue?': 'Weet je zeker dat je wilt doorgaan?',

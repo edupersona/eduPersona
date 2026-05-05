@@ -1,12 +1,12 @@
 """
 Invitation CRUD endpoints for API v1.
 
-GET    /{tenant}/api/v1/invitations            - List all invitations
-GET    /{tenant}/api/v1/invitations/{id}       - Get single invitation by ID
-GET    /{tenant}/api/v1/invitations/code/{code} - Get invitation by code
-POST   /{tenant}/api/v1/invitations            - Create invitation
-PATCH  /{tenant}/api/v1/invitations/{id}       - Update invitation
-DELETE /{tenant}/api/v1/invitations/{id}       - Delete invitation
+GET    /api/v1/{tenant}/invitations            - List all invitations
+GET    /api/v1/{tenant}/invitations/{id}       - Get single invitation by ID
+GET    /api/v1/{tenant}/invitations/code/{code} - Get invitation by code
+POST   /api/v1/{tenant}/invitations            - Create invitation
+PATCH  /api/v1/{tenant}/invitations/{id}       - Update invitation
+DELETE /api/v1/{tenant}/invitations/{id}       - Delete invitation
 """
 from fastapi import HTTPException, Query
 from pydantic import BaseModel
@@ -39,7 +39,7 @@ class InvitationUpdate(BaseModel):
     invitation_email: str | None = None
 
 
-@api_router.get("/{tenant}/api/v1/invitations")
+@api_router.get("/invitations")
 async def list_invitations(
     tenant: str,
     guest_id: int | None = None,
@@ -82,7 +82,7 @@ async def list_invitations(
         raise api_error("INTERNAL_ERROR", str(e), status_code=500)
 
 
-@api_router.get("/{tenant}/api/v1/invitations/{invitation_id}")
+@api_router.get("/invitations/{invitation_id}")
 async def get_invitation_by_id(tenant: str, invitation_id: int, expand: str | None = None):
     """Get single invitation by ID."""
     validate_tenant_or_raise(tenant)
@@ -112,7 +112,7 @@ async def get_invitation_by_id(tenant: str, invitation_id: int, expand: str | No
         raise api_error("INTERNAL_ERROR", str(e), status_code=500)
 
 
-@api_router.get("/{tenant}/api/v1/invitations/code/{code}")
+@api_router.get("/invitations/code/{code}")
 async def get_invitation_by_code(tenant: str, code: str, expand: str | None = None):
     """Get invitation by code (public lookup)."""
     validate_tenant_or_raise(tenant)
@@ -142,7 +142,7 @@ async def get_invitation_by_code(tenant: str, code: str, expand: str | None = No
         raise api_error("INTERNAL_ERROR", str(e), status_code=500)
 
 
-@api_router.post("/{tenant}/api/v1/invitations")
+@api_router.post("/invitations")
 async def create_invitation_endpoint(tenant: str, data: InvitationCreate):
     """Create a new invitation."""
     validate_tenant_or_raise(tenant)
@@ -182,7 +182,7 @@ async def create_invitation_endpoint(tenant: str, data: InvitationCreate):
         raise api_error("INTERNAL_ERROR", str(e), status_code=500)
 
 
-@api_router.patch("/{tenant}/api/v1/invitations/{invitation_id}")
+@api_router.patch("/invitations/{invitation_id}")
 async def update_invitation(tenant: str, invitation_id: int, data: InvitationUpdate):
     """Update invitation fields."""
     validate_tenant_or_raise(tenant)
@@ -219,7 +219,7 @@ async def update_invitation(tenant: str, invitation_id: int, data: InvitationUpd
         raise api_error("INTERNAL_ERROR", str(e), status_code=500)
 
 
-@api_router.delete("/{tenant}/api/v1/invitations/{invitation_id}")
+@api_router.delete("/invitations/{invitation_id}")
 async def delete_invitation(tenant: str, invitation_id: int):
     """Delete an invitation."""
     validate_tenant_or_raise(tenant)

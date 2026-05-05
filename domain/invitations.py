@@ -11,15 +11,25 @@ from domain.stores import (
     get_role_assignment_store,
     get_role_store,
 )
+from ng_rdm.store.multitenancy import valid_tenants
 from ng_rdm.utils import logger
 from ng_rdm.utils.helpers import now_utc, utc_datetime_to_str
+
+
+async def find_invitation_by_code(code: str) -> tuple[str, dict] | None:
+    """Resolve `(tenant, invitation)` for an invitation code, scanning all tenants."""
+    for tenant in valid_tenants:
+        items = await get_invitation_store(tenant).read_items(filter_by={"code": code})
+        if items:
+            return tenant, items[0]
+    return None
 
 
 async def _promote_eduid_pseudonym(tenant: str, guest_id: int) -> None:
     """Promote uids[0] from the eduID GuestAttribute to Guest.eduid_pseudonym.
 
     Called at onboarding completion — marks the guest as reliably verified and
-    enables later login via /{tenant}/apps matching against eduid_pseudonym.
+    enables later login via /apps matching against eduid_pseudonym.
 
     Source of truth is the single `name="eduid"` attribute row. On re-acceptance
     the row has already been replaced by update_guest_from_userinfo, so this

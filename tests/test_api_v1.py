@@ -14,7 +14,7 @@ class TestGuestsAPI:
     @pytest.mark.api
     async def test_list_guests_empty(self, api_client, test_tenant):
         """GET /api/v1/guests returns empty list when no guests."""
-        response = await api_client.get(f"/{test_tenant}/api/v1/guests")
+        response = await api_client.get(f"/api/v1/{test_tenant}/guests")
         assert response.status_code == 200
         data = response.json()
         assert "data" in data
@@ -24,7 +24,7 @@ class TestGuestsAPI:
     @pytest.mark.api
     async def test_list_guests(self, api_client, test_tenant, sample_guest):
         """GET /api/v1/guests returns guests with enriched data."""
-        response = await api_client.get(f"/{test_tenant}/api/v1/guests")
+        response = await api_client.get(f"/api/v1/{test_tenant}/guests")
         assert response.status_code == 200
         data = response.json()
         assert data["meta"]["total"] >= 1
@@ -36,7 +36,7 @@ class TestGuestsAPI:
     @pytest.mark.api
     async def test_get_guest(self, api_client, test_tenant, sample_guest):
         """GET /api/v1/guests/{id} returns single guest."""
-        response = await api_client.get(f"/{test_tenant}/api/v1/guests/{sample_guest['id']}")
+        response = await api_client.get(f"/api/v1/{test_tenant}/guests/{sample_guest['id']}")
         assert response.status_code == 200
         data = response.json()
         assert data["data"]["user_id"] == sample_guest["user_id"]
@@ -44,14 +44,14 @@ class TestGuestsAPI:
     @pytest.mark.api
     async def test_get_guest_not_found(self, api_client, test_tenant):
         """GET /api/v1/guests/{id} returns 404 for non-existent guest."""
-        response = await api_client.get(f"/{test_tenant}/api/v1/guests/99999")
+        response = await api_client.get(f"/api/v1/{test_tenant}/guests/99999")
         assert response.status_code == 404
 
     @pytest.mark.api
     async def test_create_guest(self, api_client, test_tenant):
         """POST /api/v1/guests creates new guest."""
         response = await api_client.post(
-            f"/{test_tenant}/api/v1/guests",
+            f"/api/v1/{test_tenant}/guests",
             json={
                 "user_id": "new.user.v1@example.edu",
                 "email": "new.v1@gmail.com",
@@ -70,7 +70,7 @@ class TestGuestsAPI:
     async def test_create_guest_conflict(self, api_client, test_tenant, sample_guest):
         """POST /api/v1/guests returns 409 for duplicate user_id."""
         response = await api_client.post(
-            f"/{test_tenant}/api/v1/guests",
+            f"/api/v1/{test_tenant}/guests",
             json={
                 "user_id": sample_guest["user_id"],
                 "email": "duplicate@gmail.com",
@@ -82,7 +82,7 @@ class TestGuestsAPI:
     async def test_update_guest(self, api_client, test_tenant, sample_guest):
         """PATCH /api/v1/guests/{id} updates guest fields."""
         response = await api_client.patch(
-            f"/{test_tenant}/api/v1/guests/{sample_guest['id']}",
+            f"/api/v1/{test_tenant}/guests/{sample_guest['id']}",
             json={"given_name": "Updated"},
         )
         assert response.status_code == 200
@@ -97,7 +97,7 @@ class TestGuestsAPI:
             user_id="to.delete.v1@example.edu",
             email="delete@gmail.com",
         )
-        response = await api_client.delete(f"/{test_tenant}/api/v1/guests/{guest.id}")
+        response = await api_client.delete(f"/api/v1/{test_tenant}/guests/{guest.id}")
         assert response.status_code == 200
         assert response.json()["data"]["deleted"] is True
 
@@ -108,7 +108,7 @@ class TestRolesAPI:
     @pytest.mark.api
     async def test_list_roles(self, api_client, test_tenant, sample_role):
         """GET /api/v1/roles returns roles."""
-        response = await api_client.get(f"/{test_tenant}/api/v1/roles")
+        response = await api_client.get(f"/api/v1/{test_tenant}/roles")
         assert response.status_code == 200
         data = response.json()
         assert data["meta"]["total"] >= 1
@@ -116,7 +116,7 @@ class TestRolesAPI:
     @pytest.mark.api
     async def test_get_role(self, api_client, test_tenant, sample_role):
         """GET /api/v1/roles/{id} returns single role."""
-        response = await api_client.get(f"/{test_tenant}/api/v1/roles/{sample_role['id']}")
+        response = await api_client.get(f"/api/v1/{test_tenant}/roles/{sample_role['id']}")
         assert response.status_code == 200
         data = response.json()
         assert data["data"]["name"] == sample_role["name"]
@@ -125,7 +125,7 @@ class TestRolesAPI:
     async def test_create_role(self, api_client, test_tenant):
         """POST /api/v1/roles creates new role."""
         response = await api_client.post(
-            f"/{test_tenant}/api/v1/roles",
+            f"/api/v1/{test_tenant}/roles",
             json={
                 "name": "New Role v1",
                 "mail_sender_email": "sender@example.com",
@@ -151,7 +151,7 @@ class TestRoleAssignmentsAPI:
     async def test_create_role_assignment(self, api_client, test_tenant, sample_guest, sample_role):
         """POST /api/v1/role-assignments creates assignment."""
         response = await api_client.post(
-            f"/{test_tenant}/api/v1/role-assignments",
+            f"/api/v1/{test_tenant}/role-assignments",
             json={
                 "guest_id": sample_guest["id"],
                 "role_id": sample_role["id"],
@@ -175,7 +175,7 @@ class TestRoleAssignmentsAPI:
         )
         try:
             response = await api_client.get(
-                f"/{test_tenant}/api/v1/role-assignments?expand=guest,role"
+                f"/api/v1/{test_tenant}/role-assignments?expand=guest,role"
             )
             assert response.status_code == 200
             data = response.json()
@@ -201,7 +201,7 @@ class TestInvitationsAPI:
         )
         try:
             response = await api_client.post(
-                f"/{test_tenant}/api/v1/invitations",
+                f"/api/v1/{test_tenant}/invitations",
                 json={
                     "guest_id": sample_guest["id"],
                     "role_assignment_ids": [ra.id],
@@ -240,7 +240,7 @@ class TestInvitationsAPI:
             role_assignment_id=ra.id,
         )
         try:
-            response = await api_client.get(f"/{test_tenant}/api/v1/invitations/code/testcode123v1")
+            response = await api_client.get(f"/api/v1/{test_tenant}/invitations/code/testcode123v1")
             assert response.status_code == 200
             data = response.json()
             assert data["data"]["code"] == "testcode123v1"
@@ -257,7 +257,7 @@ class TestQuickInvite:
     async def test_quick_invite_new_guest(self, api_client, test_tenant, sample_role):
         """POST /api/v1/quick-invite creates guest, assignment, and invitation."""
         response = await api_client.post(
-            f"/{test_tenant}/api/v1/quick-invite",
+            f"/api/v1/{test_tenant}/quick-invite",
             json={
                 "user_id": "quick.invite.v1@example.edu",
                 "email": "quick@gmail.com",
@@ -286,7 +286,7 @@ class TestQuickInvite:
     async def test_quick_invite_existing_guest(self, api_client, test_tenant, sample_guest, sample_role):
         """POST /api/v1/quick-invite uses existing guest."""
         response = await api_client.post(
-            f"/{test_tenant}/api/v1/quick-invite",
+            f"/api/v1/{test_tenant}/quick-invite",
             json={
                 "user_id": sample_guest["user_id"],
                 "email": sample_guest["email"],
@@ -309,7 +309,7 @@ class TestQuickInvite:
     async def test_quick_invite_by_role_name(self, api_client, test_tenant, sample_role):
         """POST /api/v1/quick-invite accepts role_name instead of role_id."""
         response = await api_client.post(
-            f"/{test_tenant}/api/v1/quick-invite",
+            f"/api/v1/{test_tenant}/quick-invite",
             json={
                 "user_id": "quick.name.v1@example.edu",
                 "email": "quick.name@gmail.com",
@@ -333,7 +333,7 @@ class TestQuickInvite:
     async def test_quick_invite_missing_role(self, api_client, test_tenant):
         """POST /api/v1/quick-invite fails without role_id or role_name."""
         response = await api_client.post(
-            f"/{test_tenant}/api/v1/quick-invite",
+            f"/api/v1/{test_tenant}/quick-invite",
             json={
                 "user_id": "no.role@example.edu",
                 "email": "no.role@gmail.com",
@@ -348,7 +348,7 @@ class TestPagination:
     @pytest.mark.api
     async def test_pagination_params(self, api_client, test_tenant):
         """List endpoints respect limit and offset."""
-        response = await api_client.get(f"/{test_tenant}/api/v1/guests?limit=5&offset=0")
+        response = await api_client.get(f"/api/v1/{test_tenant}/guests?limit=5&offset=0")
         assert response.status_code == 200
         data = response.json()
         assert data["meta"]["limit"] == 5
@@ -361,7 +361,7 @@ class TestResponseFormat:
     @pytest.mark.api
     async def test_success_response_format(self, api_client, test_tenant):
         """Successful responses have data and meta fields."""
-        response = await api_client.get(f"/{test_tenant}/api/v1/guests")
+        response = await api_client.get(f"/api/v1/{test_tenant}/guests")
         assert response.status_code == 200
         data = response.json()
         assert "data" in data
@@ -371,7 +371,7 @@ class TestResponseFormat:
     @pytest.mark.api
     async def test_error_response_format(self, api_client, test_tenant):
         """Error responses have error field with code and message."""
-        response = await api_client.get(f"/{test_tenant}/api/v1/guests/99999")
+        response = await api_client.get(f"/api/v1/{test_tenant}/guests/99999")
         assert response.status_code == 404
         data = response.json()
         assert "detail" in data
@@ -386,7 +386,7 @@ class TestGuestsNestedEndpoints:
     @pytest.mark.api
     async def test_get_guest_attributes_empty(self, api_client, test_tenant, sample_guest):
         """GET /guests/{id}/attributes returns empty list when no attributes."""
-        response = await api_client.get(f"/{test_tenant}/api/v1/guests/{sample_guest['id']}/attributes")
+        response = await api_client.get(f"/api/v1/{test_tenant}/guests/{sample_guest['id']}/attributes")
         assert response.status_code == 200
         data = response.json()
         assert data["data"] == []
@@ -395,13 +395,13 @@ class TestGuestsNestedEndpoints:
     @pytest.mark.api
     async def test_get_guest_attributes_not_found(self, api_client, test_tenant):
         """GET /guests/{id}/attributes returns 404 for non-existent guest."""
-        response = await api_client.get(f"/{test_tenant}/api/v1/guests/99999/attributes")
+        response = await api_client.get(f"/api/v1/{test_tenant}/guests/99999/attributes")
         assert response.status_code == 404
 
     @pytest.mark.api
     async def test_get_guest_role_assignments_empty(self, api_client, test_tenant, sample_guest):
         """GET /guests/{id}/role-assignments returns empty list when no assignments."""
-        response = await api_client.get(f"/{test_tenant}/api/v1/guests/{sample_guest['id']}/role-assignments")
+        response = await api_client.get(f"/api/v1/{test_tenant}/guests/{sample_guest['id']}/role-assignments")
         assert response.status_code == 200
         data = response.json()
         assert data["data"] == []
@@ -415,7 +415,7 @@ class TestGuestsNestedEndpoints:
             role_id=sample_role["id"],
         )
         try:
-            response = await api_client.get(f"/{test_tenant}/api/v1/guests/{sample_guest['id']}/role-assignments")
+            response = await api_client.get(f"/api/v1/{test_tenant}/guests/{sample_guest['id']}/role-assignments")
             assert response.status_code == 200
             data = response.json()
             assert data["meta"]["total"] == 1
@@ -426,13 +426,13 @@ class TestGuestsNestedEndpoints:
     @pytest.mark.api
     async def test_get_guest_role_assignments_not_found(self, api_client, test_tenant):
         """GET /guests/{id}/role-assignments returns 404 for non-existent guest."""
-        response = await api_client.get(f"/{test_tenant}/api/v1/guests/99999/role-assignments")
+        response = await api_client.get(f"/api/v1/{test_tenant}/guests/99999/role-assignments")
         assert response.status_code == 404
 
     @pytest.mark.api
     async def test_get_guest_invitations_empty(self, api_client, test_tenant, sample_guest):
         """GET /guests/{id}/invitations returns empty list when no invitations."""
-        response = await api_client.get(f"/{test_tenant}/api/v1/guests/{sample_guest['id']}/invitations")
+        response = await api_client.get(f"/api/v1/{test_tenant}/guests/{sample_guest['id']}/invitations")
         assert response.status_code == 200
         data = response.json()
         assert data["data"] == []
@@ -440,7 +440,7 @@ class TestGuestsNestedEndpoints:
     @pytest.mark.api
     async def test_get_guest_invitations_not_found(self, api_client, test_tenant):
         """GET /guests/{id}/invitations returns 404 for non-existent guest."""
-        response = await api_client.get(f"/{test_tenant}/api/v1/guests/99999/invitations")
+        response = await api_client.get(f"/api/v1/{test_tenant}/guests/99999/invitations")
         assert response.status_code == 404
 
 
@@ -451,7 +451,7 @@ class TestRolesAPIExtended:
     async def test_update_role(self, api_client, test_tenant, sample_role):
         """PATCH /roles/{id} updates role fields."""
         response = await api_client.patch(
-            f"/{test_tenant}/api/v1/roles/{sample_role['id']}",
+            f"/api/v1/{test_tenant}/roles/{sample_role['id']}",
             json={"name": "Updated Role Name"},
         )
         assert response.status_code == 200
@@ -462,7 +462,7 @@ class TestRolesAPIExtended:
     async def test_update_role_not_found(self, api_client, test_tenant):
         """PATCH /roles/{id} returns 404 for non-existent role."""
         response = await api_client.patch(
-            f"/{test_tenant}/api/v1/roles/99999",
+            f"/api/v1/{test_tenant}/roles/99999",
             json={"name": "New Name"},
         )
         assert response.status_code == 404
@@ -471,7 +471,7 @@ class TestRolesAPIExtended:
     async def test_update_role_empty_body(self, api_client, test_tenant, sample_role):
         """PATCH /roles/{id} returns 400 when no fields to update."""
         response = await api_client.patch(
-            f"/{test_tenant}/api/v1/roles/{sample_role['id']}",
+            f"/api/v1/{test_tenant}/roles/{sample_role['id']}",
             json={},
         )
         assert response.status_code == 400
@@ -488,14 +488,14 @@ class TestRolesAPIExtended:
             mail_sender_name="Test",
             role_end_date="2030-01-01",
         )
-        response = await api_client.delete(f"/{test_tenant}/api/v1/roles/{role.id}")
+        response = await api_client.delete(f"/api/v1/{test_tenant}/roles/{role.id}")
         assert response.status_code == 200
         assert response.json()["data"]["deleted"] is True
 
     @pytest.mark.api
     async def test_delete_role_not_found(self, api_client, test_tenant):
         """DELETE /roles/{id} returns 404 for non-existent role."""
-        response = await api_client.delete(f"/{test_tenant}/api/v1/roles/99999")
+        response = await api_client.delete(f"/api/v1/{test_tenant}/roles/99999")
         assert response.status_code == 404
 
     @pytest.mark.api
@@ -507,7 +507,7 @@ class TestRolesAPIExtended:
             role_id=sample_role["id"],
         )
         try:
-            response = await api_client.get(f"/{test_tenant}/api/v1/roles/{sample_role['id']}/assignments")
+            response = await api_client.get(f"/api/v1/{test_tenant}/roles/{sample_role['id']}/assignments")
             assert response.status_code == 200
             data = response.json()
             assert data["meta"]["total"] == 1
@@ -518,7 +518,7 @@ class TestRolesAPIExtended:
     @pytest.mark.api
     async def test_get_role_assignments_empty(self, api_client, test_tenant, sample_role):
         """GET /roles/{id}/assignments returns empty list when no assignments."""
-        response = await api_client.get(f"/{test_tenant}/api/v1/roles/{sample_role['id']}/assignments")
+        response = await api_client.get(f"/api/v1/{test_tenant}/roles/{sample_role['id']}/assignments")
         assert response.status_code == 200
         data = response.json()
         assert data["data"] == []
@@ -526,7 +526,7 @@ class TestRolesAPIExtended:
     @pytest.mark.api
     async def test_get_role_assignments_not_found(self, api_client, test_tenant):
         """GET /roles/{id}/assignments returns 404 for non-existent role."""
-        response = await api_client.get(f"/{test_tenant}/api/v1/roles/99999/assignments")
+        response = await api_client.get(f"/api/v1/{test_tenant}/roles/99999/assignments")
         assert response.status_code == 404
 
 
@@ -542,7 +542,7 @@ class TestRoleAssignmentsAPIExtended:
             role_id=sample_role["id"],
         )
         try:
-            response = await api_client.get(f"/{test_tenant}/api/v1/role-assignments/{ra.id}")
+            response = await api_client.get(f"/api/v1/{test_tenant}/role-assignments/{ra.id}")
             assert response.status_code == 200
             data = response.json()
             assert data["data"]["id"] == ra.id
@@ -559,7 +559,7 @@ class TestRoleAssignmentsAPIExtended:
             role_id=sample_role["id"],
         )
         try:
-            response = await api_client.get(f"/{test_tenant}/api/v1/role-assignments/{ra.id}?expand=guest,role")
+            response = await api_client.get(f"/api/v1/{test_tenant}/role-assignments/{ra.id}?expand=guest,role")
             assert response.status_code == 200
             data = response.json()
             assert "guest" in data["data"]
@@ -572,14 +572,14 @@ class TestRoleAssignmentsAPIExtended:
     @pytest.mark.api
     async def test_get_role_assignment_not_found(self, api_client, test_tenant):
         """GET /role-assignments/{id} returns 404 for non-existent assignment."""
-        response = await api_client.get(f"/{test_tenant}/api/v1/role-assignments/99999")
+        response = await api_client.get(f"/api/v1/{test_tenant}/role-assignments/99999")
         assert response.status_code == 404
 
     @pytest.mark.api
     async def test_create_role_assignment_invalid_guest(self, api_client, test_tenant, sample_role):
         """POST /role-assignments returns 404 for non-existent guest."""
         response = await api_client.post(
-            f"/{test_tenant}/api/v1/role-assignments",
+            f"/api/v1/{test_tenant}/role-assignments",
             json={"guest_id": 99999, "role_id": sample_role["id"]},
         )
         assert response.status_code == 404
@@ -588,7 +588,7 @@ class TestRoleAssignmentsAPIExtended:
     async def test_create_role_assignment_invalid_role(self, api_client, test_tenant, sample_guest):
         """POST /role-assignments returns 404 for non-existent role."""
         response = await api_client.post(
-            f"/{test_tenant}/api/v1/role-assignments",
+            f"/api/v1/{test_tenant}/role-assignments",
             json={"guest_id": sample_guest["id"], "role_id": 99999},
         )
         assert response.status_code == 404
@@ -606,7 +606,7 @@ class TestRoleAssignmentsAPIExtended:
         )
         try:
             response = await api_client.patch(
-                f"/{test_tenant}/api/v1/role-assignments/{ra.id}",
+                f"/api/v1/{test_tenant}/role-assignments/{ra.id}",
                 json={"end_date": valid_end_date},
             )
             assert response.status_code == 200
@@ -619,7 +619,7 @@ class TestRoleAssignmentsAPIExtended:
     async def test_update_role_assignment_not_found(self, api_client, test_tenant):
         """PATCH /role-assignments/{id} returns 404 for non-existent assignment."""
         response = await api_client.patch(
-            f"/{test_tenant}/api/v1/role-assignments/99999",
+            f"/api/v1/{test_tenant}/role-assignments/99999",
             json={"end_date": "2030-12-31"},
         )
         assert response.status_code == 404
@@ -632,14 +632,14 @@ class TestRoleAssignmentsAPIExtended:
             guest_id=sample_guest["id"],
             role_id=sample_role["id"],
         )
-        response = await api_client.delete(f"/{test_tenant}/api/v1/role-assignments/{ra.id}")
+        response = await api_client.delete(f"/api/v1/{test_tenant}/role-assignments/{ra.id}")
         assert response.status_code == 200
         assert response.json()["data"]["deleted"] is True
 
     @pytest.mark.api
     async def test_delete_role_assignment_not_found(self, api_client, test_tenant):
         """DELETE /role-assignments/{id} returns 404 for non-existent assignment."""
-        response = await api_client.delete(f"/{test_tenant}/api/v1/role-assignments/99999")
+        response = await api_client.delete(f"/api/v1/{test_tenant}/role-assignments/99999")
         assert response.status_code == 404
 
     @pytest.mark.api
@@ -651,7 +651,7 @@ class TestRoleAssignmentsAPIExtended:
             role_id=sample_role["id"],
         )
         try:
-            response = await api_client.get(f"/{test_tenant}/api/v1/role-assignments?guest_id={sample_guest['id']}")
+            response = await api_client.get(f"/api/v1/{test_tenant}/role-assignments?guest_id={sample_guest['id']}")
             assert response.status_code == 200
             data = response.json()
             assert all(item["guest_id"] == sample_guest["id"] for item in data["data"])
@@ -667,7 +667,7 @@ class TestRoleAssignmentsAPIExtended:
             role_id=sample_role["id"],
         )
         try:
-            response = await api_client.get(f"/{test_tenant}/api/v1/role-assignments?role_id={sample_role['id']}")
+            response = await api_client.get(f"/api/v1/{test_tenant}/role-assignments?role_id={sample_role['id']}")
             assert response.status_code == 200
             data = response.json()
             assert all(item["role_id"] == sample_role["id"] for item in data["data"])
@@ -695,7 +695,7 @@ class TestInvitationsAPIExtended:
         )
         await InvitationRoleAssignment.create(invitation_id=inv.id, role_assignment_id=ra.id)
         try:
-            response = await api_client.get(f"/{test_tenant}/api/v1/invitations")
+            response = await api_client.get(f"/api/v1/{test_tenant}/invitations")
             assert response.status_code == 200
             data = response.json()
             assert data["meta"]["total"] >= 1
@@ -721,7 +721,7 @@ class TestInvitationsAPIExtended:
         )
         await InvitationRoleAssignment.create(invitation_id=inv.id, role_assignment_id=ra.id)
         try:
-            response = await api_client.get(f"/{test_tenant}/api/v1/invitations?status=pending")
+            response = await api_client.get(f"/api/v1/{test_tenant}/invitations?status=pending")
             assert response.status_code == 200
             data = response.json()
             assert all(item["status"] == "pending" for item in data["data"])
@@ -747,7 +747,7 @@ class TestInvitationsAPIExtended:
         )
         await InvitationRoleAssignment.create(invitation_id=inv.id, role_assignment_id=ra.id)
         try:
-            response = await api_client.get(f"/{test_tenant}/api/v1/invitations?guest_id={sample_guest['id']}")
+            response = await api_client.get(f"/api/v1/{test_tenant}/invitations?guest_id={sample_guest['id']}")
             assert response.status_code == 200
             data = response.json()
             assert all(item["guest_id"] == sample_guest["id"] for item in data["data"])
@@ -773,7 +773,7 @@ class TestInvitationsAPIExtended:
         )
         await InvitationRoleAssignment.create(invitation_id=inv.id, role_assignment_id=ra.id)
         try:
-            response = await api_client.get(f"/{test_tenant}/api/v1/invitations?expand=guest")
+            response = await api_client.get(f"/api/v1/{test_tenant}/invitations?expand=guest")
             assert response.status_code == 200
             data = response.json()
             for item in data["data"]:
@@ -800,7 +800,7 @@ class TestInvitationsAPIExtended:
         )
         await InvitationRoleAssignment.create(invitation_id=inv.id, role_assignment_id=ra.id)
         try:
-            response = await api_client.get(f"/{test_tenant}/api/v1/invitations/{inv.id}")
+            response = await api_client.get(f"/api/v1/{test_tenant}/invitations/{inv.id}")
             assert response.status_code == 200
             data = response.json()
             assert data["data"]["id"] == inv.id
@@ -813,13 +813,13 @@ class TestInvitationsAPIExtended:
     @pytest.mark.api
     async def test_get_invitation_by_id_not_found(self, api_client, test_tenant):
         """GET /invitations/{id} returns 404 for non-existent invitation."""
-        response = await api_client.get(f"/{test_tenant}/api/v1/invitations/99999")
+        response = await api_client.get(f"/api/v1/{test_tenant}/invitations/99999")
         assert response.status_code == 404
 
     @pytest.mark.api
     async def test_get_invitation_by_code_not_found(self, api_client, test_tenant):
         """GET /invitations/code/{code} returns 404 for non-existent code."""
-        response = await api_client.get(f"/{test_tenant}/api/v1/invitations/code/nonexistent")
+        response = await api_client.get(f"/api/v1/{test_tenant}/invitations/code/nonexistent")
         assert response.status_code == 404
 
     @pytest.mark.api
@@ -840,7 +840,7 @@ class TestInvitationsAPIExtended:
         await InvitationRoleAssignment.create(invitation_id=inv.id, role_assignment_id=ra.id)
         try:
             response = await api_client.patch(
-                f"/{test_tenant}/api/v1/invitations/{inv.id}",
+                f"/api/v1/{test_tenant}/invitations/{inv.id}",
                 json={"status": "accepted"},
             )
             assert response.status_code == 200
@@ -869,7 +869,7 @@ class TestInvitationsAPIExtended:
         await InvitationRoleAssignment.create(invitation_id=inv.id, role_assignment_id=ra.id)
         try:
             response = await api_client.patch(
-                f"/{test_tenant}/api/v1/invitations/{inv.id}",
+                f"/api/v1/{test_tenant}/invitations/{inv.id}",
                 json={"status": "invalid_status"},
             )
             assert response.status_code == 400
@@ -882,7 +882,7 @@ class TestInvitationsAPIExtended:
     async def test_update_invitation_not_found(self, api_client, test_tenant):
         """PATCH /invitations/{id} returns 404 for non-existent invitation."""
         response = await api_client.patch(
-            f"/{test_tenant}/api/v1/invitations/99999",
+            f"/api/v1/{test_tenant}/invitations/99999",
             json={"status": "accepted"},
         )
         assert response.status_code == 404
@@ -905,7 +905,7 @@ class TestInvitationsAPIExtended:
         await InvitationRoleAssignment.create(invitation_id=inv.id, role_assignment_id=ra.id)
         try:
             response = await api_client.patch(
-                f"/{test_tenant}/api/v1/invitations/{inv.id}",
+                f"/api/v1/{test_tenant}/invitations/{inv.id}",
                 json={},
             )
             assert response.status_code == 400
@@ -931,7 +931,7 @@ class TestInvitationsAPIExtended:
         )
         await InvitationRoleAssignment.create(invitation_id=inv.id, role_assignment_id=ra.id)
         try:
-            response = await api_client.delete(f"/{test_tenant}/api/v1/invitations/{inv.id}")
+            response = await api_client.delete(f"/api/v1/{test_tenant}/invitations/{inv.id}")
             assert response.status_code == 200
             assert response.json()["data"]["deleted"] is True
         finally:
@@ -940,14 +940,14 @@ class TestInvitationsAPIExtended:
     @pytest.mark.api
     async def test_delete_invitation_not_found(self, api_client, test_tenant):
         """DELETE /invitations/{id} returns 404 for non-existent invitation."""
-        response = await api_client.delete(f"/{test_tenant}/api/v1/invitations/99999")
+        response = await api_client.delete(f"/api/v1/{test_tenant}/invitations/99999")
         assert response.status_code == 404
 
     @pytest.mark.api
     async def test_create_invitation_invalid_guest(self, api_client, test_tenant, sample_role):
         """POST /invitations returns 404 for non-existent guest."""
         response = await api_client.post(
-            f"/{test_tenant}/api/v1/invitations",
+            f"/api/v1/{test_tenant}/invitations",
             json={
                 "guest_id": 99999,
                 "role_assignment_ids": [1],
@@ -960,7 +960,7 @@ class TestInvitationsAPIExtended:
     async def test_create_invitation_invalid_role_assignment(self, api_client, test_tenant, sample_guest):
         """POST /invitations returns 404 for non-existent role assignment."""
         response = await api_client.post(
-            f"/{test_tenant}/api/v1/invitations",
+            f"/api/v1/{test_tenant}/invitations",
             json={
                 "guest_id": sample_guest["id"],
                 "role_assignment_ids": [99999],

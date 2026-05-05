@@ -145,7 +145,7 @@ def _go_to_guest(row: dict):
     """Navigate to guest detail page."""
     tenant = get_tenant_from_session()
     if tenant and (guest_id := row.get("guest_id")):
-        ui.navigate.to(f'/{tenant}/m/guests?id={guest_id}')
+        ui.navigate.to(f'/m/{tenant}/guests?id={guest_id}')
 
 
 def get_role_guests_config() -> TableConfig:
@@ -285,7 +285,7 @@ async def render_role_tabs(role: dict, tenant: str):
     await tabs.build()      # type: ignore
 
 
-@ui.page('/{tenant}/m/roles')
+@ui.page('/m/{tenant}/roles')
 async def roles_page(tenant: str = Depends(require_role_admin_auth), id: int | None = None):
     logger.debug(f"roles page accessed by tenant: {tenant}")
 

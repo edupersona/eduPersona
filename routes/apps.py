@@ -12,8 +12,13 @@ from ng_rdm.components import Button, Col, Row
 from services.auth.guest_auth import create_guest_oidc_handler
 from services.i18n import _
 from services.oidc_mt.multitenant import start_oidc_login
-from services.tenant import validate_tenant
+from services.tenant import get_default_tenant
 from services.theme import frame
+
+
+def _session_tenant() -> str:
+    """Tenant from session if set, else default."""
+    return app.storage.user.get("tenant") or get_default_tenant()
 
 
 def _is_guest_session() -> bool:
@@ -72,10 +77,10 @@ def _render_role_card(tenant: str, ra: dict, status: str) -> None:
             # TO DO: create Badge in ng_rdm...
             ui.badge(_(meta['label_key'])).props(f"color={meta['color']}").style('font-size: 1.3rem;')
 
-@ui.page('/{tenant}/apps/no_account')
-async def apps_no_account_page(tenant: str) -> None:
+@ui.page('/apps/no_account')
+async def apps_no_account_page() -> None:
     """Shown when eduID login succeeds but no matching Guest exists (or onboarding wasn't completed)."""
-    validate_tenant(tenant)
+    tenant = _session_tenant()
 
     with frame('no_account', tenant):
         with Col(classes='centered-content'):
@@ -85,23 +90,23 @@ async def apps_no_account_page(tenant: str) -> None:
                          ).classes('text')
                 with Row().classes('button-row').style('margin-top: 1rem; gap: 0.75rem;'):
                     Button(_('Enter invitation code'),
-                           on_click=lambda: ui.navigate.to(f'/{tenant}/accept'))
+                           on_click=lambda: ui.navigate.to('/accept'))
                     Button(_('Try a different eduID'), color='secondary',
-                           on_click=lambda: ui.navigate.to(f'/{tenant}/apps?relogin=1'))
+                           on_click=lambda: ui.navigate.to('/apps?relogin=1'))
 
 
-@ui.page('/{tenant}/apps')
-async def apps_page(tenant: str, relogin: int = 0) -> None:
+@ui.page('/apps')
+async def apps_page(relogin: int = 0) -> None:
     """Guest portal: role-assignment cards (active / future / expired) + pending invitations."""
-    validate_tenant(tenant)
+    tenant = _session_tenant()
 
-    if relogin or not _is_guest_session() or app.storage.user.get("tenant") != tenant:
+    if relogin or not _is_guest_session():
         if app.storage.user.get("authenticated"):
             app.storage.user.clear()
         await start_oidc_login(
             tenant=tenant, idp="eduid",
             callback_handler=create_guest_oidc_handler(tenant),
-            next_url=f"/{tenant}/apps", force_login=True,
+            next_url="/apps", force_login=True,
         )
         return
 
@@ -135,7 +140,7 @@ async def apps_page(tenant: str, relogin: int = 0) -> None:
         if pending:
             ui.link(
                 _('You have unclaimed invitations for other roles — click here to accept'),
-                f'/{tenant}/accept',
+                '/accept',
             ).classes('apps-other-invites')
 
-        ui.link(_('Use a different eduID'), f'/{tenant}/apps?relogin=1').classes('text-muted')
+        ui.link(_('Click here to use a different eduID'), '/apps?relogin=1').classes('text')

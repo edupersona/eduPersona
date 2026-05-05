@@ -61,7 +61,7 @@ async def test_guest_workflow_with_ui(user: User, test_tenant: str, sample_invit
     # This is a placeholder for full UI integration tests
     # Would require complete OIDC mocking
 
-    await user.open(f'/{test_tenant}/accept/{sample_invitation}')
+    await user.open(f'/accept/{sample_invitation}')
     await user.should_see('Welkom')  # Dutch: Welcome
 
     # Full test would include:

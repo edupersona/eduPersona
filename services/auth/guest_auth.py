@@ -56,17 +56,17 @@ def create_guest_oidc_handler(tenant: str):
         uids = userinfo.get("uids") or []
         if not uids:
             logger.error("Guest eduID login: userinfo missing 'uids' claim")
-            ui.navigate.to(f"/{tenant}/apps/no_account")
+            ui.navigate.to("/apps/no_account")
             return
 
         pseudonym = uids[0]
         guests = await get_guest_store(tenant).read_items(filter_by={"eduid_pseudonym": pseudonym})
         if not guests:
             logger.info(f"Guest eduID login: no guest with pseudonym={pseudonym[:8]}...")
-            ui.navigate.to(f"/{tenant}/apps/no_account")
+            ui.navigate.to("/apps/no_account")
             return
 
         await complete_guest_authentication(tenant, guests[0])
-        ui.navigate.to(next_url or f"/{tenant}/apps")
+        ui.navigate.to(next_url or "/apps")
 
     return guest_result_handler

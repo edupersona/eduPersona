@@ -14,7 +14,7 @@ class TestAPIKeyAuth:
     async def test_missing_api_key_returns_401(self, test_tenant):
         """Request without X-API-Key header returns 401."""
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            response = await client.get(f"/{test_tenant}/api/v1/guests")
+            response = await client.get(f"/api/v1/{test_tenant}/guests")
         assert response.status_code == 401
         assert response.json()["detail"]["error"]["code"] == "UNAUTHORIZED"
 
@@ -23,14 +23,14 @@ class TestAPIKeyAuth:
         """Request with incorrect API key returns 401."""
         headers = {"X-API-Key": "wrong-key"}
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test", headers=headers) as client:
-            response = await client.get(f"/{test_tenant}/api/v1/guests")
+            response = await client.get(f"/api/v1/{test_tenant}/guests")
         assert response.status_code == 401
         assert response.json()["detail"]["error"]["code"] == "UNAUTHORIZED"
 
     @pytest.mark.api
     async def test_valid_api_key_succeeds(self, api_client, test_tenant):
         """Request with correct API key succeeds."""
-        response = await api_client.get(f"/{test_tenant}/api/v1/guests")
+        response = await api_client.get(f"/api/v1/{test_tenant}/guests")
         assert response.status_code == 200
 
     @pytest.mark.api
@@ -45,7 +45,7 @@ class TestAPIKeyAuth:
 
 @pytest.mark.api
 async def test_invite_roles_create_role(api_client, test_tenant):
-    """Test POST /{tenant}/api/v1/invite-roles creates new role (SURF API emulation)"""
+    """Test POST /api/v1/{tenant}/invite-roles creates new role (SURF API emulation)"""
     payload = {
         "name": "New SURF Role",
         "shortName": "surf-role-123",
@@ -57,7 +57,7 @@ async def test_invite_roles_create_role(api_client, test_tenant):
         ]
     }
 
-    response = await api_client.post(f"/{test_tenant}/api/v1/invite-roles", json=payload)
+    response = await api_client.post(f"/api/v1/{test_tenant}/invite-roles", json=payload)
 
     assert response.status_code == 200
     body = response.json()
@@ -72,7 +72,7 @@ async def test_invite_roles_create_role(api_client, test_tenant):
 
 @pytest.mark.api
 async def test_invite_roles_update_role(api_client, test_tenant, sample_role):
-    """Test POST /{tenant}/api/v1/invite-roles updates existing role"""
+    """Test POST /api/v1/{tenant}/invite-roles updates existing role"""
     payload = {
         "name": "Updated Role Name",
         "shortName": sample_role["scim_id"],  # Use existing scim_id
@@ -84,7 +84,7 @@ async def test_invite_roles_update_role(api_client, test_tenant, sample_role):
         ]
     }
 
-    response = await api_client.post(f"/{test_tenant}/api/v1/invite-roles", json=payload)
+    response = await api_client.post(f"/api/v1/{test_tenant}/invite-roles", json=payload)
 
     assert response.status_code == 200
     body = response.json()
@@ -97,13 +97,13 @@ async def test_invite_roles_update_role(api_client, test_tenant, sample_role):
 
 @pytest.mark.api
 async def test_invite_roles_missing_required_fields(api_client, test_tenant):
-    """Test POST /{tenant}/api/v1/invite-roles with missing required fields"""
+    """Test POST /api/v1/{tenant}/invite-roles with missing required fields"""
     payload = {
         "name": "Test Group"
         # Missing shortName
     }
 
-    response = await api_client.post(f"/{test_tenant}/api/v1/invite-roles", json=payload)
+    response = await api_client.post(f"/api/v1/{test_tenant}/invite-roles", json=payload)
 
     # Pydantic validation returns 422 for missing required fields
     assert response.status_code == 422
@@ -113,12 +113,12 @@ async def test_invite_roles_missing_required_fields(api_client, test_tenant):
 async def test_multitenancy_in_api(api_client, sample_role):
     """Test that API respects tenant isolation — unconfigured tenant returns 404."""
     # Query roles for 'hvh' tenant (has sample_role + api_key)
-    hvh_response = await api_client.get("/hvh/api/v1/roles")
+    hvh_response = await api_client.get("/api/v1/hvh/roles")
     assert hvh_response.status_code == 200
     hvh_body = hvh_response.json()
     hvh_roles = hvh_body["data"]
     assert "Test Role" in [g["name"] for g in hvh_roles]
 
     # 'vu' tenant is registered as valid but has no config/api_key — should be rejected
-    vu_response = await api_client.get("/vu/api/v1/roles")
+    vu_response = await api_client.get("/api/v1/vu/roles")
     assert vu_response.status_code == 404

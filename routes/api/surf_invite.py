@@ -1,7 +1,7 @@
 """
 SURF Invite API compatibility endpoints.
 
-POST /{tenant}/api/v1/invite-roles - Upsert role from SURF Invite API format
+POST /api/v1/{tenant}/invite-roles - Upsert role from SURF Invite API format
 
 Example SURF Invite API payload:
 {
@@ -49,7 +49,7 @@ class InviteRoleRequest(BaseModel):
     applicationUsages: list[ApplicationUsage] = []
 
 
-@api_router.post("/{tenant}/api/v1/invite-roles")
+@api_router.post("/invite-roles")
 async def create_invite_role(tenant: str, data: InviteRoleRequest):
     """Upsert role from SURF Invite API format.
 

@@ -4,7 +4,7 @@ Proof of Concept van een self-service pagina om interne identiteiten te verrijke
 
 Werkwijze (zie ook figuur):
 
-1. Maak een **gast** aan en ken een **rol** toe. Structureel zul je dat willen doen vanuit instellings-IGA/IDM, maar het kan ook (bijvoorbeeld in een PoC) interactief in eduPersona. Die rol moet ook gedefinieerd worden, uiteraard &ndash; zelfde verhaal.
+1. Maak een **gast** aan en ken een **rol** toe. Structureel zul je dat willen doen vanuit instellings-IGA/IDM, maar het kan ook interactief in eduPersona. Die rol moet ook gedefinieerd worden, uiteraard &ndash; zelfde verhaal.
 2. Maak een **uitnodiging** aan voor deze gast en rol en verzend deze: eduPersona kan een SMTP stekker of Postmark gebruiken voor uitgaande mail en biedt templates die per tenant kunnen worden ingesteld -- maar uiteraard kan de verzending ook vanuit IGA/IDM plaatsvinden. 
 3. De gast opent de link naar de self-service-pagina **/accept**, of kopieert en plakt de code. Daar leiden we hem/haar door de stappen die nodig zijn om toegang te geven. Voor elke IDP (inclusief maar niet beperkt tot eduID) kunnen we controles doen op attributen (naam, mailadres e.d.) en op meegegeven ACR's (bijv. tweede factor) - en de gebruiker de goede kant opsturen als nadere verificatie of configuratie nodig is. 
 
@@ -54,7 +54,7 @@ Je kunt nu gasten opvoeren, rollen definiëren en toekennen, en gasten uitnodige
 Anders: klik op de uitnodiging en kopieer de code.
 
 Je hebt nu de code waarmee een gast de onboarding kan starten:
-* ga naar http://localhost:8080/hvh/accept<br>
+* ga naar http://localhost:8080/accept<br>
 *TIP: Houd de 'admin' en 'gast' schermen gescheiden, bijvoorbeeld door verschillende browsers te gebruiken*
 * voer de code in en volg de aangegeven stappen
 * na succesvolle afronding is het eduID-pseudoniem geregistreerd en wordt de gast doorgeleid naar zijn/haar '/apps' pagina 
@@ -71,7 +71,7 @@ We hebben een demo-/PoC-omgeving draaien op [https://edupersona.nl/](https://edu
 
 * eduPersona is fundamenteel **multi-tenant**, ook als je dat niet gebruikt. De default tenant die je overal tegenkomt is 'hvh': de beruchte Hogeschool van Harderwijk. Je kunt in settings.json je eigen tenant-string als key opnemen onder de `tenants` key. 
 
-* **'Mijn applicaties & diensten'** (`/{tenant}/apps`): eenmaal 'onboarded', logt een gast hier met eduID in en ziet al zijn/haar rollen. Deze toegang is gebaseerd op het eduID-pseudoniem dat bij het accepteren van de uitnodiging wordt gebruikt &ndash; dit wordt bij de gast vastgelegd.
+* **'Mijn applicaties & diensten'** (`/apps`): eenmaal 'onboarded', logt een gast hier met eduID in en ziet al zijn/haar rollen. Deze toegang is gebaseerd op het eduID-pseudoniem dat bij het accepteren van de uitnodiging wordt gebruikt &ndash; dit wordt bij de gast vastgelegd.
 
 * **SCIM**: eduPersona gebruikt een store/observer-patroon om alle mutaties van gebruikers, rollen e.d. via SCIM terug te synchroniseren &ndash; meestal zal dat naar een IDM/IGA-systeem zijn.
 
@@ -115,9 +115,7 @@ Stel in settings.json de `tenants.hvh.api_key` in als je de API wilt gaan gebrui
 
 Zie requirements.txt (en requirements-test.txt als je de tests wilt kunnen draaien).
 
-### Contraints
-
-Let op, er wordt nog druk gesleuteld aan deze code. Onder andere is het de bedoeling om de beheersinterface (gasten, rollen) af te splitsen, zodat de 'onboarding' module zo licht mogelijk wordt. 
+### Constraints
 
 Aandachtspunt: eduID-pseudoniemen zijn per instelling (en desgewenst zelfs per applicatie) uniek. Om deze reden moet eduPersona (of de gebruikte eduPersona tenant) als SP/RP in dezelfde scope worden opgenomen als de instellingssystemen waarop (of waarmee) straks met eduID wordt ingelogd. 
 

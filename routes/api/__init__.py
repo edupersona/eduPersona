@@ -1,15 +1,19 @@
 """
 RESTful API v1 package for edupersona.
 
-Tenant-scoped endpoints (/{tenant}/api/v1/...) require X-API-Key header.
+Tenant-scoped endpoints (/api/v1/{tenant}/...) require X-API-Key header.
 Non-tenant endpoints (e.g. cleanup) use their own auth mechanism.
 """
 from fastapi import APIRouter, Depends
 
 from services.auth.dependencies import require_api_key
 
-# Tenant-scoped router — all routes require a valid per-tenant API key
-tenant_api_router = APIRouter(dependencies=[Depends(require_api_key)])
+# Tenant-scoped router — all routes require a valid per-tenant API key.
+# Tenant lives in the prefix; individual endpoints register relative paths.
+tenant_api_router = APIRouter(
+    prefix="/api/v1/{tenant}",
+    dependencies=[Depends(require_api_key)],
+)
 
 # Top-level router (cleanup uses its own API key mechanism)
 api_router = APIRouter()

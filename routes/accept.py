@@ -7,8 +7,8 @@ from ng_rdm.utils import logger
 from services.i18n import _
 from services.session_manager import initialize_state
 from services.settings import get_tenant_config
-from domain.invitations import get_invitation_with_roles
-from services.tenant import store_tenant_in_session, validate_tenant
+from domain.invitations import find_invitation_by_code, get_invitation_with_roles
+from services.tenant import get_default_tenant, store_tenant_in_session
 from services.theme import frame
 
 
@@ -38,10 +38,16 @@ async def process_invite_code(tenant: str, state: dict, invite_code: str):
         ui.notify(_('Invalid invite code'), type='negative')
 
 
-@ui.page('/{tenant}/accept')
-@ui.page('/{tenant}/accept/{invite_code}')
-async def accept_invitation(tenant: str, invite_code: str = ""):
-    validate_tenant(tenant)
+@ui.page('/accept')
+@ui.page('/accept/{invite_code}')
+async def accept_invitation(invite_code: str = ""):
+    """Guest invitation entry. Tenant is resolved from the invitation code;
+    bare /accept renders with the default-tenant theme until a code is entered."""
+    tenant = get_default_tenant()
+    if invite_code:
+        match = await find_invitation_by_code(invite_code.strip())
+        if match:
+            tenant = match[0]
 
     with frame('accept', tenant):
         # Ensure client connection for tab storage

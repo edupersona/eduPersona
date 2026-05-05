@@ -1,14 +1,14 @@
 """
 Guest CRUD endpoints for API v1.
 
-GET    /{tenant}/api/v1/guests           - List all guests
-GET    /{tenant}/api/v1/guests/{id}      - Get single guest
-POST   /{tenant}/api/v1/guests           - Create guest
-PATCH  /{tenant}/api/v1/guests/{id}      - Update guest
-DELETE /{tenant}/api/v1/guests/{id}      - Delete guest
-GET    /{tenant}/api/v1/guests/{id}/attributes      - Get guest's OIDC attributes
-GET    /{tenant}/api/v1/guests/{id}/role-assignments - Get guest's role assignments
-GET    /{tenant}/api/v1/guests/{id}/invitations     - Get guest's invitations
+GET    /api/v1/{tenant}/guests           - List all guests
+GET    /api/v1/{tenant}/guests/{id}      - Get single guest
+POST   /api/v1/{tenant}/guests           - Create guest
+PATCH  /api/v1/{tenant}/guests/{id}      - Update guest
+DELETE /api/v1/{tenant}/guests/{id}      - Delete guest
+GET    /api/v1/{tenant}/guests/{id}/attributes      - Get guest's OIDC attributes
+GET    /api/v1/{tenant}/guests/{id}/role-assignments - Get guest's role assignments
+GET    /api/v1/{tenant}/guests/{id}/invitations     - Get guest's invitations
 """
 from fastapi import HTTPException, Query
 from pydantic import BaseModel
@@ -42,7 +42,7 @@ class GuestUpdate(BaseModel):
     scim_id: str | None = None
 
 
-@api_router.get("/{tenant}/api/v1/guests")
+@api_router.get("/guests")
 async def list_guests(
     tenant: str,
     q: str | None = None,
@@ -70,7 +70,7 @@ async def list_guests(
         raise api_error("INTERNAL_ERROR", str(e), status_code=500)
 
 
-@api_router.get("/{tenant}/api/v1/guests/{guest_id}")
+@api_router.get("/guests/{guest_id}")
 async def get_guest(tenant: str, guest_id: int):
     """Get single guest by ID."""
     validate_tenant_or_raise(tenant)
@@ -89,7 +89,7 @@ async def get_guest(tenant: str, guest_id: int):
         raise api_error("INTERNAL_ERROR", str(e), status_code=500)
 
 
-@api_router.post("/{tenant}/api/v1/guests")
+@api_router.post("/guests")
 async def create_guest(tenant: str, data: GuestCreate):
     """Create a new guest."""
     validate_tenant_or_raise(tenant)
@@ -116,7 +116,7 @@ async def create_guest(tenant: str, data: GuestCreate):
         raise api_error("INTERNAL_ERROR", str(e), status_code=500)
 
 
-@api_router.patch("/{tenant}/api/v1/guests/{guest_id}")
+@api_router.patch("/guests/{guest_id}")
 async def update_guest(tenant: str, guest_id: int, data: GuestUpdate):
     """Update guest fields."""
     validate_tenant_or_raise(tenant)
@@ -146,7 +146,7 @@ async def update_guest(tenant: str, guest_id: int, data: GuestUpdate):
         raise api_error("INTERNAL_ERROR", str(e), status_code=500)
 
 
-@api_router.delete("/{tenant}/api/v1/guests/{guest_id}")
+@api_router.delete("/guests/{guest_id}")
 async def delete_guest(tenant: str, guest_id: int):
     """Delete a guest."""
     validate_tenant_or_raise(tenant)
@@ -169,7 +169,7 @@ async def delete_guest(tenant: str, guest_id: int):
         raise api_error("INTERNAL_ERROR", str(e), status_code=500)
 
 
-@api_router.get("/{tenant}/api/v1/guests/{guest_id}/attributes")
+@api_router.get("/guests/{guest_id}/attributes")
 async def get_guest_attributes(tenant: str, guest_id: int):
     """Get guest's OIDC attributes."""
     validate_tenant_or_raise(tenant)
@@ -192,7 +192,7 @@ async def get_guest_attributes(tenant: str, guest_id: int):
         raise api_error("INTERNAL_ERROR", str(e), status_code=500)
 
 
-@api_router.get("/{tenant}/api/v1/guests/{guest_id}/role-assignments")
+@api_router.get("/guests/{guest_id}/role-assignments")
 async def get_guest_role_assignments(tenant: str, guest_id: int):
     """Get guest's role assignments."""
     validate_tenant_or_raise(tenant)
@@ -215,7 +215,7 @@ async def get_guest_role_assignments(tenant: str, guest_id: int):
         raise api_error("INTERNAL_ERROR", str(e), status_code=500)
 
 
-@api_router.get("/{tenant}/api/v1/guests/{guest_id}/invitations")
+@api_router.get("/guests/{guest_id}/invitations")
 async def get_guest_invitations(tenant: str, guest_id: int):
     """Get guest's invitations."""
     validate_tenant_or_raise(tenant)

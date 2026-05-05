@@ -4,7 +4,6 @@ Based on alarm app patterns adapted for eduIDM.
 """
 
 from datetime import datetime, timedelta
-from typing import Callable
 
 from fastapi import HTTPException, Request, Security
 from fastapi.security import APIKeyHeader
@@ -48,105 +47,63 @@ def check_inactivity() -> bool:
 
 
 def _extract_tenant_from_path(request: Request) -> str:
-    """Extract tenant from URL path. Returns empty string if not found."""
-    path = str(request.url.path)
-    parts = path.strip('/').split('/')
-    if parts:
-        return parts[0]  # First path segment is tenant
+    """Extract tenant from URL path under namespace-first scheme.
+
+    `/m/{tenant}/...`        → parts[1]
+    `/api/v1/{tenant}/...`   → parts[2]
+    Other paths              → empty string
+    """
+    parts = str(request.url.path).strip('/').split('/')
+    if len(parts) >= 2 and parts[0] == 'm':
+        return parts[1]
+    if len(parts) >= 3 and parts[0] == 'api' and parts[1] == 'v1':
+        return parts[2]
     return ""
 
 
-def check_valid_tenant(request: Request) -> str:
-    """
-    Dependency to check if user has valid authenticated session.
-    Returns tenant if authenticated, raises HTTPException to redirect if not.
-    """
-    tenant = auth_tenant()
-    if tenant:
-        if check_inactivity():
-            return tenant
-        # Session expired - redirect to login
-        logger.info(f"Session expired for tenant {tenant}")
-    else:
-        logger.info("No authenticated session found")
-
-    # Determine redirect tenant: from path, session, or default
-    redirect_tenant = _extract_tenant_from_path(request) or tenant or get_default_tenant()
-    login_url = f"/{redirect_tenant}/m/login"
-
-    # Redirect to login page
+def _redirect_to_login(request: Request, tenant_hint: str, reason: str) -> None:
+    """Raise 307 redirect to the tenant login. Single funnel for any auth failure."""
+    redirect_tenant = _extract_tenant_from_path(request) or tenant_hint or get_default_tenant()
+    logger.info(f"Auth redirect → /m/{redirect_tenant}/login ({reason})")
     raise HTTPException(
         status_code=307,
         detail="Authentication Required",
-        headers={"Location": login_url}
+        headers={"Location": f"/m/{redirect_tenant}/login"},
     )
 
 
-def check_authz(scope: str) -> Callable:
-    """
-    Factory function that creates authorization dependency for specific scope.
-
-    Args:
-        scope: Authorization scope required (e.g., 'invitations', 'roles')
-
-    Returns:
-        Dependency function that checks authorization
-    """
-    async def dependency():
-        authz_ok = scope in app.storage.user.get("authz", [])
-        if not authz_ok:
-            logger.warning(f"Authorization denied for scope: {scope}")
-            raise HTTPException(
-                status_code=403,
-                detail=f"Unauthorized: requires '{scope}' permission"
-            )
-        return authz_ok
-    return dependency
+def check_valid_tenant(request: Request) -> str:
+    """Return tenant for an authenticated session; otherwise redirect to login."""
+    tenant = auth_tenant()
+    if tenant and check_inactivity():
+        return tenant
+    _redirect_to_login(request, tenant, "no session" if not tenant else "session expired")
+    return ""  # unreachable; satisfies type checker
 
 
-# Combined dependencies for common patterns
+def _require_scope(request: Request, scope: str) -> str:
+    """Auth + scope check. Any failure (no session, expired, missing scope) redirects."""
+    tenant = check_valid_tenant(request)
+    if scope not in app.storage.user.get("authz", []):
+        _redirect_to_login(request, tenant, f"missing scope '{scope}'")
+    return tenant
+
 
 def require_admin_auth(request: Request) -> str:
-    """Dependency requiring any admin authentication."""
+    """Any authenticated admin."""
     return check_valid_tenant(request)
 
 
 def require_invite_auth(request: Request) -> str:
-    """Dependency requiring 'invitations' authorization."""
-    tenant = check_valid_tenant(request)
-    # Check authorization
-    authz = app.storage.user.get("authz", [])
-    if 'invitations' not in authz:
-        raise HTTPException(
-            status_code=403,
-            detail="Unauthorized: requires 'invitations' permission"
-        )
-    return tenant
+    return _require_scope(request, 'invitations')
 
 
 def require_role_admin_auth(request: Request) -> str:
-    """Dependency requiring 'roles' authorization."""
-    tenant = check_valid_tenant(request)
-    # Check authorization
-    authz = app.storage.user.get("authz", [])
-    if 'roles' not in authz:
-        raise HTTPException(
-            status_code=403,
-            detail="Unauthorized: requires 'roles' permission"
-        )
-    return tenant
+    return _require_scope(request, 'roles')
 
 
 def require_guests_auth(request: Request) -> str:
-    """Dependency requiring 'guests' authorization."""
-    tenant = check_valid_tenant(request)
-    authz = app.storage.user.get("authz", [])
-    if 'guests' not in authz:
-        raise HTTPException(
-            status_code=403,
-            detail="Unauthorized: requires 'guests' permission"
-        )
-    return tenant
+    return _require_scope(request, 'guests')
 
 
 # API key authentication for REST API endpoints
@@ -157,12 +114,15 @@ async def require_api_key(request: Request, _key: str | None = Security(_api_key
     try:
         tc = get_tenant_config(tenant)
     except ValueError:
-        raise HTTPException(status_code=404, detail={"error": {"code": "NOT_FOUND", "message": f"Unknown tenant: {tenant}"}})
+        raise HTTPException(status_code=404, detail={
+                            "error": {"code": "NOT_FOUND", "message": f"Unknown tenant: {tenant}"}})
 
     expected_key = tc.get("api_key", "")
     if not expected_key:
-        raise HTTPException(status_code=403, detail={"error": {"code": "API_DISABLED", "message": "API access not configured for this tenant"}})
+        raise HTTPException(status_code=403, detail={
+                            "error": {"code": "API_DISABLED", "message": "API access not configured for this tenant"}})
     api_key = request.headers.get("x-api-key", "")
     if not api_key or api_key != expected_key:
-        raise HTTPException(status_code=401, detail={"error": {"code": "UNAUTHORIZED", "message": "Invalid or missing API key"}})
+        raise HTTPException(status_code=401, detail={
+                            "error": {"code": "UNAUTHORIZED", "message": "Invalid or missing API key"}})
     return tenant

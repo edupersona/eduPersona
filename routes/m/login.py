@@ -15,16 +15,16 @@ from services.oidc_mt.multitenant import start_oidc_login
 from services.tenant import get_default_tenant, validate_tenant
 from services.theme import frame
 
-@ui.page('/{tenant}/m/login')
+@ui.page('/m/{tenant}/login')
 async def admin_login_page(client: Client, tenant: str, next_url: str | None = None) -> None:
     """Admin login page supporting both OIDC and fallback authentication."""
 
     # Validate tenant from path parameter
     validate_tenant(tenant)
 
-    # Default next_url to tenant-scoped roles page
+    # Default next_url to tenant-scoped guests page
     if not next_url:
-        next_url = f"/{tenant}/m/guests"
+        next_url = f"/m/{tenant}/guests"
 
     # Clear any existing admin session
     if app.storage.user.get("user_type") == "admin":
@@ -129,7 +129,7 @@ async def admin_login_page(client: Client, tenant: str, next_url: str | None = N
                         )
 
 
-@ui.page('/{tenant}/m/oidc_login')
+@ui.page('/m/{tenant}/oidc_login')
 async def admin_oidc_login_redirect(tenant: str, next_url: str | None = None) -> None:
     """Initiate OIDC login for admin users."""
     # Validate tenant from path parameter
@@ -137,7 +137,7 @@ async def admin_oidc_login_redirect(tenant: str, next_url: str | None = None) ->
 
     # Default next_url to tenant-scoped roles page
     if not next_url:
-        next_url = f"/{tenant}/m/roles"
+        next_url = f"/m/{tenant}/roles"
 
     logger.info(f"Starting admin OIDC login for tenant: {tenant}, next: {next_url}")
 
@@ -153,12 +153,12 @@ async def admin_oidc_login_redirect(tenant: str, next_url: str | None = None) ->
     )
 
 
-@ui.page('/{tenant}/m/logout')
+@ui.page('/m/{tenant}/logout')
 def admin_logout_page(tenant: str) -> RedirectResponse:
     """Clear admin session and redirect to tenant login."""
     logger.info(f"Admin logout for tenant: {tenant}")
     app.storage.user.clear()
-    return RedirectResponse(f"/{tenant}/m/login")
+    return RedirectResponse(f"/m/{tenant}/login")
 
 
 # Backward compatibility: redirect old /m/logout to default tenant
@@ -167,4 +167,4 @@ def admin_logout_page_legacy() -> RedirectResponse:
     """Legacy logout route - redirect to default tenant."""
     default_tenant = get_default_tenant()
     app.storage.user.clear()
-    return RedirectResponse(f"/{default_tenant}/m/login")
+    return RedirectResponse(f"/m/{default_tenant}/login")

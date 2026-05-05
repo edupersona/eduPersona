@@ -1,11 +1,11 @@
 """
 Role Assignment CRUD endpoints for API v1.
 
-GET    /{tenant}/api/v1/role-assignments           - List all role assignments
-GET    /{tenant}/api/v1/role-assignments/{id}      - Get single assignment
-POST   /{tenant}/api/v1/role-assignments           - Create assignment
-PATCH  /{tenant}/api/v1/role-assignments/{id}      - Update dates
-DELETE /{tenant}/api/v1/role-assignments/{id}      - Delete assignment
+GET    /api/v1/{tenant}/role-assignments           - List all role assignments
+GET    /api/v1/{tenant}/role-assignments/{id}      - Get single assignment
+POST   /api/v1/{tenant}/role-assignments           - Create assignment
+PATCH  /api/v1/{tenant}/role-assignments/{id}      - Update dates
+DELETE /api/v1/{tenant}/role-assignments/{id}      - Delete assignment
 """
 from fastapi import HTTPException, Query
 from pydantic import BaseModel
@@ -37,7 +37,7 @@ class RoleAssignmentUpdate(BaseModel):
     end_date: str | None = None
 
 
-@api_router.get("/{tenant}/api/v1/role-assignments")
+@api_router.get("/role-assignments")
 async def list_role_assignments(
     tenant: str,
     guest_id: int | None = None,
@@ -84,7 +84,7 @@ async def list_role_assignments(
         raise api_error("INTERNAL_ERROR", str(e), status_code=500)
 
 
-@api_router.get("/{tenant}/api/v1/role-assignments/{assignment_id}")
+@api_router.get("/role-assignments/{assignment_id}")
 async def get_role_assignment(tenant: str, assignment_id: int, expand: str | None = None):
     """Get single role assignment by ID."""
     validate_tenant_or_raise(tenant)
@@ -118,7 +118,7 @@ async def get_role_assignment(tenant: str, assignment_id: int, expand: str | Non
         raise api_error("INTERNAL_ERROR", str(e), status_code=500)
 
 
-@api_router.post("/{tenant}/api/v1/role-assignments")
+@api_router.post("/role-assignments")
 async def create_role_assignment_endpoint(tenant: str, data: RoleAssignmentCreate):
     """Create a new role assignment."""
     validate_tenant_or_raise(tenant)
@@ -157,7 +157,7 @@ async def create_role_assignment_endpoint(tenant: str, data: RoleAssignmentCreat
         raise api_error("INTERNAL_ERROR", str(e), status_code=500)
 
 
-@api_router.patch("/{tenant}/api/v1/role-assignments/{assignment_id}")
+@api_router.patch("/role-assignments/{assignment_id}")
 async def update_role_assignment_endpoint(tenant: str, assignment_id: int, data: RoleAssignmentUpdate):
     """Update role assignment dates."""
     validate_tenant_or_raise(tenant)
@@ -192,7 +192,7 @@ async def update_role_assignment_endpoint(tenant: str, assignment_id: int, data:
         raise api_error("INTERNAL_ERROR", str(e), status_code=500)
 
 
-@api_router.delete("/{tenant}/api/v1/role-assignments/{assignment_id}")
+@api_router.delete("/role-assignments/{assignment_id}")
 async def delete_role_assignment(tenant: str, assignment_id: int):
     """Delete a role assignment."""
     validate_tenant_or_raise(tenant)

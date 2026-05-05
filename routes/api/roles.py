@@ -1,12 +1,12 @@
 """
 Role CRUD endpoints for API v1.
 
-GET    /{tenant}/api/v1/roles            - List all roles
-GET    /{tenant}/api/v1/roles/{id}       - Get single role
-POST   /{tenant}/api/v1/roles            - Create role
-PATCH  /{tenant}/api/v1/roles/{id}       - Update role
-DELETE /{tenant}/api/v1/roles/{id}       - Delete role
-GET    /{tenant}/api/v1/roles/{id}/assignments - List role assignments for this role
+GET    /api/v1/{tenant}/roles            - List all roles
+GET    /api/v1/{tenant}/roles/{id}       - Get single role
+POST   /api/v1/{tenant}/roles            - Create role
+PATCH  /api/v1/{tenant}/roles/{id}       - Update role
+DELETE /api/v1/{tenant}/roles/{id}       - Delete role
+GET    /api/v1/{tenant}/roles/{id}/assignments - List role assignments for this role
 """
 from datetime import date, timedelta
 
@@ -58,7 +58,7 @@ class RoleUpdate(BaseModel):
     role_end_date: str | None = None
 
 
-@api_router.get("/{tenant}/api/v1/roles")
+@api_router.get("/roles")
 async def list_roles(
     tenant: str,
     q: str | None = None,
@@ -81,7 +81,7 @@ async def list_roles(
         raise api_error("INTERNAL_ERROR", str(e), status_code=500)
 
 
-@api_router.get("/{tenant}/api/v1/roles/{role_id}")
+@api_router.get("/roles/{role_id}")
 async def get_role(tenant: str, role_id: int):
     """Get single role by ID."""
     validate_tenant_or_raise(tenant)
@@ -100,7 +100,7 @@ async def get_role(tenant: str, role_id: int):
         raise api_error("INTERNAL_ERROR", str(e), status_code=500)
 
 
-@api_router.post("/{tenant}/api/v1/roles")
+@api_router.post("/roles")
 async def create_role(tenant: str, data: RoleCreate):
     """Create a new role."""
     validate_tenant_or_raise(tenant)
@@ -127,7 +127,7 @@ async def create_role(tenant: str, data: RoleCreate):
         raise api_error("INTERNAL_ERROR", str(e), status_code=500)
 
 
-@api_router.patch("/{tenant}/api/v1/roles/{role_id}")
+@api_router.patch("/roles/{role_id}")
 async def update_role(tenant: str, role_id: int, data: RoleUpdate):
     """Update role fields."""
     validate_tenant_or_raise(tenant)
@@ -157,7 +157,7 @@ async def update_role(tenant: str, role_id: int, data: RoleUpdate):
         raise api_error("INTERNAL_ERROR", str(e), status_code=500)
 
 
-@api_router.delete("/{tenant}/api/v1/roles/{role_id}")
+@api_router.delete("/roles/{role_id}")
 async def delete_role(tenant: str, role_id: int):
     """Delete a role."""
     validate_tenant_or_raise(tenant)
@@ -180,7 +180,7 @@ async def delete_role(tenant: str, role_id: int):
         raise api_error("INTERNAL_ERROR", str(e), status_code=500)
 
 
-@api_router.get("/{tenant}/api/v1/roles/{role_id}/assignments")
+@api_router.get("/roles/{role_id}/assignments")
 async def get_role_assignments(
     tenant: str,
     role_id: int,

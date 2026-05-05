@@ -166,7 +166,7 @@ def _go_to_role(row: dict):
     """Navigate to role detail page."""
     tenant = get_tenant_from_session()
     if tenant and (role_id := row.get("role_id")):
-        ui.navigate.to(f'/{tenant}/m/roles?id={role_id}')
+        ui.navigate.to(f'/m/{tenant}/roles?id={role_id}')
 
 
 def get_role_assignment_config() -> TableConfig:
@@ -301,7 +301,7 @@ async def render_guest_role_assignments(guest: dict, tenant: str):
     await table.build()     # type: ignore
 
 
-@ui.page('/{tenant}/m/guests')
+@ui.page('/m/{tenant}/guests')
 async def guests_page(tenant: str = Depends(require_guests_auth), id: int | None = None):
 
     ui_state = {"viewstack": {}, "editcard": {}, "detail_card": {}}

@@ -116,7 +116,7 @@ class StepCard:
 
     def render_disabled(self, state: dict) -> None:
         """Override in subclasses to customize disabled content"""
-        ui.label(self.disabled_text).classes('text-muted').style('margin-top: 0.5rem;')
+        ui.label(self.disabled_text).classes('text').style('margin-top: 0.5rem;')
 
     def is_completed(self, state: dict) -> bool:
         """Check if this step is completed"""
@@ -165,7 +165,7 @@ class VerifyEduIDStep(StepCard):
             tenant=self.tenant,
             idp="eduid",
             callback_handler=self.result_handler,
-            next_url=f"/{self.tenant}/accept",
+            next_url="/accept",
             force_login=True
         )
 
@@ -220,14 +220,14 @@ class VerifyInstitutionalStep(StepCard):
             tenant=self.tenant,
             idp="institutional",
             callback_handler=self.result_handler,
-            next_url=f"/{self.tenant}/accept",
+            next_url="/accept",
             force_login=True
         )
 
     def render_enabled(self, state: dict) -> None:
-        ui.label(_('Log in via test-IDP to verify your institutional identity.')).classes('text-muted')
+        ui.label(_('Log in via test-IDP to verify your institutional identity.')).classes('text')
         ui.label('Demo van willekeurige test-IDP als secundaire verificatie. Kies bijvoorbeeld voor "professor5/professor5"').classes(
-            'text-muted')
+            'text')
         with Row().classes('button-row'):
             Button(
                 _('Login via (dummy) institution'),
@@ -282,19 +282,25 @@ class LinkApplicationStep(StepCard):
             redirect_text = role.get('redirect_text', '')
             if redirect_url and redirect_text:
                 ui.link(
-                    _('Click here to log in to {app}', app=redirect_text),
-                    redirect_url,
+                    _('Go to my apps & services'),
+                    '/apps',
                     new_tab=True
                 ).classes('btn-primary') \
                     .style('padding: 0.5rem 1rem; border-radius: 0.25rem; font-size: 14pt; font-weight: 500; text-decoration: none; display: inline-block; margin-top: 0.5rem;')
-                # .style('padding: 0.5rem 1rem; border-radius: 0.25rem; font-size: 14pt; color:white; font-weight: 500; text-decoration: none; display: inline-block; margin-top: 0.5rem;')
 
-        # Direct link to the guest's services overview — session was established at accept time
-        if self.tenant:
-            ui.link(
-                _('Go to my services overview'),
-                f'/{self.tenant}/apps',
-            ).style('margin-top: 1rem; display: inline-block;')
+                # ui.link(
+                #     _('Click here to log in to {app}', app=redirect_text),
+                #     redirect_url,
+                #     new_tab=True
+                # ).classes('btn-primary') \
+                #     .style('padding: 0.5rem 1rem; border-radius: 0.25rem; font-size: 14pt; font-weight: 500; text-decoration: none; display: inline-block; margin-top: 0.5rem;')
+
+        # # Direct link to the guest's services overview — session was established at accept time
+        # if self.tenant:
+        #     ui.link(
+        #         _('Go to my apps & services'),
+        #         '/apps',
+        #     ).style('margin-top: 1rem; display: inline-block;')
 
 
 # Step Card Class Registry

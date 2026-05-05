@@ -51,8 +51,9 @@ def get_invitations_table_config() -> TableConfig:
     return TableConfig(
         columns=[
             Column(name="calc_guest_name", label=_("Guest"), width_percent=22),
-            Column(name="role_names", label=_("Roles"), width_percent=35),
-            Column(name="invited_at", label=_("Invited"), width_percent=30, formatter=none_as_text),
+            Column(name="role_names", label=_("Roles"), width_percent=30),
+            Column(name="invited_at", label=_("Invited"), width_percent=18, formatter=none_as_text),
+            Column(name="accepted_at", label=_("Accepted"), width_percent=18, formatter=none_as_text),
             Column(name="status", label=_("Status"), width_percent=12, render=render_status),
         ],
         empty_message=_("No invitations found."),
@@ -79,6 +80,7 @@ async def render_invitation_details(invitation: dict):
             ui.label(_('Invitation Details')).classes('rdm-detail-section-label').classes('rdm-detail-text-sm')
             ui.label(f"{_('Email')}: {invitation.get('invitation_email', '-')}").classes('rdm-detail-text-sm')
             ui.label(f"{_('Invited at')}: {none_as_text(invitation.get('invited_at', ''))}").classes('rdm-detail-text-sm')
+            ui.label(f"{_('Accepted at')}: {none_as_text(invitation.get('accepted_at', ''))}").classes('rdm-detail-text-sm')
             if invitation.get('code'):
                 ui.label(f"{_('Code')}: {invitation.get('code')}").classes('rdm-detail-text-sm')
 
@@ -263,7 +265,7 @@ async def new_invitation_dialog(tenant: str, roles: list[dict]):
     dlg.open()
 
 
-@ui.page('/{tenant}/m/invitations')
+@ui.page('/m/{tenant}/invitations')
 async def invitations_page(tenant: str = Depends(require_invite_auth)):
     logger.debug(f"invitations page accessed by tenant: {tenant}")
 

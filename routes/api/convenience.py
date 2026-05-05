@@ -1,7 +1,7 @@
 """
 Convenience endpoints for API v1.
 
-POST /{tenant}/api/v1/quick-invite - Create guest + assignment + invitation in one call
+POST /api/v1/{tenant}/quick-invite - Create guest + assignment + invitation in one call
 """
 from fastapi import HTTPException
 from pydantic import BaseModel
@@ -29,7 +29,7 @@ class QuickInviteRequest(BaseModel):
     personal_message: str | None = None
 
 
-@api_router.post("/{tenant}/api/v1/quick-invite")
+@api_router.post("/quick-invite")
 async def quick_invite(tenant: str, data: QuickInviteRequest):
     """Create guest + role assignment + invitation in one call.
 

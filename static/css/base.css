@@ -110,6 +110,7 @@ body {
 
 .text-success {
   color: var(--rdm-success);
+  font-size: 1.1rem;
 }
 
 .text-error {
@@ -348,11 +349,15 @@ a.btn-primary:hover {
   border-radius: 9999px;
   font-weight: 500;
 }
-/* InvitationStatus chips */
-.status-chip-pending  { background: #fef3c7; color: #92400e; }
-.status-chip-accepted { background: #d1fae5; color: #065f46; }
-.status-chip-expired  { background: #fee2e2; color: #991b1b; }
-.status-chip-revoked  { background: #e5e7eb; color: #374151; }
+
+.invitations-page {
+  /* InvitationStatus chips */
+  .status-chip-pending  { background: #fef3c7; color: #92400e; }
+  .status-chip-accepted { background: #d1fae5; color: #065f46; }
+  .status-chip-expired  { background: #fee2e2; color: #991b1b; }
+  .status-chip-revoked  { background: #e5e7eb; color: #374151; }
+}
+
 /* GuestStatus chips */
 .status-chip-active_roles { background: #dbeafe; color: #1e40af; }
 .status-chip-invited        { background: #fef3c7; color: #92400e; }
@@ -482,9 +487,16 @@ a.btn-primary:hover {
     width: 100%;
 }
 
-.invitations-text-caption {
-  font-size: 1rem;
-  margin: 5px 0;
+.invitations-page {
+  .invitations-text-caption {
+    font-size: 1rem;
+    margin: 5px 0;
+  }
+  .rdm-table {
+    .rdm-cell-invited_at, .rdm-cell-accepted_at {
+      font-size: 1rem;
+    }
+  }
 }
 
 .accept-page {

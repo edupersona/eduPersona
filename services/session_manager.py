@@ -6,25 +6,29 @@ from nicegui import app
 from ng_rdm.utils import logger
 
 
+_DEFAULTS = {
+    'invite_code': '',
+    'invitation_id': None,
+    'role_assignments': [],
+    'role_name': '',
+    'steps_completed': {
+        'code_matched': False,
+        'eduid_login': False,
+        'mfa_verified': False,
+        'completed': False,
+    },
+    'eduid_userinfo': {},
+    'oidc_state': {},
+}
+
+
 def initialize_state():
-    """Initialize tab state if it doesn't exist"""
-    if not hasattr(app.storage, 'tab') or not app.storage.tab:
-        logger.debug("Initializing new tab state")
-        app.storage.tab.update({
-            'invite_code': '',
-            'invitation_id': None,
-            'role_assignments': [],
-            'role_name': '',
-            'steps_completed': {
-                'code_matched': False,
-                'eduid_login': False,
-                'mfa_verified': False,
-                'completed': False
-            },
-            'eduid_userinfo': {},
-            'oidc_state': {}
-        })
-        logger.info("Tab state initialized successfully")
-    else:
-        logger.debug("Tab state already exists")
+    """Ensure tab state has all expected keys; preserve any existing values.
+
+    Earlier versions only initialized when tab storage was empty, which left
+    stale tabs (e.g. carrying just `oidc_state` from an OIDC kickoff) missing
+    other defaults — readers like `Steps.render()` would then KeyError.
+    """
+    for key, default in _DEFAULTS.items():
+        app.storage.tab.setdefault(key, default)
     return app.storage.tab

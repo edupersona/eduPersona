@@ -18,7 +18,7 @@ def map_invitation_context(invitation: dict, base_url: str) -> dict:
     context = invitation.copy()
     roles = [ra.get("role", {}) for ra in invitation.get("role_assignments", [])]
 
-    context["accept_url"] = f"{base_url}/{invitation['tenant']}/accept/{invitation['code']}"
+    context["accept_url"] = f"{base_url}/accept/{invitation['code']}"
 
     # Role names for display
     role_names = [r.get("name", "") for r in roles if r.get("name")]

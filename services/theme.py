@@ -7,14 +7,14 @@ from services.settings import get_tenant_config
 
 pages = {
     # possible menu entries, depending on authz (order: guests - roles - invitations):
-    'guests': {'path': 'm/guests', 'label': 'gasten'},
-    'roles': {'path': 'm/roles', 'label': 'rollen'},
-    'invitations': {'path': 'm/invitations', 'label': 'uitnodigingen'},
-    'accept': {'path': 'accept', 'label': 'accepteren'},
-    # other pages:
-    'apps': {'path': 'apps', 'label': 'mijn diensten'},
-    'login': {'path': 'm/login', 'label': 'inloggen'},
-    'home': {'path': '/', 'label': 'home'},
+    # `tenanted=True` → URL becomes /m/{tenant}/<path>; otherwise <path> is used as-is.
+    'guests':      {'path': 'guests',      'label': 'gasten',         'tenanted': True},
+    'roles':       {'path': 'roles',       'label': 'rollen',         'tenanted': True},
+    'invitations': {'path': 'invitations', 'label': 'uitnodigingen',  'tenanted': True},
+    'accept':      {'path': '/accept',     'label': 'accepteren',     'tenanted': False},
+    'apps':        {'path': '/apps',       'label': 'mijn diensten',  'tenanted': False},
+    'login':       {'path': 'login',       'label': 'inloggen',       'tenanted': True},
+    'home':        {'path': '/',           'label': 'home',           'tenanted': False},
 }
 
 @ui.refreshable
@@ -26,7 +26,7 @@ def main_menu(navtitle: str, tenant: str) -> None:
 
     for key, page in pages.items():
         if key in authz:
-            path = f"/{tenant}/{page['path']}"
+            path = f"/m/{tenant}/{page['path']}" if page['tenanted'] else page['path']
             ui.link(page['label'], path).classes(f"main-menu {key}").classes("selected" if navtitle == key else "")
 
 
@@ -63,9 +63,9 @@ def _user_link(tenant: str):
 
         with ui.menu().props(remove="no-parent-event"):
             if app.storage.user.get("authenticated", False) and not is_guest:
-                ui.menu_item("uitloggen", lambda: ui.navigate.to(f"/{tenant}/m/logout"))
+                ui.menu_item("uitloggen", lambda: ui.navigate.to(f"/m/{tenant}/logout"))
             else:
-                login_path = f"/{tenant}/m/login"
+                login_path = f"/m/{tenant}/login"
                 ui.menu_item("inloggen", lambda: ui.navigate.to(login_path))
 
 
