@@ -27,8 +27,13 @@ def landing_page():
     with Col(classes='landing-page'):
         # Layout: logo + cards (responsive via CSS)
         with ui.row().classes('landing-layout'):
+            with ui.link(target='https://github.com/edupersona/eduPersona', new_tab=True).classes('github-link'):
+                Icon('github')
+
             # Logo
             ui.image('/static/img/edupersona.png').classes('landing-logo')
+
+            ui.label(_('Bridging eduID and institution identity')).classes('landing-tagline')
 
             # Cards container
             with Row().classes('landing-cards'):
@@ -46,11 +51,6 @@ def landing_page():
 
             with Row().classes('admin-link'):
                 ui.link(_('Admin access'), f'/m/{default_tenant}/guests')
-                # with ui.card().classes('card-clickable') as beheer_card:
-                #     with Col(classes='card-content'):
-                #         ui.icon('admin_panel_settings', size='3em').classes('icon-primary')
-                #         ui.label(_('Management')).classes('card-title')
-                #         ui.label(_('Manage roles and invitations')).classes('text-muted')
 
         # Make entire cards clickable
         accept_card.on('click', lambda: ui.navigate.to('/accept'))

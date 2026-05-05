@@ -128,6 +128,8 @@ async def admin_login_page(client: Client, tenant: str, next_url: str | None = N
                             on_click=try_fallback_login,
                         )
 
+            ui.link(_('Register for PoC access here'), '/register').classes('register-link')
+
 
 @ui.page('/m/{tenant}/oidc_login')
 async def admin_oidc_login_redirect(tenant: str, next_url: str | None = None) -> None:

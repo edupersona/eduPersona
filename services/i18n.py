@@ -47,6 +47,7 @@ translations: dict[str, dict[str, str]] = {
         "Click here if you've received an invitation": 'Klik hier als je een uitnodiging hebt ontvangen',
         'Access your apps & services with eduID': 'Toegang naar je apps & diensten met eduID',
         'Login with eduID': 'Inloggen met eduID',
+        'Bridging eduID and institution identity': 'De brug tussen eduID en instellingsidentiteit',
 
         # Apps page
         '{name}: Your Apps & Services': '{name}: applicaties & diensten',
@@ -66,6 +67,7 @@ translations: dict[str, dict[str, str]] = {
         'Tenant': 'Tenant',
         'username': 'gebruikersnaam',
         'Username and password are required': 'Gebruikersnaam en wachtwoord zijn verplicht',
+        'Register for PoC access here': 'Zelf proberen? Registreer hier voor toegang naar de PoC-omgeving',
 
         # Roles (routes/m/roles.py)
         'active role(s)': 'actieve rol(len)',
@@ -219,12 +221,25 @@ translations: dict[str, dict[str, str]] = {
         '✓ Your eduID is now linked!': '✓ Uw eduID is nu gekoppeld!',
         'Go to my apps & services': 'Naar mijn apps & diensten',
 
-        # apps pages (routes/apps.py)
+        # Apps page (routes/apps.py)
         'No services found': 'Geen diensten beschikbaar',
         'Your eduID has (not yet) been registered here. Have you received an invitation?': 'Uw eduID is hier (nog) niet bekend. Heeft u een uitnodiging ontvangen?',
         'Enter invitation code': 'Uitnodigingscode invoeren',
         'Try a different eduID': 'Inloggen met een andere eduID',
         'Click here to use a different eduID': 'Klik hier om met een andere eduID in te loggen',
+
+        # Registration page (routes/register.py)
+        'Register for PoC access': 'Registreer hier voor toegang naar de eduPersona PoC',
+        'Leave your details if you want to try out eduPersona.nl for yourself. We will send you a test login for this PoC environment.':
+            'Wil je eduPersona.nl zelf proberen? Vul je gegevens in en we sturen je een login. (Vrijblijvend en gratis, uiteraard.)',
+        'First name': 'voornaam',
+        'Last name': 'achternaam',
+        'Organisation': 'organisatie',
+        'Please fill in all fields with a valid email': 'Vul alle velden in met een geldig mailadres',
+        'Could not send your request — please try again later': 'Je aanvraag kon niet worden verstuurd — probeer het later opnieuw',
+        'Thank you!': 'Bedankt!',
+        "We've received your details and will be in touch shortly with your PoC test login.":
+            'Bedankt voor je interesse! We hebben je gegevens ontvangen, je hoort snel van ons terug.',
 
         # SCIM Sync
         'Are you sure you want to continue?': 'Weet je zeker dat je wilt doorgaan?',

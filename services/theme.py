@@ -14,6 +14,7 @@ pages = {
     'accept':      {'path': '/accept',     'label': 'accepteren',     'tenanted': False},
     'apps':        {'path': '/apps',       'label': 'mijn diensten',  'tenanted': False},
     'login':       {'path': 'login',       'label': 'inloggen',       'tenanted': True},
+    'register':    {'path': '/register',   'label': 'aanmelden',      'tenanted': False},
     'home':        {'path': '/',           'label': 'home',           'tenanted': False},
 }
 

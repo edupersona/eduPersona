@@ -7,6 +7,7 @@
 body {
   overflow-y: scroll;
   max-width: var(--max-width, 1250px);
+  font-family: var(--font-sans);
 }
 
 /* Page structure */
@@ -405,7 +406,7 @@ a.btn-primary:hover {
 .login-page {
   .q-hoverable:hover {
     /* background-color: var(--rdm-bg-hover) !important;   */
-    background-color: var(--rdm-primary) !important;  
+    background-color: var(--rdm-primary) !important;
     color: white !important;
     font-weight: 700;
   }
@@ -415,6 +416,25 @@ a.btn-primary:hover {
       margin-left: var(--rdm-spacing-md);
       font-size: var(--rdm-font-size);
     }
+  }
+  .register-link {
+    display: block;
+    margin-top: 1rem;
+    font-size: 1.1rem;
+    text-decoration: underline;
+  }
+}
+
+.register-page {
+  margin: 0 auto;
+
+  .register-card {
+    width: 400px;
+    padding: 1.5rem;
+  }
+
+  .register-intro {
+    margin-bottom: 1rem;
   }
 }
 
@@ -436,6 +456,22 @@ a.btn-primary:hover {
     flex-direction: column;
     gap: 1rem;
     align-items: flex-start;
+    position: relative;
+
+    .landing-tagline {
+      font-size: 2rem;
+      font-weight: 600;
+      font-family: var(--font-sans);
+
+    }
+
+    .github-link {
+      position: absolute;
+      top: 0;
+      right: 0;
+      font-size: 1.75rem;
+      text-decoration: none;
+    }
   }
 
   .landing-logo {
@@ -446,11 +482,12 @@ a.btn-primary:hover {
   .landing-cards {
     display: flex;
     flex-direction: row;
+    flex-wrap: wrap;
     max-width: 960px;
     gap: 1rem;
 
     .card-clickable {
-      width: 350px;
+      width: 380px;
       max-width: 100%;
       padding: 2rem;
       cursor: pointer;
@@ -592,6 +629,13 @@ textarea.q-field__native {
   }
 }
 
+/* small screens < 600px: logo shrinks and stacks above cards */
+@media (max-width: 599px) {
+  .landing-logo {
+    width: 80px;
+  }
+}
+
 /* medium screens 600 - 768px */
 @media (min-width: 600px) {
   /* logo left, cards stacked right */
@@ -600,10 +644,3 @@ textarea.q-field__native {
   }
 }
 
-/* XL screens > 1200px */
-@media (min-width: 1200px) {
-  /* logo left, cards side-by-side right */
-  .landing-cards {
-    flex-direction: row;
-  }
-}

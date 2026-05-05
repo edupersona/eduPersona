@@ -8,6 +8,7 @@ import routes.apps
 from routes.api import api_router
 import routes.landing
 import routes.m  # all /m routes
+import routes.register
 from ng_rdm.store.orm import init_db
 from ng_rdm.utils import logger, configure_logging
 from services.auth.oidc import init_edupersona_oidc
