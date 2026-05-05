@@ -1,6 +1,6 @@
-## **eduPersona onboarding**: landingspagina voor matching & verificatie van eduID users
+## eduPersona onboarding 
 
-Proof of Concept van een self-service pagina om interne identiteiten te verrijken met eduID-pseudoniem (en eventueel -attributen), waarbij de verificatie naar wens kan worden ingericht en de gastgebruiker stap voor stap begeleid wordt in het 'onboarding'-proces.
+Een self-service pagina die de eduID van gastgebruikers betrouwbaar koppelt aan instellingsidentiteiten. Bij het aanvaarden van de uitnodiging doorloopt de gast een flexibel, configureerbaar stappenplan, waarbij de gastgebruiker stap voor stap begeleid wordt tot aan alle onboarding-eisen is voldaan.
 
 Werkwijze (zie ook figuur):
 
