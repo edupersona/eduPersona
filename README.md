@@ -51,7 +51,7 @@ Als je eduID en/of instellings-logins echt wilt testen zul je de benodigde OIDC 
 
 ### edupersona.nl
 
-We hebben een demo-/PoC-omgeving draaien op [https://edupersona.nl/](https://edupersona.nl/) . <br>[Registreer je daar](https://edupersona.nl/register) als je tijdelijke admin credentials wilt hebben om e.e.a. in de praktijk te proberen.
+We hebben een demo-/PoC-omgeving draaien op [https://edupersona.nl/](https://edupersona.nl/) <br>[Registreer je daar](https://edupersona.nl/register) als je tijdelijke admin credentials wilt hebben om e.e.a. in de praktijk te proberen.
 
 ### Inrichting, features, configuratie
 

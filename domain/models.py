@@ -4,15 +4,20 @@ Tortoise ORM models for edupersona application
 from datetime import date
 from tortoise import fields
 from ng_rdm.models import RdmModel, MultitenantRdmModel, FieldSpec, Validator, required_validator
-
+from services.i18n import _
 
 class InvitationStatus:
     """Invitation status pseudo-enum"""
     options = ["pending", "accepted", "expired"]
 
 _email_validator = Validator(
-    message="Must be a valid email address",
+    message=_("Must be a valid email address"),
     validator=lambda v, _: '@' in v if v else True
+)
+
+_edupersona_email_validator = Validator(
+    message=_("Must be an @edupersona.nl email address (for this PoC)"),
+    validator=lambda v, _: '@' in v and v.split('@', 1)[1].lower() == 'edupersona.nl' if v else True
 )
 
 class Guest(MultitenantRdmModel):
@@ -56,6 +61,10 @@ class GuestAttribute(RdmModel):
 
 class Role(MultitenantRdmModel):
     """Roles for organizing invitations with redirect config"""
+    field_specs = {
+        'mail_sender_email': FieldSpec(validators=[_edupersona_email_validator]),
+    }
+
     id = fields.IntField(primary_key=True)
     scim_id = fields.CharField(max_length=255, null=True)       # SCIM: 'id' field ('their' resource id)
     #

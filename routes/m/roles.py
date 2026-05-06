@@ -81,7 +81,7 @@ ROLES_FORM_CONFIG = FormConfig(
         Column(name="role_details", label=_("Role details (course, term, period, code)"),
                placeholder=_("e.g. visiting professor term II / 2026-2027")),
         Column(name="mail_sender_email", label=_("Sender email"),
-               placeholder=_("Invite sender's mail address")),
+               placeholder=_("Invite sender's mail address (POC: name@edupersona.nl)")),
         Column(name="mail_sender_name", label=_("Sender name"),
                placeholder=_("e.g., Carol Johnson")),
         Column(name="redirect_text", label=_("Application name"),
