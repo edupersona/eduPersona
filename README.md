@@ -1,9 +1,9 @@
-## eduPersona onboarding 
+# eduPersona onboarding 
 
-Een self-service pagina die de eduID van gastgebruikers betrouwbaar koppelt aan instellingsidentiteiten. Bij het aanvaarden van de uitnodiging doorloopt de gast een flexibel, configureerbaar stappenplan, waarbij de gastgebruiker stap voor stap begeleid wordt tot aan alle onboarding-eisen is voldaan.
+<b>TL;DR:</b> Een self-service pagina die de eduID van gastgebruikers betrouwbaar koppelt aan instellingsidentiteiten. Bij het aanvaarden van de uitnodiging doorloopt de gast een flexibel, configureerbaar stappenplan, waarbij de gastgebruiker stap voor stap begeleid wordt tot aan alle onboarding-eisen is voldaan.
 
-Werkwijze (zie ook figuur):
-
+Hoe werkt het? (zie ook tekening hieronder)
+ 
 1. Maak een **gast** aan en ken een **rol** toe. Structureel zul je dat willen doen vanuit instellings-IGA/IDM, maar het kan ook interactief in eduPersona. Die rol moet ook gedefinieerd worden, uiteraard &ndash; zelfde verhaal.
 2. Maak een **uitnodiging** aan voor deze gast en rol en verzend deze: eduPersona kan een SMTP stekker of Postmark gebruiken voor uitgaande mail en biedt templates die per tenant kunnen worden ingesteld -- maar uiteraard kan de verzending ook vanuit IGA/IDM plaatsvinden. 
 3. De gast opent de link naar de self-service-pagina **/accept**, of kopieert en plakt de code. Daar leiden we hem/haar door de stappen die nodig zijn om toegang te geven. Voor elke IDP (inclusief maar niet beperkt tot eduID) kunnen we controles doen op attributen (naam, mailadres e.d.) en op meegegeven ACR's (bijv. tweede factor) - en de gebruiker de goede kant opsturen als nadere verificatie of configuratie nodig is. 
@@ -14,20 +14,16 @@ Werkwijze (zie ook figuur):
 
 <br>
 
-![eduPersona Diagram](docs/edupersona_diagram.png)
-
 De link tussen instellingsaccount en eduID die hier wordt vastgelegd zou vervolgens kunnen worden gebruikt om via de <a href="https://servicedesk.surf.nl/wiki/spaces/IAM/pages/222462401/Ondersteuning+voor+applicaties+zonder+multi-identifier+functionaliteit">instellings-informatie API</a> het instellingsaccount mee te geven bij het inloggen. Dat maakt integratie van eduID in het applicatielandschap aanzienlijk eenvoudiger (vgl. anyID/keyring scenario van Aventus).
+
+![eduPersona Diagram](docs/edupersona_diagram.png)
 
 
 ### Relatie met SURF Invite
 
 SURF Invite is vooral te beschouwen als een *autorisatie-tool*, met als uitgangspunt dat het autorisatiepakket voor gasten kan worden bepaald op basis van Invite rollen. De principiële koers vanuit SURF Access is dat de eduID identiteit centraal staat en dat *bij het inloggen* het benodigde autorisatiepakket wordt meegeleverd. 
 
-eduPersona heeft als vertrekpunt dat een *instellingsidentiteit* in een 'onboarding-scenario' wordt verrijkt met o.a. eduID &ndash; dus *als onderdeel van de levenscyclus*. Als de benodigde verificaties eenmaal hebben plaatsgevonden (en het betrouwbaarheidsniveau is voldoende hoog), dan is daarna bij het inloggen geen enkele afhankelijkheid meer van attributen/claims die verder worden meegeleverd.
-
-Kortom: eduPersona is een self-service pagina die ervoor zorgt dat de *instelling* zekerheid heeft wie er precies straks met eduID inlogt en bovendien dat de externe *gebruiker* een goede 'onboarding' ervaring heeft:
-
-<img src="docs/screenshot3.png" alt="screenshot" width="650"/>
+eduPersona heeft als vertrekpunt dat een *instellingsidentiteit* in een onboarding-proces (uitnodigen, accepteren, verifiëren) wordt verrijkt met o.a. eduID &ndash; dus *als onderdeel van de levenscyclus*. Als de benodigde verificaties eenmaal hebben plaatsgevonden (en het betrouwbaarheidsniveau is voldoende hoog), dan is daarna bij het inloggen geen enkele afhankelijkheid meer van attributen/claims die verder worden meegeleverd.
 
 
 ### Getting started
@@ -58,6 +54,8 @@ Je hebt nu de code waarmee een gast de onboarding kan starten:
 *TIP: Houd de 'admin' en 'gast' schermen gescheiden, bijvoorbeeld door verschillende browsers te gebruiken*
 * voer de code in en volg de aangegeven stappen
 * na succesvolle afronding is het eduID-pseudoniem geregistreerd en wordt de gast doorgeleid naar zijn/haar '/apps' pagina 
+
+<img src="docs/screenshot3.png" alt="screenshot" width="650"/>
 
 Als je eduID en/of instellings-logins echt wilt testen zul je de benodigde OIDC client_id's en secrets moeten configureren in settings.json en het eduPersona portal registreren bij SURFconext(-test) en/of de betrokken IDP. (Dit kan óók met een dev omgeving op localhost.)
 
