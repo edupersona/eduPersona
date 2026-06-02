@@ -54,7 +54,7 @@ async def test_create_role(test_tenant):
         "tenant": test_tenant,
         "scim_id": "test-scim-123",
         "name": "Test Role",
-        "mail_sender_email": "test@example.com",
+        "mail_sender_email": "test@edupersona.nl",
         "mail_sender_name": "Test Sender",
         "redirect_url": "https://example.com",
         "redirect_text": "Go to Example",
@@ -383,7 +383,7 @@ async def test_role_end_date_caps_assignment_end_dates(test_tenant, sample_guest
         "name": "Capping Test Role",
         "redirect_url": "https://example.com",
         "redirect_text": "Go",
-        "mail_sender_email": "test@example.com",
+        "mail_sender_email": "test@edupersona.nl",
         "mail_sender_name": "Test",
         "role_end_date": original_role_end,
     })
@@ -419,7 +419,7 @@ async def test_role_end_date_no_cap_when_within_range(test_tenant, sample_guest)
         "name": "No-Cap Test Role",
         "redirect_url": "https://example.com",
         "redirect_text": "Go",
-        "mail_sender_email": "test@example.com",
+        "mail_sender_email": "test@edupersona.nl",
         "mail_sender_name": "Test",
         "role_end_date": original_role_end,
     })

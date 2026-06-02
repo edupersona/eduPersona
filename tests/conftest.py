@@ -171,7 +171,7 @@ async def sample_role(test_tenant):
         "name": "Test Role",
         "redirect_url": "https://example.com/test",
         "redirect_text": "Go to Test",
-        "mail_sender_email": "test@example.com",
+        "mail_sender_email": "test@edupersona.nl",
         "mail_sender_name": "Test Sender",
         "role_end_date": (date.today() + timedelta(days=365)).isoformat(),
     })

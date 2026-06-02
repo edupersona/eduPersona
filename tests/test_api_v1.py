@@ -128,7 +128,7 @@ class TestRolesAPI:
             f"/api/v1/{test_tenant}/roles",
             json={
                 "name": "New Role v1",
-                "mail_sender_email": "sender@example.com",
+                "mail_sender_email": "sender@edupersona.nl",
                 "mail_sender_name": "Sender",
                 "redirect_url": "https://example.com",
                 "redirect_text": "Go",
@@ -484,7 +484,7 @@ class TestRolesAPIExtended:
             name="Role to Delete",
             redirect_url="https://example.com",
             redirect_text="Go",
-            mail_sender_email="test@example.com",
+            mail_sender_email="test@edupersona.nl",
             mail_sender_name="Test",
             role_end_date="2030-01-01",
         )

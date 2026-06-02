@@ -130,7 +130,7 @@ async def role_without_scim_id(test_tenant):
         "name": "Unprovisioned Role",
         "redirect_url": "https://example.com/test",
         "redirect_text": "Go to Test",
-        "mail_sender_email": "test@example.com",
+        "mail_sender_email": "test@edupersona.nl",
         "mail_sender_name": "Test Sender",
         "role_end_date": (date.today() + timedelta(days=365)).isoformat(),
     })
@@ -150,7 +150,7 @@ async def role_with_scim_id(test_tenant, scim_observer):
         "name": "Provisioned Role",
         "redirect_url": "https://example.com/test",
         "redirect_text": "Go to Test",
-        "mail_sender_email": "test@example.com",
+        "mail_sender_email": "test@edupersona.nl",
         "mail_sender_name": "Test Sender",
         "role_end_date": (date.today() + timedelta(days=365)).isoformat(),
     })
@@ -251,7 +251,7 @@ async def test_on_role_event_create_updates_store(scim_observer, test_tenant):
         "name": "Observer Test Role",
         "redirect_url": "https://example.com/test",
         "redirect_text": "Go to Test",
-        "mail_sender_email": "test@example.com",
+        "mail_sender_email": "test@edupersona.nl",
         "mail_sender_name": "Test Sender",
         "role_end_date": (date.today() + timedelta(days=365)).isoformat(),
     })
@@ -439,7 +439,7 @@ async def test_bulk_sync_to_scim(scim_http_client, test_tenant):
         "name": "Bulk Sync Role",
         "redirect_url": "https://example.com/test",
         "redirect_text": "Go to Test",
-        "mail_sender_email": "test@example.com",
+        "mail_sender_email": "test@edupersona.nl",
         "mail_sender_name": "Test Sender",
         "role_end_date": (date.today() + timedelta(days=365)).isoformat(),
     })

@@ -42,7 +42,7 @@ async def test_cleanup_expired_role(test_tenant):
         "name": "Expired Role",
         "redirect_url": "https://example.com",
         "redirect_text": "Go",
-        "mail_sender_email": "test@example.com",
+        "mail_sender_email": "test@edupersona.nl",
         "mail_sender_name": "Test",
         "role_end_date": expired_date,
     })
@@ -86,7 +86,7 @@ async def test_cleanup_expired_role_keeps_guest_with_other_assignments(test_tena
         "name": "Expired Role",
         "redirect_url": "https://example.com",
         "redirect_text": "Go",
-        "mail_sender_email": "test@example.com",
+        "mail_sender_email": "test@edupersona.nl",
         "mail_sender_name": "Test",
         "role_end_date": expired_date,
     })
@@ -98,7 +98,7 @@ async def test_cleanup_expired_role_keeps_guest_with_other_assignments(test_tena
         "name": "Active Role",
         "redirect_url": "https://example.com",
         "redirect_text": "Go",
-        "mail_sender_email": "test@example.com",
+        "mail_sender_email": "test@edupersona.nl",
         "mail_sender_name": "Test",
         "role_end_date": active_date,
     })
