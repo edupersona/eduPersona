@@ -11,13 +11,9 @@ _DEFAULTS = {
     'invitation_id': None,
     'role_assignments': [],
     'role_name': '',
-    'steps_completed': {
-        'code_matched': False,
-        'eduid_login': False,
-        'mfa_verified': False,
-        'completed': False,
-    },
-    'eduid_userinfo': {},
+    # Per-step bookkeeping owned by domain.step_cards.Steps; see cline_docs/step_cards.md
+    'outcomes': {},
+    'outputs': {},
     'oidc_state': {},
 }
 

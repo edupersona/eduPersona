@@ -76,46 +76,75 @@
                     "force_login": true
                 }
             },
-            "steps": [
-                {
-                    "class": "VerifyInviteStep",
-                    "config": {
-                        "completed_key": "code_matched",
-                        "title": "Stap 1. Kopieer en plak hier de code die je per mail hebt ontvangen",
-                        "completed_text": "✓ Code ontvangen en bevestigd",
-                        "disabled_text": null
-                    }
-                },
-                {
-                    "class": "VerifyEduIDStep",
-                    "config": {
-                        "completed_key": "eduid login",
-                        "title": "Stap 2. Inloggen met eduID (let op: gebruik je TEST eduID)",
-                        "completed_text": "✓ Ingelogd met (test-)eduID",
-                        "disabled_text": "Voltooi eerst stap 1"
-                    }
-                },
-                {
-                    "class": "VerifyInstitutionalStep",
-                    "config": {
-                        "completed_key": "login instelling",
-                        "title": "Stap 3. Inloggen met (dummy) instellingsaccount",
-                        "completed_text": "✓ Institutioneel ingelogd (test-IDP)",
-                        "disabled_text": "Voltooi eerst stap 2"
-                    }
-                },
-                {
-                    "class": "LinkApplicationStep",
-                    "config": {
-                        "completed_key": "completed",
-                        "title": "Stap 4. Toegang naar de applicatie",
-                        "completed_text": "✓ Uw eduID is nu gekoppeld!",
-                        "disabled_text": "Voltooi eerst de vorige stappen",
-                        "default_link_url": "http://localhost:8080/hvh/apps",
-                        "default_link_text": "Mijn diensten en applicaties"
-                    }
+            "default_scenario": "default",
+            "scenarios": {
+                "default": {
+                    "steps": [
+                        {
+                            "class": "VerifyInviteStep",
+                            "id": "verify_invite",
+                            "config": {
+                                "title": "Stap 1. Kopieer en plak hier de code die je per mail hebt ontvangen",
+                                "completed_text": "✓ Code ontvangen en bevestigd",
+                                "disabled_text": null
+                            }
+                        },
+                        {
+                            "class": "OIDCLoginStep",
+                            "id": "eduid_login",
+                            "config": {
+                                "idp": "eduid",
+                                "title": "Stap 2. Inloggen met eduID (let op: gebruik je TEST eduID)",
+                                "completed_text": "✓ Ingelogd met (test-)eduID",
+                                "disabled_text": "Voltooi eerst stap 1",
+                                "primary_button_label": "YES! I already have a (test!) eduID",
+                                "secondary_button": {
+                                    "label": "No - I don't have a (test!) eduID yet",
+                                    "url": "https://test.eduid.nl/home",
+                                    "hint": "Come back here after you've created it!"
+                                }
+                            }
+                        },
+                        {
+                            "class": "OIDCLoginStep",
+                            "id": "institutional_login",
+                            "config": {
+                                "idp": "institutional",
+                                "title": "Stap 3. Inloggen met (dummy) instellingsaccount",
+                                "completed_text": "✓ Institutioneel ingelogd (test-IDP)",
+                                "disabled_text": "Voltooi eerst stap 2",
+                                "primary_button_label": "Login via (dummy) institution",
+                                "help_text": "Demo van willekeurige test-IDP als secundaire verificatie. Kies bijvoorbeeld voor \"professor5/professor5\""
+                            }
+                        },
+                        {
+                            "class": "VerifyAlumniDb",
+                            "id": "alumni_lookup",
+                            "config": {
+                                "title": "Stap 4. Verifieer je gegevens in onze alumnidatabase",
+                                "completed_text": "✓ Alumnigegevens geverifieerd",
+                                "disabled_text": "Voltooi eerst stap 3",
+                                "help_text": "Voer je geboortedatum en vijfcijferige studentnummer in zoals bekend bij onze alumniadministratie.",
+                                "primary_button_label": "Verify alumni status",
+                                "dob_label": "Date of birth",
+                                "student_number_label": "Student number",
+                                "dob_min_year": 1960,
+                                "dob_max_year": 1990,
+                                "student_number_pattern": "^\\d{5}$"
+                            }
+                        },
+                        {
+                            "class": "FinalizeStep",
+                            "id": "finalize",
+                            "config": {
+                                "title": "Stap 5. Toegang naar de applicatie",
+                                "completed_text": "✓ Uw eduID is nu gekoppeld!",
+                                "disabled_text": "Voltooi eerst de vorige stappen"
+                            }
+                        }
+                    ]
                 }
-            ]
+            }
         }
     }
 }

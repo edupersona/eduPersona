@@ -55,7 +55,7 @@ We hebben een demo-/PoC-omgeving draaien op [https://edupersona.nl/](https://edu
 
 ### Inrichting, features, configuratie
 
-* Het **onboarding stappenplan** is flexibel, want gedefinieerd via configuratie (settings.json: `tenants.hvh.steps`) - waarbij 'kaarten' worden gebruikt die zijn gedefinieerd in `domain/step_cards.py`.
+* Het **onboarding stappenplan** is flexibel, want gedefinieerd via configuratie (settings.json: `tenants.hvh.scenarios.<key>.steps`) - waarbij 'kaarten' worden gebruikt die zijn gedefinieerd in `domain/step_cards.py`. Een tenant kan meerdere scenario's hebben; vandaag heeft elke tenant er één (`default`). 
 
 * Voor het **verzenden van de uitnodiging** wordt ondersteuning van SMTP en Postmark geboden. Mailberichten worden opgesteld via Jinja2 HTML-templates. Afzenders kunnen per rol worden geconfigureerd.
 

@@ -25,6 +25,31 @@ async def find_invitation_by_code(code: str) -> tuple[str, dict] | None:
     return None
 
 
+async def apply_invite_code_to_state(tenant: str, state: dict, invite_code: str) -> bool:
+    """Validate an invite code and populate scenario context on `state`.
+
+    Returns True if the code was valid and state was populated; False otherwise.
+    Pure state mutation — no UI side effects; callers handle notifications.
+    """
+    invitation = await get_invitation_with_roles(tenant, invite_code.strip())
+    if not invitation:
+        logger.warning(f"Invalid invite_code attempted: {invite_code}")
+        return False
+
+    role_assignments = invitation.get("role_assignments", [])
+    if not role_assignments:
+        logger.error(f"No role assignments for invitation code: {invite_code}")
+        return False
+
+    role_names = [ra.get("role", {}).get("name", "") for ra in role_assignments if ra.get("role")]
+
+    state['invite_code'] = invite_code
+    state['invitation_id'] = invitation['id']
+    state['role_assignments'] = role_assignments
+    state['role_name'] = ", ".join(role_names) if role_names else ""
+    return True
+
+
 async def _promote_eduid_pseudonym(tenant: str, guest_id: int) -> None:
     """Promote uids[0] from the eduID GuestAttribute to Guest.eduid_pseudonym.
 

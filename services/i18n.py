@@ -199,7 +199,7 @@ translations: dict[str, dict[str, str]] = {
         'To': 'Aan',
         'User identifier in our systems': 'interne userid in onze systemen',
 
-        # Accept page & Step cards (routes/accept.py, components/step_cards.py)
+        # Accept page & Step cards (routes/accept.py, domain/step_cards.py)
         'Accept invitation  ▶︎': 'Uitnodiging accepteren  ▶︎',
         'Click here to log in to {app}': 'Klik hier om in te loggen op {app}',
         "Come back here after you've created it!": "Kom hier terug als je 'm hebt aangemaakt!",
@@ -222,6 +222,12 @@ translations: dict[str, dict[str, str]] = {
         'YES! I already have a (test!) eduID': 'JA! Ik heb al een (test!) eduID',
         '✓ Your eduID is now linked!': '✓ Uw eduID is nu gekoppeld!',
         'Go to my apps & services': 'Naar mijn apps & diensten',
+        'Date of birth': 'Geboortedatum',
+        'Student number': 'Studentnummer',
+        'Verify alumni status': 'Controleer in alumnidatabase',
+        'Five digits required': 'Vijf cijfers vereist',
+        'No matching alumni record found — check your details and try again.':
+            'Geen alumnigegevens gevonden — controleer je gegevens en probeer het opnieuw.',
 
         # Apps page (routes/apps.py)
         'No services found': 'Geen diensten beschikbaar',

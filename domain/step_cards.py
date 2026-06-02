@@ -1,14 +1,37 @@
-"""Step card components for the onboarding flow"""
-from nicegui import app, ui
+"""Step card components for the onboarding flow.
+
+See cline_docs/step_cards.md for the full contract — lifecycle, StepResult,
+the MAY / MAY NOT rules, and the single-session invariant.
+"""
+import json
+import re
+from dataclasses import dataclass
+from typing import Literal
+
+from nicegui import ui
 
 from ng_rdm.components import Col, Row, Button
 from ng_rdm.utils import logger
+
 from services.i18n import _
 from services.oidc_mt.multitenant import start_oidc_login
 from services.auth.guest_auth import establish_guest_session_for_code
-from domain.invitations import accept_invitation
+from domain.invitations import accept_invitation, apply_invite_code_to_state
 from domain.models import GuestAttribute
-from domain.stores import get_invitation_store, get_guest_store, get_role_store
+from domain.stores import get_invitation_store
+
+
+Outcome = Literal['pending', 'in_progress', 'completed', 'failed', 'skipped']
+
+
+@dataclass
+class StepResult:
+    """Outcome of a step's action. Returned from StepCard.act() and result handlers."""
+    outcome: Outcome
+    output: dict | None = None
+    error: str | None = None
+    fatal: bool = False
+
 
 def expandable_info(valdict: dict) -> None:
     if valdict:
@@ -26,6 +49,7 @@ userinfo_mapping = {
     'authentication': ['acr']
 }
 
+
 async def update_guest_from_userinfo(tenant: str, invite_code: str, userinfo: dict, idp: str) -> None:
     """Replace this guest's GuestAttribute row for `idp` with the new userinfo.
 
@@ -35,67 +59,74 @@ async def update_guest_from_userinfo(tenant: str, invite_code: str, userinfo: di
         userinfo: OIDC userinfo dict
         idp: IdP identifier from settings.oidc (e.g., "eduid", "institutional")
     """
-    import json
-
     invitation_store = get_invitation_store(tenant)
-
     invitations = await invitation_store.read_items(filter_by={"code": invite_code})
     if not invitations:
         logger.warning(f"update_guest_from_userinfo: invitation not found for code: {invite_code}")
         return
-
     guest_id = invitations[0]["guest_id"]
-
     # Replace any prior attributes from this IdP (re-acceptance must not accumulate)
     await GuestAttribute.filter(guest_id=guest_id, name=idp).delete()
     await GuestAttribute.create(guest_id=guest_id, name=idp, value=json.dumps(userinfo))
 
-    # # eduID is the authoritative source for the guest's display name
-    # guest_store = get_guest_store(tenant)
-    # if idp == "eduid":
-    #     guest_updates = {}
-    #     if userinfo.get('given_name'):
-    #         guest_updates["given_name"] = userinfo['given_name']
-    #     if userinfo.get('family_name'):
-    #         guest_updates["family_name"] = userinfo['family_name']
-    #     # if userinfo.get('email'):
-    #     #     guest_updates["email"] = userinfo['email']
-    #
-    #     if guest_updates:
-    #         await guest_store.update_item(guest_id, guest_updates)
+
+# ──────────────────────────── base class ────────────────────────────
 
 
-# Base Step Card Class
 class StepCard:
-    """Base class for all step cards in the onboarding flow"""
+    """Base class for all step cards.
+
+    Steps signal completion exclusively via the orchestrator's `record(step_id, result)`
+    funnel — never by mutating state directly.
+    """
+
+    # 'interactive' (default) or 'finalize'. May be overridden on subclass or in config.
+    kind: str = 'interactive'
 
     def __init__(self, config: dict):
+        self.config = config
         self.title = config['title']
         self.completed_text = config['completed_text']
-        self.disabled_text = config.get('disabled_text', '')
-        self.completed_key = config['completed_key']
-        self.steps = None  # Will be set by Steps container
-        self.state = {}  # Will be set by Steps container
-        self.tenant = None  # Will be set by Steps container
-        self.info = {}
+        self.disabled_text = config.get('disabled_text') or ''
+        # Assigned by Steps._create_steps:
+        self.step_id: str = ''
+        self.steps: 'Steps | None' = None
+        self.state: dict = {}
+        self.tenant: str | None = None
 
-    async def click_handler(self):
-        """Override in subclasses to handle click actions (for button and icon)"""
+    # ── overridable hooks ──────────────────────────────────────────────
+
+    async def is_already_done(self) -> bool:
+        """Override on verification-style steps that have a durable DB marker.
+        Returning True at scenario startup → step is recorded as 'skipped'.
+        Default: never auto-skip. Subclasses read scenario context via `self.steps.context`.
+        """
+        return False
+
+    async def act(self) -> StepResult | None:
+        """User-triggered action. Override in subclasses.
+
+        Return a StepResult to record immediately, or None when completion is
+        signaled asynchronously (e.g., via an OIDC callback's `result_handler`).
+        """
+        return None
+
+    async def result_handler(self, userinfo: dict, id_token_claims: dict, token_data: dict, next_url: str = "") -> None:
+        """OIDC callback. Override on OIDC-bound steps."""
         pass
 
-    def render(self, state: dict, is_enabled: bool, step_number: int) -> None:
-        """Render the step card UI components"""
-        is_completed = self.is_completed(state)
+    # ── rendering ─────────────────────────────────────────────────────
+
+    def render(self, state: dict, outcome: str, is_enabled: bool) -> None:
+        is_completed = outcome in ('completed', 'skipped')
         status_color = 'positive' if is_completed else 'grey'
         status_icon = 'check_circle' if is_completed else 'radio_button_unchecked'
 
         with ui.card().classes('step-card'):
             with Row().classes('step-card-row'):
                 icon = ui.icon(status_icon, color=status_color).classes('step-icon')
-
-                # Make icon clickable if enabled
                 if is_enabled and not is_completed:
-                    icon.on('click', self.click_handler)
+                    icon.on('click', self._handle_click)
 
                 with Col(classes='step-content'):
                     ui.label(self.title).classes('step-title')
@@ -106,253 +137,353 @@ class StepCard:
                     else:
                         self.render_disabled(state)
 
+    async def _handle_click(self):
+        """Default click handler: run `act()`, record the result via the orchestrator."""
+        if self.steps is None:
+            return
+        result = await self.act()
+        if result is not None:
+            await self.steps.record(self.step_id, result)
+
     def render_enabled(self, state: dict) -> None:
-        """Implement in subclasses for step-specific content"""
         raise NotImplementedError
 
     def render_completed(self, state: dict) -> None:
-        """Override in subclasses to customize completed_content"""
         ui.label(self.completed_text).classes('text-success').style('margin-top: 0.5rem;')
 
     def render_disabled(self, state: dict) -> None:
-        """Override in subclasses to customize disabled content"""
         ui.label(self.disabled_text).classes('text').style('margin-top: 0.5rem;')
 
-    def is_completed(self, state: dict) -> bool:
-        """Check if this step is completed"""
-        return state['steps_completed'].get(self.completed_key, False)
 
-    async def result_handler(self, userinfo: dict, id_token_claims: dict, token_data: dict, next_url: str = "") -> None:
-        """Override in subclasses to handle OIDC completion results"""
-        pass
+# ──────────────────────────── concrete cards ────────────────────────────
 
 
-# Step Subclasses
 class VerifyInviteStep(StepCard):
-    """Step 1: Verify invitation code"""
+    """Validate the invitation code typed by the user and populate scenario context."""
 
-    async def click_handler(self):
-        """Submit invitation code"""
-        from routes.accept import process_invite_code
-
-        invite_code_value = self.state.get('invite_code_input', '')
-        if self.tenant and invite_code_value:
-            await process_invite_code(self.tenant, self.state, invite_code_value)
-            # Use the steps reference to trigger refresh
-            if self.steps:
-                self.steps.render.refresh()
+    async def act(self) -> StepResult | None:
+        if not self.tenant:
+            logger.error("Tenant not set in step card")
+            return StepResult('failed', error='tenant not set')
+        invite_code = (self.state.get('invite_code_input') or '').strip()
+        if not invite_code:
+            return None
+        ok = await apply_invite_code_to_state(self.tenant, self.state, invite_code)
+        if ok:
+            from services.tenant import store_tenant_in_session
+            store_tenant_in_session(self.tenant)
+            return StepResult('completed')
+        ui.notify(_('Invalid invite code'), type='negative')
+        return None
 
     def render_enabled(self, state: dict) -> None:
         ui.input(
             _('Enter your invitation code here'),
             placeholder=_('Invitation code')
         ).classes('form-input').bind_value(self.state, 'invite_code_input')
+        Button(_('Confirm code'), on_click=self._handle_click).style('margin-top: 0.5rem;')
 
-        Button(_('Confirm code'), on_click=self.click_handler).style('margin-top: 0.5rem;')
 
+class OIDCLoginStep(StepCard):
+    """Generic OIDC login step. IdP, copy, and optional secondary CTA come from config."""
 
-class VerifyEduIDStep(StepCard):
-    """Step 2: Verify eduID login"""
+    def __init__(self, config: dict):
+        super().__init__(config)
+        self.idp: str = config['idp']
+        self.primary_button_label: str = config['primary_button_label']
+        self.secondary_button: dict | None = config.get('secondary_button')
+        self.help_text: str | None = config.get('help_text')
 
-    idp = "eduid"
-
-    async def click_handler(self):
-        """Initiate eduID login flow"""
+    async def act(self) -> StepResult | None:
         if not self.tenant:
             logger.error("Tenant not set in step card")
-            return
+            return StepResult('failed', error='tenant not set')
         await start_oidc_login(
             tenant=self.tenant,
-            idp="eduid",
+            idp=self.idp,
             callback_handler=self.result_handler,
             next_url="/accept",
-            force_login=True
+            force_login=True,
         )
+        # Completion arrives asynchronously via result_handler; no immediate result.
+        return None
 
-    def create_eduid_handler(self):
-        ui.navigate.to('https://test.eduid.nl/home', new_tab=True)
+    def _secondary_button_handler(self):
+        if self.secondary_button:
+            ui.navigate.to(self.secondary_button['url'], new_tab=True)
 
     def render_enabled(self, state: dict) -> None:
+        if self.help_text:
+            ui.label(_(self.help_text)).classes('text')
         with Row().classes('button-row'):
             with Col():
-                Button(
-                    _('YES! I already have a (test!) eduID'),
-                    on_click=self.click_handler
-                ).style('margin-right: 1rem;')
-
-            with Col(style='align-items: center; gap: 8px;'):
-                Button(
-                    _("No - I don't have a (test!) eduID yet"),
-                    on_click=self.create_eduid_handler
-                )
-                ui.label(_("Come back here after you've created it!")).style('font-size: 0.95rem;')
+                Button(_(self.primary_button_label), on_click=self._handle_click).style('margin-right: 1rem;')
+            if self.secondary_button:
+                with Col(style='align-items: center; gap: 8px;'):
+                    Button(_(self.secondary_button['label']), on_click=self._secondary_button_handler)
+                    if self.secondary_button.get('hint'):
+                        ui.label(_(self.secondary_button['hint'])).style('font-size: 0.95rem;')
 
     def render_completed(self, state: dict) -> None:
         ui.label(self.completed_text).classes('text-success').style('margin-top: 0.5rem;')
-        expandable_info(state.get('eduid_userinfo', {}))
+        userinfo = state.get('outputs', {}).get(self.step_id, {}).get('userinfo', {})
+        expandable_info(userinfo)
 
     async def result_handler(self, userinfo: dict, id_token_claims: dict, token_data: dict, next_url: str = "") -> None:
-        """Handle eduID OIDC completion"""
-        logger.debug(f"eduID login completed with userinfo: {userinfo}")
-        # Get invite code directly from state
+        logger.debug(f"{self.idp} login completed with userinfo: {userinfo}")
         invite_code = self.state.get('invite_code')
-
-        # Update state
-        self.state['eduid_userinfo'] = userinfo
-        self.state['steps_completed']['eduid login'] = True
-
-        # Update storage
         if invite_code and self.tenant:
             await update_guest_from_userinfo(self.tenant, invite_code, userinfo, self.idp)
+        if self.steps:
+            await self.steps.record(
+                self.step_id,
+                StepResult('completed', output={'userinfo': userinfo}),
+            )
 
 
-class VerifyInstitutionalStep(StepCard):
-    """Step 3: Verify institutional account"""
+class VerifyAlumniDb(StepCard):
+    """Verify alumni status against a (simulated) records lookup.
 
-    idp = "institutional"
+    Generic enough to be reused for any "two-field lookup with format + range
+    constraints" pattern. Config drives bounds, format, and copy; the class is
+    flavour-agnostic.
+    """
 
-    async def click_handler(self):
-        """Initiate institutional login flow"""
-        if not self.tenant:
-            logger.error("Tenant not set in step card")
-            return
-        await start_oidc_login(
-            tenant=self.tenant,
-            idp="institutional",
-            callback_handler=self.result_handler,
-            next_url="/accept",
-            force_login=True
+    def __init__(self, config: dict):
+        super().__init__(config)
+        # Exclusive year bounds (year-of-birth must be strictly between min and max).
+        self.dob_min_year: int = config.get('dob_min_year', 1960)
+        self.dob_max_year: int = config.get('dob_max_year', 1990)
+        self.student_number_pattern: str = config.get('student_number_pattern', r'^\d{5}$')
+        self.dob_label: str = config.get('dob_label', 'Date of birth')
+        self.student_number_label: str = config.get('student_number_label', 'Student number')
+        self.primary_button_label: str = config.get('primary_button_label', 'Verify alumni status')
+        self.help_text: str | None = config.get('help_text')
+
+    def _dob_year(self, value: str) -> int | None:
+        try:
+            return int((value or '').split('-')[0])
+        except ValueError:
+            return None
+
+    def _student_number_valid(self, value: str) -> bool:
+        return bool(re.match(self.student_number_pattern, value or ''))
+
+    async def act(self) -> StepResult | None:
+        dob = (self.state.get('alumni_dob') or '').strip()
+        student_number = (self.state.get('alumni_student_number') or '').strip()
+        year = self._dob_year(dob)
+        if (
+            year is None
+            or not (self.dob_min_year < year < self.dob_max_year)
+            or not self._student_number_valid(student_number)
+        ):
+            ui.notify(
+                _('No matching alumni record found — check your details and try again.'),
+                type='negative',
+            )
+            return StepResult('failed', error='alumni lookup miss')
+        return StepResult(
+            'completed',
+            output={'dob': dob, 'student_number': student_number},
         )
 
     def render_enabled(self, state: dict) -> None:
-        ui.label(_('Log in via test-IDP to verify your institutional identity.')).classes('text')
-        ui.label('Demo van willekeurige test-IDP als secundaire verificatie. Kies bijvoorbeeld voor "professor5/professor5"').classes(
-            'text')
-        with Row().classes('button-row'):
-            Button(
-                _('Login via (dummy) institution'),
-                on_click=self.click_handler
-            )
+        with Col(style='gap: 0.75rem; max-width: 24rem;'):
+            if self.help_text:
+                ui.label(_(self.help_text)).classes('text')
+            ui.input(label=_(self.dob_label), placeholder='YYYY-MM-DD') \
+                .bind_value(self.state, 'alumni_dob').props('type=date').classes('form-input')
+            ui.input(
+                label=_(self.student_number_label),
+                placeholder='12345',
+                validation={
+                    _('Five digits required'): lambda v: self._student_number_valid(v),
+                },
+            ).bind_value(self.state, 'alumni_student_number') \
+             .props('type=text inputmode=numeric maxlength=5').classes('form-input')
+            Button(_(self.primary_button_label), on_click=self._handle_click).style('margin-top: 0.5rem;')
 
     def render_completed(self, state: dict) -> None:
         ui.label(self.completed_text).classes('text-success').style('margin-top: 0.5rem;')
-        expandable_info(state.get('secondary_userinfo', {}))
+        out = state.get('outputs', {}).get(self.step_id, {})
+        if out:
+            expandable_info({
+                _(self.dob_label): out.get('dob', ''),
+                _(self.student_number_label): out.get('student_number', ''),
+            })
 
-    async def result_handler(self, userinfo: dict, id_token_claims: dict, token_data: dict, next_url: str = "") -> None:
-        """Handle institutional OIDC completion"""
-        logger.debug(f"Institutional login completed with userinfo: {userinfo}")
+
+class FinalizeStep(StepCard):
+    """Terminal step: accept the invitation, establish guest session, render exit links.
+
+    Auto-runs once all preceding interactive steps reach completed/skipped state.
+    Idempotent — re-running is a no-op for invitations already in 'accepted'.
+    """
+
+    kind = 'finalize'
+
+    async def act(self) -> StepResult | None:
+        if not self.tenant:
+            return StepResult('failed', error='tenant not set')
         invite_code = self.state.get('invite_code')
+        if not invite_code:
+            return StepResult('failed', error='invite code missing')
 
-        if invite_code:
-            self.state['steps_completed']['login instelling'] = True
-            self.state['steps_completed']['completed'] = True
-            self.state['secondary_userinfo'] = userinfo
-
-            if not self.tenant:
-                logger.error("Tenant not set in step card")
-                return
-
-            await update_guest_from_userinfo(self.tenant, invite_code, userinfo, self.idp)
-
-            # Accept invitation and provision to SCIM (also promotes eduid_pseudonym)
+        # Idempotency: only call accept_invitation when the invitation is still pending.
+        invitations = await get_invitation_store(self.tenant).read_items(filter_by={"code": invite_code})
+        if invitations and invitations[0].get('status') == 'pending':
             accepted = await accept_invitation(self.tenant, invite_code)
             if not accepted:
-                logger.error(f"Failed to accept invitation: {invite_code}")
-            else:
-                # Log the guest in so the final-step link to /apps works without re-auth
-                await establish_guest_session_for_code(self.tenant, invite_code)
+                return StepResult('failed', error='accept_invitation failed')
 
-            # Redirect URL/text already set in state from process_invite_code
+        await establish_guest_session_for_code(self.tenant, invite_code)
+        return StepResult('completed')
 
-
-class LinkApplicationStep(StepCard):
-    """Step 4: Link to the application"""
+    def render_enabled(self, state: dict) -> None:
+        # FinalizeStep auto-runs; this branch is rarely reached. Show the title's
+        # completed_text as a holding message until the auto-run lands.
+        ui.label(self.completed_text).classes('text').style('margin-top: 0.5rem;')
 
     def render_completed(self, state: dict) -> None:
-        # note: no render_enabled at the moment:
-        # because self.state['steps_completed']['completed'] is already set in card 3
-
         ui.label(_('✓ Your eduID is now linked!')).classes('text-success')
-
-        # Show links to each assigned role's application
         role_assignments = state.get('role_assignments', [])
         for ra in role_assignments:
             role = ra.get('role', {})
             redirect_url = role.get('redirect_url', '')
             redirect_text = role.get('redirect_text', '')
             if redirect_url and redirect_text:
-                ui.link(
-                    _('Go to my apps & services'),
-                    '/apps',
-                    new_tab=True
-                ).classes('btn-primary') \
+                ui.link(_('Go to my apps & services'), '/apps', new_tab=True) \
+                    .classes('btn-primary') \
                     .style('padding: 0.5rem 1rem; border-radius: 0.25rem; font-size: 14pt; font-weight: 500; text-decoration: none; display: inline-block; margin-top: 0.5rem;')
 
-                # ui.link(
-                #     _('Click here to log in to {app}', app=redirect_text),
-                #     redirect_url,
-                #     new_tab=True
-                # ).classes('btn-primary') \
-                #     .style('padding: 0.5rem 1rem; border-radius: 0.25rem; font-size: 14pt; font-weight: 500; text-decoration: none; display: inline-block; margin-top: 0.5rem;')
 
-        # # Direct link to the guest's services overview — session was established at accept time
-        # if self.tenant:
-        #     ui.link(
-        #         _('Go to my apps & services'),
-        #         '/apps',
-        #     ).style('margin-top: 1rem; display: inline-block;')
+# ──────────────────────────── registry + orchestrator ────────────────────────────
 
 
-# Step Card Class Registry
 STEP_CARD_CLASSES = {
     'VerifyInviteStep': VerifyInviteStep,
-    'VerifyEduIDStep': VerifyEduIDStep,
-    'VerifyInstitutionalStep': VerifyInstitutionalStep,
-    'LinkApplicationStep': LinkApplicationStep
+    'OIDCLoginStep': OIDCLoginStep,
+    'VerifyAlumniDb': VerifyAlumniDb,
+    'FinalizeStep': FinalizeStep,
 }
 
 
-# Steps Collection Class
 class Steps:
-    """Collection of step cards for the onboarding flow"""
+    """Onboarding orchestrator.
 
-    def __init__(self, tenant: str, state: dict, tenant_config: dict):
+    Owns: scenario instantiation, completion bookkeeping (`state['outcomes']`),
+    output storage (`state['outputs']`), prerequisite evaluation (positional),
+    and the terminal hook that auto-runs the `FinalizeStep` when ready.
+
+    Steps signal completion by returning a StepResult from `act()` or by calling
+    `self.steps.record(step_id, result)` from a result handler.
+    """
+
+    def __init__(self, tenant: str, state: dict, scenario_config: dict):
         self.tenant = tenant
         self.state = state
-        self.tenant_config = tenant_config
+        self.scenario_config = scenario_config
+        self.state.setdefault('outcomes', {})
+        self.state.setdefault('outputs', {})
         self.step_instances = self._create_steps()
 
+    @property
+    def outcomes(self) -> dict[str, str]:
+        return self.state['outcomes']
+
+    @property
+    def context(self) -> dict:
+        """Read-only scenario context exposed to `is_already_done`."""
+        return {
+            'tenant': self.tenant,
+            'invite_code': self.state.get('invite_code', ''),
+            'invitation_id': self.state.get('invitation_id'),
+            'role_assignments': self.state.get('role_assignments', []),
+        }
+
     def _create_steps(self) -> list[StepCard]:
-        """Create step instances based on tenant config"""
-        steps = []
-        for step_config in self.tenant_config['steps']:
+        instances: list[StepCard] = []
+        for i, step_config in enumerate(self.scenario_config['steps']):
             step_class_name = step_config['class']
             if step_class_name not in STEP_CARD_CLASSES:
                 raise ValueError(f"Unknown step card class: {step_class_name}")
             step_class = STEP_CARD_CLASSES[step_class_name]
             step_instance = step_class(step_config['config'])
-            step_instance.steps = self  # Add reference to parent Steps container
-            step_instance.state = self.state  # Store state reference on step card
-            step_instance.tenant = self.tenant  # Store tenant reference on step card
-            steps.append(step_instance)
-        return steps
+            step_instance.step_id = step_config.get('id', str(i))
+            step_instance.steps = self
+            step_instance.state = self.state
+            step_instance.tenant = self.tenant
+            # Config-level `kind` overrides the class default; lets a scenario mark
+            # an arbitrary step as the finalize step (kept simple — we only use the
+            # class default in practice).
+            if 'kind' in step_config:
+                step_instance.kind = step_config['kind']
+            instances.append(step_instance)
+        return instances
+
+    async def startup(self) -> None:
+        """Replay durable markers. Any step whose `is_already_done` returns True
+        is recorded as 'skipped' before the first render. Then the finalize hook
+        is consulted in case the replay already satisfies its prerequisites."""
+        for step in self.step_instances:
+            if self.outcomes.get(step.step_id) in ('completed', 'skipped'):
+                continue
+            if await step.is_already_done():
+                self.outcomes[step.step_id] = 'skipped'
+        await self._maybe_run_finalize()
+
+    async def record(self, step_id: str, result: StepResult) -> None:
+        """The single state-mutation funnel. Steps must call this instead of
+        writing to `state['outcomes']` or `state['steps_completed']` directly."""
+        self.outcomes[step_id] = result.outcome
+        if result.output is not None:
+            self.state['outputs'][step_id] = result.output
+        if result.outcome == 'completed':
+            await self._maybe_run_finalize()
+        # Refresh if a live render exists; OIDC callback context has no live render.
+        try:
+            self.render.refresh()
+        except Exception:
+            pass
+
+    async def _maybe_run_finalize(self) -> None:
+        finalize_step = next((s for s in self.step_instances if s.kind == 'finalize'), None)
+        if finalize_step is None:
+            return
+        if self.outcomes.get(finalize_step.step_id) in ('completed', 'failed'):
+            return
+        others_done = all(
+            self.outcomes.get(s.step_id) in ('completed', 'skipped')
+            for s in self.step_instances if s is not finalize_step
+        )
+        if not others_done:
+            return
+        try:
+            result = await finalize_step.act()
+        except Exception as e:
+            logger.error(f"FinalizeStep '{finalize_step.step_id}' raised: {e}")
+            return
+        if result is not None:
+            self.outcomes[finalize_step.step_id] = result.outcome
+            if result.output is not None:
+                self.state['outputs'][finalize_step.step_id] = result.output
 
     @ui.refreshable
     def render(self) -> None:
-        """Render all step cards"""
-        state = app.storage.tab
         suffix = ''
-        if state['role_name']:
-            suffix = ' ' + _('as') + ' ' + state['role_name']
+        if self.state.get('role_name'):
+            suffix = ' ' + _('as') + ' ' + self.state['role_name']
 
         ui.label(_('Welcome{suffix}', suffix=suffix)).classes('page-title')
         ui.label(
-            _('Follow the step-by-step plan below to accept your invitation{suffix}.', suffix=suffix)).classes('page-subtitle')
+            _('Follow the step-by-step plan below to accept your invitation{suffix}.', suffix=suffix)
+        ).classes('page-subtitle')
 
         for i, step in enumerate(self.step_instances):
-            # Check if prerequisites (all previous steps) are met
+            outcome = self.outcomes.get(step.step_id, 'pending')
             is_enabled = all(
-                self.step_instances[j].is_completed(self.state)
+                self.outcomes.get(self.step_instances[j].step_id) in ('completed', 'skipped')
                 for j in range(i)
             )
-            step.render(self.state, is_enabled, i + 1)
+            step.render(self.state, outcome, is_enabled)

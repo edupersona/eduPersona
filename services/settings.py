@@ -51,6 +51,24 @@ def get_tenant_config(tenant: str) -> DotDict:
     return settings['tenants'][tenant]
 
 
+def get_scenario_config(tenant: str, scenario_key: str | None = None) -> DotDict:
+    """Resolve a scenario config for `tenant`.
+
+    Falls back to the tenant's `default_scenario` when `scenario_key` is None.
+    Scenarios are the named bundles of onboarding steps; today every tenant has
+    exactly one ("default"), but the layer is in place so future tenants can
+    define more without further code change.
+    """
+    tc = get_tenant_config(tenant)
+    scenarios = tc.get('scenarios') or {}
+    if not scenarios:
+        raise ValueError(f"Tenant '{tenant}' has no scenarios defined")
+    key = scenario_key or tc.get('default_scenario') or next(iter(scenarios))
+    if key not in scenarios:
+        raise ValueError(f"Unknown scenario '{key}' for tenant '{tenant}'")
+    return scenarios[key]
+
+
 def reload_settings():
     """Force reload of settings (useful for testing)"""
     global _settings_cache, config

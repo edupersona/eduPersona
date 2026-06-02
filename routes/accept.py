@@ -1,41 +1,14 @@
 # /accept route: self-service page showing onboarding progress
 
-from nicegui import app, ui
+from nicegui import ui
 
-from domain.step_cards import Steps
-from ng_rdm.utils import logger
-from services.i18n import _
+from domain.step_cards import Steps, StepResult
 from services.session_manager import initialize_state
-from services.settings import get_tenant_config
-from domain.invitations import find_invitation_by_code, get_invitation_with_roles
+from services.settings import get_scenario_config
+from domain.invitations import find_invitation_by_code, apply_invite_code_to_state
 from services.tenant import get_default_tenant, store_tenant_in_session
 from services.theme import frame
-
-
-async def process_invite_code(tenant: str, state: dict, invite_code: str):
-    """Check invite code; if valid, add invitation & role details to session state"""
-    invitation = await get_invitation_with_roles(tenant, invite_code.strip())
-
-    if invitation:
-        role_assignments = invitation.get("role_assignments", [])
-        if not role_assignments:
-            logger.error(f"No role assignments for invitation code: {invite_code}")
-            ui.notify(_('Invalid invite code (no roles assigned)'), type='negative')
-            return
-
-        # Build role display info from linked role assignments
-        role_names = [ra.get("role", {}).get("name", "") for ra in role_assignments if ra.get("role")]
-
-        # Update state with invitation data
-        state['invite_code'] = invite_code
-        state['invitation_id'] = invitation['id']
-        state['role_assignments'] = role_assignments
-        state['role_name'] = ", ".join(role_names) if role_names else ""
-        state['steps_completed']['code_matched'] = True
-        store_tenant_in_session(tenant)
-    else:
-        logger.warning(f"Invalid invite_code attempted: {invite_code}")
-        ui.notify(_('Invalid invite code'), type='negative')
+from services.i18n import _
 
 
 @ui.page('/accept')
@@ -50,15 +23,21 @@ async def accept_invitation(invite_code: str = ""):
             tenant = match[0]
 
     with frame('accept', tenant):
-        # Ensure client connection for tab storage
         await ui.context.client.connected()
 
         state = initialize_state()
-        tc = get_tenant_config(tenant)
+        scenario_config = get_scenario_config(tenant)
+
+        steps = Steps(tenant, state, scenario_config)
 
         if invite_code:
-            await process_invite_code(tenant, state, invite_code)
+            applied = await apply_invite_code_to_state(tenant, state, invite_code)
+            if applied:
+                store_tenant_in_session(tenant)
+                if steps.step_instances:
+                    await steps.record(steps.step_instances[0].step_id, StepResult('completed'))
+            else:
+                ui.notify(_('Invalid invite code'), type='negative')
 
-        # create and render steps
-        steps = Steps(tenant, state, tc)
+        await steps.startup()
         steps.render()  # type: ignore
