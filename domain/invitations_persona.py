@@ -11,10 +11,19 @@ import uuid
 from typing import Optional
 
 from domain.models import Invitation
+from ng_rdm.store.multitenancy import valid_tenants
 from ng_rdm.utils import logger
 from ng_rdm.utils.helpers import now_utc
 from services.persona_loader import get_persona_config, validate_persona_params
 from services.webhook import enqueue_callback
+
+
+async def find_persona_invitation_tenant(code: str) -> Optional[str]:
+    """Resolve the tenant owning a persona invitation `code`, scanning all tenants."""
+    for tenant in valid_tenants:
+        if await Invitation.exists(tenant=tenant, code=code, persona_key__isnull=False):
+            return tenant
+    return None
 
 
 def _invitation_to_dict(inv: Invitation) -> dict:

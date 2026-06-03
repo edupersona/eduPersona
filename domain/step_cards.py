@@ -17,8 +17,10 @@ from services.i18n import _
 from services.oidc_mt.multitenant import start_oidc_login
 from services.auth.guest_auth import establish_guest_session_for_code
 from domain.invitations import accept_invitation, apply_invite_code_to_state
-from domain.models import GuestAttribute
+from domain.invitations_persona import accept_persona_invitation, apply_persona_invite_to_state
+from domain.models import GuestAttribute, Invitation
 from domain.stores import get_invitation_store
+from services.persona_loader import get_persona_config
 
 
 Outcome = Literal['pending', 'in_progress', 'completed', 'failed', 'skipped']
@@ -358,6 +360,97 @@ class FinalizeStep(StepCard):
                     .style('padding: 0.5rem 1rem; border-radius: 0.25rem; font-size: 14pt; font-weight: 500; text-decoration: none; display: inline-block; margin-top: 0.5rem;')
 
 
+# ──────────────────────────── persona-mode variants (Phase G) ────────────────────────────
+# Same config class-names as role-mode, but Shape B behaviour: no Guest, outputs
+# flow into Invitation.step_outputs, acceptance fires the webhook callback.
+
+
+class PersonaVerifyInviteStep(VerifyInviteStep):
+    """Validate the code via persona-mode state population (no role_assignments)."""
+
+    async def act(self) -> StepResult | None:
+        if not self.tenant:
+            logger.error("Tenant not set in step card")
+            return StepResult('failed', error='tenant not set')
+        invite_code = (self.state.get('invite_code_input') or '').strip()
+        if not invite_code:
+            return None
+        ok = await apply_persona_invite_to_state(self.tenant, self.state, invite_code)
+        if ok:
+            from services.tenant import store_tenant_in_session
+            store_tenant_in_session(self.tenant)
+            return StepResult('completed')
+        ui.notify(_('Invalid invite code'), type='negative')
+        return None
+
+
+class PersonaOIDCLoginStep(OIDCLoginStep):
+    """OIDC login that writes userinfo to state['outputs'][idp] (gotcha 10) — no GuestAttribute."""
+
+    async def act(self) -> StepResult | None:
+        if not self.tenant:
+            logger.error("Tenant not set in step card")
+            return StepResult('failed', error='tenant not set')
+        await start_oidc_login(
+            tenant=self.tenant,
+            idp=self.idp,
+            callback_handler=self.result_handler,
+            next_url="/accept/p",
+            force_login=True,
+        )
+        return None
+
+    async def result_handler(self, userinfo: dict, id_token_claims: dict, token_data: dict, next_url: str = "") -> None:
+        logger.debug(f"{self.idp} persona login completed with userinfo: {userinfo}")
+        # Key by IdP name, not step id — this is the callback_outputs key (§2.7, gotcha 10).
+        self.state.setdefault('outputs', {})[self.idp] = userinfo
+        if self.steps:
+            await self.steps.record(self.step_id, StepResult('completed'))
+
+    def render_completed(self, state: dict) -> None:
+        ui.label(self.completed_text).classes('text-success').style('margin-top: 0.5rem;')
+        expandable_info(state.get('outputs', {}).get(self.idp, {}))
+
+
+class PersonaFinalizeStep(FinalizeStep):
+    """Persist state['outputs'] to Invitation.step_outputs, then accept (fires callback)."""
+
+    async def act(self) -> StepResult | None:
+        if not self.tenant:
+            return StepResult('failed', error='tenant not set')
+        invite_code = self.state.get('invite_code')
+        if not invite_code:
+            return StepResult('failed', error='invite code missing')
+
+        inv = await Invitation.get_or_none(tenant=self.tenant, code=invite_code)
+        if inv is None:
+            return StepResult('failed', error='invitation not found')
+
+        if inv.status == 'pending':
+            # Persist outputs BEFORE accept so the webhook envelope can read them (§2.7).
+            inv.step_outputs = dict(self.state.get('outputs', {})) or None
+            await inv.save()
+            accepted = await accept_persona_invitation(self.tenant, invite_code)
+            if not accepted:
+                return StepResult('failed', error='accept_persona_invitation failed')
+        return StepResult('completed')
+
+    def render_completed(self, state: dict) -> None:
+        redirect_url = None
+        persona_key = state.get('persona_key')
+        if self.tenant and persona_key:
+            try:
+                redirect_url = get_persona_config(self.tenant, persona_key).success_redirect_url
+            except Exception:
+                redirect_url = None
+        ui.label(self.completed_text).classes('text-success')
+        if redirect_url:
+            ui.link(_('Continue'), redirect_url) \
+                .classes('btn-primary') \
+                .style('padding: 0.5rem 1rem; border-radius: 0.25rem; font-size: 14pt; '
+                       'font-weight: 500; text-decoration: none; display: inline-block; margin-top: 0.5rem;')
+
+
 # ──────────────────────────── registry + orchestrator ────────────────────────────
 
 
@@ -366,6 +459,15 @@ STEP_CARD_CLASSES = {
     'OIDCLoginStep': OIDCLoginStep,
     'VerifyAlumniDb': VerifyAlumniDb,
     'FinalizeStep': FinalizeStep,
+}
+
+# Persona-mode maps the SAME config class-names to the Shape-B variants, so persona
+# settings reuse the role-mode `steps` config shape unchanged.
+PERSONA_STEP_CARD_CLASSES = {
+    'VerifyInviteStep': PersonaVerifyInviteStep,
+    'OIDCLoginStep': PersonaOIDCLoginStep,
+    'VerifyAlumniDb': VerifyAlumniDb,   # reused verbatim — already writes outputs[step_id]
+    'FinalizeStep': PersonaFinalizeStep,
 }
 
 
@@ -379,6 +481,9 @@ class Steps:
     Steps signal completion by returning a StepResult from `act()` or by calling
     `self.steps.record(step_id, result)` from a result handler.
     """
+
+    # Overridden by PersonaSteps to instantiate the Shape-B variants.
+    step_card_classes = STEP_CARD_CLASSES
 
     def __init__(self, tenant: str, state: dict, scenario_config: dict):
         self.tenant = tenant
@@ -406,9 +511,9 @@ class Steps:
         instances: list[StepCard] = []
         for i, step_config in enumerate(self.scenario_config['steps']):
             step_class_name = step_config['class']
-            if step_class_name not in STEP_CARD_CLASSES:
+            if step_class_name not in self.step_card_classes:
                 raise ValueError(f"Unknown step card class: {step_class_name}")
-            step_class = STEP_CARD_CLASSES[step_class_name]
+            step_class = self.step_card_classes[step_class_name]
             step_instance = step_class(step_config['config'])
             step_instance.step_id = step_config.get('id', str(i))
             step_instance.steps = self
@@ -469,8 +574,7 @@ class Steps:
             if result.output is not None:
                 self.state['outputs'][finalize_step.step_id] = result.output
 
-    @ui.refreshable
-    def render(self) -> None:
+    def _render_heading(self) -> None:
         suffix = ''
         if self.state.get('role_name'):
             suffix = ' ' + _('as') + ' ' + self.state['role_name']
@@ -480,6 +584,10 @@ class Steps:
             _('Follow the step-by-step plan below to accept your invitation{suffix}.', suffix=suffix)
         ).classes('page-subtitle')
 
+    @ui.refreshable
+    def render(self) -> None:
+        self._render_heading()
+
         for i, step in enumerate(self.step_instances):
             outcome = self.outcomes.get(step.step_id, 'pending')
             is_enabled = all(
@@ -487,3 +595,30 @@ class Steps:
                 for j in range(i)
             )
             step.render(self.state, outcome, is_enabled)
+
+
+class PersonaSteps(Steps):
+    """Persona-mode orchestrator: instantiates Shape-B step variants and renders a
+    persona-aware heading. No cross-persona auto-skip — every persona runs its full
+    scenario (§2.1), so the inherited default `is_already_done` (False) is correct."""
+
+    step_card_classes = PERSONA_STEP_CARD_CLASSES
+
+    def _render_heading(self) -> None:
+        persona_label = ''
+        persona_key = self.state.get('persona_key')
+        if persona_key and self.tenant:
+            try:
+                persona_label = get_persona_config(self.tenant, persona_key).label('nl')
+            except Exception:
+                persona_label = ''
+
+        suffix = (' ' + _('as') + ' ' + persona_label) if persona_label else ''
+        given = self.state.get('given_name')
+        if given:
+            ui.label(f"{_('Welcome')}, {given}{suffix}").classes('page-title')
+        else:
+            ui.label(_('Welcome{suffix}', suffix=suffix)).classes('page-title')
+        ui.label(
+            _('Follow the step-by-step plan below to accept your invitation{suffix}.', suffix=suffix)
+        ).classes('page-subtitle')

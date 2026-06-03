@@ -3,6 +3,7 @@ from nicegui import app, ui
 # from tortoise import Tortoise
 # register routes
 import routes.accept
+import routes.accept_persona  # persona-mode accept flow (/accept/p)
 import routes.api
 import routes.apps
 from routes.api import api_router
