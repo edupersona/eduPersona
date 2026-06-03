@@ -51,6 +51,9 @@ def setup_test_environment():
     # like services.webhook, breaking later monkeypatch.setattr('services.webhook.…').
     # Re-link the cached submodule. A bare `import services.webhook` does NOT re-set
     # the attribute when the module is already cached — must assign explicitly.
+    # (Related gotcha 2: test modules must not import under a @ui.page package like
+    # routes.m — it pins the package and breaks per-test route re-registration; that's
+    # why services/simulator_helpers.py lives in services, not routes.m.)
     import sys
     import services
     if 'services.webhook' in sys.modules:
