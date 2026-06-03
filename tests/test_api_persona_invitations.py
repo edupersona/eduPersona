@@ -12,6 +12,17 @@ from domain.models import Invitation, WebhookDelivery
 BASE = "/api/v1/hvh/persona-invitations"
 
 
+@pytest.fixture(autouse=True)
+def _no_real_mail(monkeypatch):
+    """Phase F wired real Postmark into the endpoint; keep these API tests offline.
+
+    Individual tests (e.g. mail-failure) re-patch this attr to assert behaviour.
+    """
+    async def _noop(tenant, invitation):
+        return None
+    monkeypatch.setattr(ep, "_send_mail_best_effort", _noop)
+
+
 async def _post(api_client, **body):
     return await api_client.post(BASE, json=body)
 

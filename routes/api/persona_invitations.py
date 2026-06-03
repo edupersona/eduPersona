@@ -18,6 +18,7 @@ from ng_rdm.utils.helpers import now_utc
 from domain.invitations_persona import create_persona_invitation
 from domain.models import Invitation, WebhookDelivery
 from services.persona_loader import PersonaParamsError, UnknownPersonaError
+from services.postmark.persona_postmark import send_persona_invitation
 
 from . import tenant_api_router as api_router
 from .common import (
@@ -71,11 +72,10 @@ def _accept_url(request: Request, code: str) -> str:
 
 
 async def _send_mail_best_effort(tenant: str, invitation: dict) -> None:
-    """Send the persona invite mail. Best-effort — never fatal (gotcha 6).
-
-    Phase E stub: logs only. Phase F replaces the body with send_persona_invitation.
-    """
-    logger.info(f"persona invite mail (stub) tenant={tenant} code={invitation['code']}")
+    """Send the persona invite mail. Best-effort — never fatal (gotcha 6)."""
+    ok = await send_persona_invitation(tenant, invitation)
+    if not ok:
+        logger.warning(f"persona invite mail not sent for {invitation['code']} (transport returned false)")
 
 
 @api_router.post("/persona-invitations")
