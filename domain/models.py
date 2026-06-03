@@ -188,9 +188,32 @@ class Invitation(MultitenantRdmModel):
 
     # Junction relation: invitation.role_assignments via InvitationRoleAssignment
     invitation_role_assignments: fields.ReverseRelation["InvitationRoleAssignment"]
+    webhook_deliveries: fields.ReverseRelation["WebhookDelivery"]
 
     class Meta(RdmModel.Meta):  # type: ignore[reportIncompatibleVariableOverride]
         table = "invitations"
+
+
+class WebhookDelivery(RdmModel):
+    """Durable outbound-callback record (one per persona invitation completion).
+
+    Carries the built payload plus the retry state machine (§2.3, §3.2): 4xx is
+    terminal, 5xx and network errors retry with exponential backoff up to a max
+    attempt count. Tenant is resolved via the invitation FK — no tenant column.
+    """
+    id = fields.IntField(primary_key=True)
+    invitation = fields.ForeignKeyField("models.Invitation", related_name="webhook_deliveries")
+    attempt_n = fields.IntField(default=0)
+    status = fields.CharField(max_length=20, default="pending")  # pending|in_flight|delivered|failed
+    last_status_code = fields.IntField(null=True)
+    last_error = fields.TextField(null=True)
+    next_retry_at = fields.DatetimeField(null=True)
+    payload = fields.JSONField()
+    created_at = fields.DatetimeField(auto_now_add=True)
+    updated_at = fields.DatetimeField(auto_now=True)
+
+    class Meta(RdmModel.Meta):  # type: ignore[reportIncompatibleVariableOverride]
+        table = "webhook_deliveries"
 
 
 class InvitationRoleAssignment(RdmModel):

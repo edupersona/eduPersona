@@ -45,6 +45,17 @@ def setup_test_environment():
     from services.exception_handlers import register_exception_handlers
     register_exception_handlers(app)
 
+    # NiceGUI test isolation gotcha (§10.1): nicegui_reset_globals pops the top-level
+    # package of every @ui.page from sys.modules. A page under `services` (e.g.
+    # services.oidc_mt.oidc_callback) severs `services`'s attribute link to siblings
+    # like services.webhook, breaking later monkeypatch.setattr('services.webhook.…').
+    # Re-link the cached submodule. A bare `import services.webhook` does NOT re-set
+    # the attribute when the module is already cached — must assign explicitly.
+    import sys
+    import services
+    if 'services.webhook' in sys.modules:
+        services.webhook = sys.modules['services.webhook']  # type: ignore[attr-defined]
+
     yield
 
 @pytest.fixture(autouse=True)
