@@ -153,15 +153,39 @@ class RoleAssignment(MultitenantRdmModel):
 
 
 class Invitation(MultitenantRdmModel):
-    """Invitation sent to a guest for one or more role assignments"""
+    """Invitation sent to a guest.
+
+    Phase C of the persona pivot: persona-mode fields are added as nullable,
+    additive columns so the schema supports both role-mode (legacy) and
+    persona-mode rows. Role-mode rows keep using `guest`/`personal_message`/the
+    junction relation; persona-mode rows (Phase D+) populate `persona_key` and
+    friends and leave `guest` NULL. The legacy `guest` FK and `personal_message`
+    are dropped in Phase I.1, at which point `persona_key` becomes NOT NULL.
+    """
     id = fields.IntField(primary_key=True)
     code = fields.CharField(max_length=32, unique=True, db_index=True)
-    guest = fields.ForeignKeyField("models.Guest", related_name="invitations")
+    # Legacy role-mode FK — nullable now so persona-mode rows can omit it (no Guest
+    # entity in persona-mode, §2.7). Dropped entirely in Phase I.1.
+    guest = fields.ForeignKeyField("models.Guest", related_name="invitations", null=True)
     personal_message = fields.TextField(null=True)
-    invitation_email = fields.CharField(max_length=255)
+    invitation_email = fields.CharField(max_length=255, db_index=True)
     invited_at = fields.DatetimeField(auto_now_add=True)
     accepted_at = fields.DatetimeField(null=True)
     status = fields.CharField(max_length=50, default="pending")  # see InvitationStatus
+
+    # --- persona-mode additive columns (Phase C) ---
+    # persona_key is nullable during C–H to keep role-mode rows insertable; Phase I
+    # tightens it to NOT NULL once role-mode is gone.
+    persona_key = fields.CharField(max_length=64, null=True)
+    client_ref = fields.CharField(max_length=255, null=True, db_index=True)
+    persona_params = fields.JSONField(null=True)   # payload pass-through, never SQL-queried (§3.1)
+    sender_email = fields.CharField(max_length=255, null=True)
+    sender_name = fields.CharField(max_length=255, null=True)
+    callback_url = fields.CharField(max_length=1024, null=True)
+    step_outputs = fields.JSONField(null=True)     # verified-fact source for the callback envelope (§2.7)
+    given_name = fields.CharField(max_length=255, null=True)   # display string from client app; not verified
+    family_name = fields.CharField(max_length=255, null=True)  # display string from client app; not verified
+
     # Junction relation: invitation.role_assignments via InvitationRoleAssignment
     invitation_role_assignments: fields.ReverseRelation["InvitationRoleAssignment"]
 
