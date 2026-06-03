@@ -20,6 +20,7 @@ api_router = APIRouter()
 
 # Import tenant-scoped route modules (register on tenant_api_router)
 from . import guests, roles, role_assignments, invitations, convenience, surf_invite  # noqa: E402
+from . import persona_invitations  # noqa: E402,F401  (persona-mode API, parallel to invitations)
 
 # Import non-auth route modules (register on api_router)
 from . import cleanup  # noqa: E402
