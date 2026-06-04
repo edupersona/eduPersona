@@ -1,15 +1,7 @@
-"""Domain layer: models and invitation lifecycle (persona-mode)."""
+"""Domain layer: models and invitation lifecycle (persona-mode).
 
-from .models import Invitation, WebhookDelivery, InvitationStatus
-from .stores import initialize_multitenancy
-from .invitations import (
-    create_invitation, accept_invitation, apply_invite_to_state,
-    find_invitation_tenant, invitation_to_dict,
-)
-
-__all__ = [
-    'Invitation', 'WebhookDelivery', 'InvitationStatus',
-    'initialize_multitenancy',
-    'create_invitation', 'accept_invitation', 'apply_invite_to_state',
-    'find_invitation_tenant', 'invitation_to_dict',
-]
+Intentionally light on re-exports: importing submodules directly (e.g.
+`from domain.invitations import create_invitation`) avoids an import cycle —
+domain.invitations -> services.persona_loader -> domain.persona would re-enter
+this package __init__ before persona_loader finished initializing.
+"""

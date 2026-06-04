@@ -1,0 +1,27 @@
+<p style="font-size:16px; margin:0 0 16px;">Beste {{ given_name or "alumnus" }},</p>
+
+<p style="font-size:15px; line-height:1.5; margin:0 0 16px;">
+  Je bent uitgenodigd als <strong>{{ persona.nl or persona.en }}</strong>.
+  Bevestig je uitnodiging met je (test-)eduID en verifieer je alumnigegevens via de knop hieronder.
+</p>
+
+{% if persona_params.personal_message %}
+<blockquote style="margin:0 0 16px; padding:12px 16px; background:#f4f7fb; border-left:3px solid #0a4d8c; font-style:italic;">
+  {{ persona_params.personal_message }}
+</blockquote>
+{% endif %}
+
+{% if persona_params.graduation_year %}
+<p style="font-size:14px; color:#555; margin:0 0 16px;">Afstudeerjaar: {{ persona_params.graduation_year }}</p>
+{% endif %}
+
+<p style="margin:0 0 24px;">
+  <a href="{{ accept_url }}"
+     style="display:inline-block; background:#0a4d8c; color:#ffffff; text-decoration:none;
+            padding:12px 22px; border-radius:6px; font-size:15px;">Accepteer je uitnodiging</a>
+</p>
+
+<p style="font-size:13px; color:#777; margin:0;">
+  Werkt de knop niet? Kopieer deze link in je browser:<br>
+  <a href="{{ accept_url }}" style="color:#0a4d8c;">{{ accept_url }}</a>
+</p>

@@ -1,150 +1,226 @@
 {
-    "DTAP": "dev",
-    "storage_secret": "your-storage-secret-here",
-    "log_level": "DEBUG",
-    "console_logging": true,
-    "base_url": "http://localhost:8080",
-    "smtp_server": "localhost",
-    "smtp_port": 25,
-    "error_notification_from": "server@edupersona.nl",
-    "error_notification_to": ["admin@your-domain.com"],
-    "postmark": {
-        "token": "your-postmark-token-here",
-        "message_stream": "your-message-stream-name"
-    },
-    "invitation_expiration_days": 14,
-    "cleanup_api_key": "your-cleanup-api-key-here",
-
-    "_default_tenant_comment": "Optional. Only used when multiple tenants are configured. If exactly one tenant is defined, that one is the default automatically.",
-    "default_tenant": "hvh",
-
-    "tenants": {
-        "hvh": {
-            "api_key": "your-tenant-api-key-here",
-            "theme": {
-                "primary_color": "rgb(59, 130, 246)",
-                "secondary_color": "#26a69a",
-                "accent_color": "#9c27b0",
-                "positive_color": "#21ba45"
-            },
-            "scim": {
-                "scim_enabled": false,
-                "scim_base_url": "http://localhost:8000",
-                "bearer_token": "your-scim-bearer-token",
-                "provision_groups": true
-            },
-            "admins": [
-                {
-                    "user": "your-user-id-hash-here",
-                    "authz": ["invitations", "guests", "roles"]
-                }
-            ],
-            "fallback_admins": [
-                {
-                    "user": "your_username",
-                    "password": "your_password",
-                    "authz": ["invitations", "guests", "roles"]
-                }
-            ],
-            "oidc": {
-                "eduid": {
-                    "label": "eduID",
-                    "CLIENT_ID": "your-client-id",
-                    "CLIENT_SECRET": "your-client-secret",
-                    "DOTWELLKNOWN": "https://connect.test.surfconext.nl/.well-known/openid-configuration",
-                    "REDIRECT_URI": "http://localhost:8080/oidc_callback",
-                    "login_hint": "https://login.test.eduid.nl",
-                    "force_login": true
-                },
-                "institutional": {
-                    "label": "instellingsaccount",
-                    "CLIENT_ID": "your-client-id",
-                    "CLIENT_SECRET": "your-client-secret",
-                    "DOTWELLKNOWN": "https://connect.test.surfconext.nl/.well-known/openid-configuration",
-                    "REDIRECT_URI": "http://localhost:8080/oidc_callback",
-                    "login_hint": "https://idp.diy.surfconext.nl",
-                    "force_login": true
-                },
-                "admin": {
-                    "label": "admin-account (via test eduID)",
-                    "CLIENT_ID": "your-client-id",
-                    "CLIENT_SECRET": "your-client-secret",
-                    "DOTWELLKNOWN": "https://connect.test.surfconext.nl/.well-known/openid-configuration",
-                    "REDIRECT_URI": "http://localhost:8080/oidc_callback",
-                    "login_hint": "https://idp.diy.surfconext.nl",
-                    "auto_provision_users": false,
-                    "force_login": true
-                }
-            },
-            "default_scenario": "default",
-            "scenarios": {
-                "default": {
-                    "steps": [
-                        {
-                            "class": "VerifyInviteStep",
-                            "id": "verify_invite",
-                            "config": {
-                                "title": "Stap 1. Kopieer en plak hier de code die je per mail hebt ontvangen",
-                                "completed_text": "✓ Code ontvangen en bevestigd",
-                                "disabled_text": null
-                            }
-                        },
-                        {
-                            "class": "OIDCLoginStep",
-                            "id": "eduid_login",
-                            "config": {
-                                "idp": "eduid",
-                                "title": "Stap 2. Inloggen met eduID (let op: gebruik je TEST eduID)",
-                                "completed_text": "✓ Ingelogd met (test-)eduID",
-                                "disabled_text": "Voltooi eerst stap 1",
-                                "primary_button_label": "YES! I already have a (test!) eduID",
-                                "secondary_button": {
-                                    "label": "No - I don't have a (test!) eduID yet",
-                                    "url": "https://test.eduid.nl/home",
-                                    "hint": "Come back here after you've created it!"
-                                }
-                            }
-                        },
-                        {
-                            "class": "OIDCLoginStep",
-                            "id": "institutional_login",
-                            "config": {
-                                "idp": "institutional",
-                                "title": "Stap 3. Inloggen met (dummy) instellingsaccount",
-                                "completed_text": "✓ Institutioneel ingelogd (test-IDP)",
-                                "disabled_text": "Voltooi eerst stap 2",
-                                "primary_button_label": "Login via (dummy) institution",
-                                "help_text": "Demo van willekeurige test-IDP als secundaire verificatie. Kies bijvoorbeeld voor \"professor5/professor5\""
-                            }
-                        },
-                        {
-                            "class": "VerifyAlumniDb",
-                            "id": "alumni_lookup",
-                            "config": {
-                                "title": "Stap 4. Verifieer je gegevens in onze alumnidatabase",
-                                "completed_text": "✓ Alumnigegevens geverifieerd",
-                                "disabled_text": "Voltooi eerst stap 3",
-                                "help_text": "Voer je geboortedatum en vijfcijferige studentnummer in zoals bekend bij onze alumniadministratie.",
-                                "primary_button_label": "Verify alumni status",
-                                "dob_label": "Date of birth",
-                                "student_number_label": "Student number",
-                                "dob_min_year": 1960,
-                                "dob_max_year": 1990,
-                                "student_number_pattern": "^\\d{5}$"
-                            }
-                        },
-                        {
-                            "class": "FinalizeStep",
-                            "id": "finalize",
-                            "config": {
-                                "title": "Stap 5. Toegang naar de applicatie",
-                                "completed_text": "✓ Uw eduID is nu gekoppeld!",
-                                "disabled_text": "Voltooi eerst de vorige stappen"
-                            }
-                        }
-                    ]
-                }
-            }
+  "DTAP": "dev",
+  "storage_secret": "your-storage-secret-here",
+  "log_level": "DEBUG",
+  "console_logging": true,
+  "base_url": "http://localhost:8080",
+  "smtp_server": "localhost",
+  "smtp_port": 25,
+  "error_notification_from": "server@edupersona.nl",
+  "error_notification_to": [
+    "admin@your-domain.com"
+  ],
+  "postmark": {
+    "token": "your-postmark-token-here",
+    "message_stream": "your-message-stream-name"
+  },
+  "invitation_expiration_days": 14,
+  "cleanup_api_key": "your-cleanup-api-key-here",
+  "_default_tenant_comment": "Optional. Only used when multiple tenants are configured. If exactly one tenant is defined, that one is the default automatically.",
+  "default_tenant": "hvh",
+  "tenants": {
+    "hvh": {
+      "api_key": "your-tenant-api-key-here",
+      "theme": {
+        "primary_color": "rgb(59, 130, 246)",
+        "secondary_color": "#26a69a",
+        "accent_color": "#9c27b0",
+        "positive_color": "#21ba45"
+      },
+      "scim": {
+        "scim_enabled": false,
+        "scim_base_url": "http://localhost:8000",
+        "bearer_token": "your-scim-bearer-token",
+        "provision_groups": true
+      },
+      "admins": [
+        {
+          "user": "your-user-id-hash-here",
+          "authz": [
+            "invitations"
+          ]
         }
+      ],
+      "fallback_admins": [
+        {
+          "user": "your_username",
+          "password": "your_password",
+          "authz": [
+            "invitations"
+          ]
+        }
+      ],
+      "oidc": {
+        "eduid": {
+          "label": "eduID",
+          "CLIENT_ID": "your-client-id",
+          "CLIENT_SECRET": "your-client-secret",
+          "DOTWELLKNOWN": "https://connect.test.surfconext.nl/.well-known/openid-configuration",
+          "REDIRECT_URI": "http://localhost:8080/oidc_callback",
+          "login_hint": "https://login.test.eduid.nl",
+          "force_login": true
+        },
+        "institutional": {
+          "label": "instellingsaccount",
+          "CLIENT_ID": "your-client-id",
+          "CLIENT_SECRET": "your-client-secret",
+          "DOTWELLKNOWN": "https://connect.test.surfconext.nl/.well-known/openid-configuration",
+          "REDIRECT_URI": "http://localhost:8080/oidc_callback",
+          "login_hint": "https://idp.diy.surfconext.nl",
+          "force_login": true
+        },
+        "admin": {
+          "label": "admin-account (via test eduID)",
+          "CLIENT_ID": "your-client-id",
+          "CLIENT_SECRET": "your-client-secret",
+          "DOTWELLKNOWN": "https://connect.test.surfconext.nl/.well-known/openid-configuration",
+          "REDIRECT_URI": "http://localhost:8080/oidc_callback",
+          "login_hint": "https://idp.diy.surfconext.nl",
+          "auto_provision_users": false,
+          "force_login": true
+        }
+      },
+      "personas": {
+        "gastdocent": {
+          "display_name": {
+            "nl": "Gastdocent",
+            "en": "Visiting lecturer"
+          },
+          "mail": {
+            "layout": "layouts/hvh.jinja2",
+            "body": "personas/gastdocent.jinja2"
+          },
+          "expected_params": {
+            "department": {
+              "type": "string",
+              "required": false
+            },
+            "personal_message": {
+              "type": "string",
+              "required": false
+            }
+          },
+          "callback_outputs": [
+            "eduid"
+          ],
+          "success_redirect_url": "https://example.org/lms/welcome",
+          "callback_url": null,
+          "steps": [
+            {
+              "class": "VerifyInviteStep",
+              "id": "verify_invite",
+              "config": {
+                "title": "Stap 1. Kopieer en plak hier de code die je per mail hebt ontvangen",
+                "completed_text": "✓ Code ontvangen en bevestigd",
+                "disabled_text": null
+              }
+            },
+            {
+              "class": "OIDCLoginStep",
+              "id": "eduid_login",
+              "config": {
+                "idp": "eduid",
+                "title": "Stap 2. Inloggen met eduID (let op: gebruik je TEST eduID)",
+                "completed_text": "✓ Ingelogd met (test-)eduID",
+                "disabled_text": "Voltooi eerst stap 1",
+                "primary_button_label": "YES! I already have a (test!) eduID",
+                "secondary_button": {
+                  "label": "No - I don't have a (test!) eduID yet",
+                  "url": "https://test.eduid.nl/home",
+                  "hint": "Come back here after you've created it!"
+                }
+              }
+            },
+            {
+              "class": "FinalizeStep",
+              "id": "finalize",
+              "config": {
+                "title": "Stap 3. Toegang naar de applicatie",
+                "completed_text": "✓ Uw onboarding is voltooid!",
+                "disabled_text": "Voltooi eerst de vorige stappen"
+              }
+            }
+          ]
+        },
+        "alumnus": {
+          "display_name": {
+            "nl": "Alumnus",
+            "en": "Alumnus"
+          },
+          "mail": {
+            "layout": "layouts/hvh.jinja2",
+            "body": "personas/alumnus.jinja2"
+          },
+          "expected_params": {
+            "graduation_year": {
+              "type": "int",
+              "required": false
+            },
+            "personal_message": {
+              "type": "string",
+              "required": false
+            }
+          },
+          "callback_outputs": [
+            "eduid",
+            "alumni_db"
+          ],
+          "success_redirect_url": "https://example.org/alumni/welcome",
+          "callback_url": null,
+          "steps": [
+            {
+              "class": "VerifyInviteStep",
+              "id": "verify_invite",
+              "config": {
+                "title": "Stap 1. Kopieer en plak hier de code die je per mail hebt ontvangen",
+                "completed_text": "✓ Code ontvangen en bevestigd",
+                "disabled_text": null
+              }
+            },
+            {
+              "class": "OIDCLoginStep",
+              "id": "eduid_login",
+              "config": {
+                "idp": "eduid",
+                "title": "Stap 2. Inloggen met eduID (let op: gebruik je TEST eduID)",
+                "completed_text": "✓ Ingelogd met (test-)eduID",
+                "disabled_text": "Voltooi eerst stap 1",
+                "primary_button_label": "YES! I already have a (test!) eduID",
+                "secondary_button": {
+                  "label": "No - I don't have a (test!) eduID yet",
+                  "url": "https://test.eduid.nl/home",
+                  "hint": "Come back here after you've created it!"
+                }
+              }
+            },
+            {
+              "class": "VerifyAlumniDb",
+              "id": "alumni_db",
+              "config": {
+                "title": "Stap 3. Verifieer je gegevens in onze alumnidatabase",
+                "completed_text": "✓ Alumnigegevens geverifieerd",
+                "disabled_text": "Voltooi eerst stap 2",
+                "help_text": "Voer je geboortedatum en vijfcijferige studentnummer in zoals bekend bij onze alumniadministratie.",
+                "primary_button_label": "Verify alumni status",
+                "dob_label": "Date of birth",
+                "student_number_label": "Student number",
+                "dob_min_year": 1960,
+                "dob_max_year": 1990,
+                "student_number_pattern": "^\\d{5}$"
+              }
+            },
+            {
+              "class": "FinalizeStep",
+              "id": "finalize",
+              "config": {
+                "title": "Stap 4. Toegang verleend",
+                "completed_text": "✓ Je alumni-onboarding is voltooid!",
+                "disabled_text": "Voltooi eerst de vorige stappen"
+              }
+            }
+          ]
+        }
+      }
     }
+  }
 }

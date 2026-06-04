@@ -31,6 +31,15 @@ def _cfg(**expected_params) -> PersonaConfig:
 
 # --- happy: load the real gastdocent persona from settings.json ---
 
+def test_get_alumnus_persona():
+    """Lock in the demo alumnus persona (4-step scenario, eduid + alumni_db outputs)."""
+    cfg = get_persona_config("hvh", "alumnus")
+    assert cfg.label("nl") == "Alumnus"
+    assert [s["id"] for s in cfg.steps] == ["verify_invite", "eduid_login", "alumni_db", "finalize"]
+    assert cfg.callback_outputs == ["eduid", "alumni_db"]
+    assert cfg.expected_params["graduation_year"].type == "int"
+
+
 def test_get_persona_config_happy():
     cfg = get_persona_config("hvh", "gastdocent")
     assert isinstance(cfg, PersonaConfig)
