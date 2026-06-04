@@ -35,6 +35,89 @@ class InvitationCreate(BaseModel):
     callback_url: str | None = None
 
 
+# ── response models (drive /docs + /redoc; success payloads use the {data, meta} envelope) ──
+
+
+class InvitationData(BaseModel):
+    id: int
+    code: str
+    status: str
+    persona_key: str
+    client_ref: str | None = None
+    invitation_email: str
+    given_name: str | None = None
+    family_name: str | None = None
+    persona_params: dict = {}
+    callback_url: str | None = None
+    invited_at: str | None = None
+    accepted_at: str | None = None
+    accept_url: str
+
+
+class DeliverySummary(BaseModel):
+    id: int
+    status: str
+    attempt_n: int
+    last_status_code: int | None = None
+    next_retry_at: str | None = None
+
+
+class InvitationDetailData(InvitationData):
+    webhook_deliveries: list[DeliverySummary] = []
+
+
+class Meta(BaseModel):
+    timestamp: str
+    total: int | None = None
+    limit: int | None = None
+    offset: int | None = None
+
+
+class InvitationEnvelope(BaseModel):
+    data: InvitationData
+    meta: Meta
+
+
+class InvitationDetailEnvelope(BaseModel):
+    data: InvitationDetailData
+    meta: Meta
+
+
+class InvitationListEnvelope(BaseModel):
+    data: list[InvitationData]
+    meta: Meta
+
+
+class DeleteResult(BaseModel):
+    deleted: bool
+    id: int
+
+
+class DeleteEnvelope(BaseModel):
+    data: DeleteResult
+    meta: Meta
+
+
+class _ApiError(BaseModel):
+    code: str
+    message: str
+    details: dict | None = None
+
+
+class _ErrorDetail(BaseModel):
+    error: _ApiError
+
+
+class ErrorEnvelope(BaseModel):
+    detail: _ErrorDetail
+
+
+# Reusable error-response docs (the api_error envelope) attached per endpoint.
+_AUTH_ERR = {401: {"model": ErrorEnvelope, "description": "Missing or invalid API key"}}
+_NOT_FOUND_ERR = {404: {"model": ErrorEnvelope, "description": "Invitation or persona not found"}}
+_VALIDATION_ERR = {400: {"model": ErrorEnvelope, "description": "Invalid request data"}}
+
+
 def _valid_email(value: str) -> bool:
     """Basic format check (no domain restriction in the base app, §2.2)."""
     if not value or value.count("@") != 1:
@@ -47,7 +130,7 @@ def _iso(dt) -> str | None:
     return dt.isoformat() if dt is not None else None
 
 
-def _to_api_dict(inv: Invitation) -> dict:
+def _to_api_dict(inv: Invitation, request: Request) -> dict:
     return {
         "id": inv.id,
         "code": inv.code,
@@ -61,6 +144,7 @@ def _to_api_dict(inv: Invitation) -> dict:
         "callback_url": inv.callback_url,
         "invited_at": _iso(inv.invited_at),
         "accepted_at": _iso(inv.accepted_at),
+        "accept_url": _accept_url(request, inv.code),
     }
 
 
@@ -75,7 +159,8 @@ async def _send_mail_best_effort(tenant: str, invitation: dict) -> None:
         logger.warning(f"persona invite mail not sent for {invitation['code']} (transport returned false)")
 
 
-@api_router.post("/invitations")
+@api_router.post("/invitations", response_model=InvitationEnvelope,
+                 responses={**_AUTH_ERR, **_VALIDATION_ERR, **_NOT_FOUND_ERR})
 async def create_invitation_endpoint(tenant: str, data: InvitationCreate, request: Request):
     """Create an invitation and fire its mail (best-effort)."""
     validate_tenant_or_raise(tenant)
@@ -104,19 +189,15 @@ async def create_invitation_endpoint(tenant: str, data: InvitationCreate, reques
     except Exception as e:  # mail outage must not roll back the persisted invitation
         logger.error(f"persona invite mail failed (non-fatal) for {invitation['code']}: {e}")
 
-    return api_response({
-        "id": invitation["id"],
-        "code": invitation["code"],
-        "status": invitation["status"],
-        "persona_key": invitation["persona_key"],
-        "client_ref": invitation["client_ref"],
-        "accept_url": _accept_url(request, invitation["code"]),
-    })
+    # Return the full resource (same shape as GET) so create and fetch agree.
+    inv = await Invitation.get(tenant=tenant, id=invitation["id"])
+    return api_response(_to_api_dict(inv, request))
 
 
-@api_router.get("/invitations")
+@api_router.get("/invitations", response_model=InvitationListEnvelope, responses={**_AUTH_ERR})
 async def list_invitations(
     tenant: str,
+    request: Request,
     status: str | None = None,
     persona_key: str | None = None,
     client_ref: str | None = None,
@@ -139,7 +220,7 @@ async def list_invitations(
         qs = qs.filter(invitation_email=email)
 
     rows = await qs.order_by("-id").all()
-    items = [_to_api_dict(inv) for inv in rows]
+    items = [_to_api_dict(inv, request) for inv in rows]
     total = len(items)
     return api_response(apply_pagination(items, limit, offset), total=total, limit=limit, offset=offset)
 
@@ -154,8 +235,9 @@ def _delivery_summary(d: WebhookDelivery) -> dict:
     }
 
 
-@api_router.get("/invitations/code/{code}")
-async def get_invitation_by_code(tenant: str, code: str):
+@api_router.get("/invitations/code/{code}", response_model=InvitationEnvelope,
+                responses={**_AUTH_ERR, **_NOT_FOUND_ERR})
+async def get_invitation_by_code(tenant: str, code: str, request: Request):
     """Public lookup by code (used by the accept page)."""
     validate_tenant_or_raise(tenant)
     log_api_call("GET", f"/invitations/code/{code[:8]}...", tenant)
@@ -163,11 +245,12 @@ async def get_invitation_by_code(tenant: str, code: str):
     inv = await Invitation.get_or_none(tenant=tenant, code=code)
     if inv is None:
         raise api_error("NOT_FOUND", "Invitation not found", status_code=404)
-    return api_response(_to_api_dict(inv))
+    return api_response(_to_api_dict(inv, request))
 
 
-@api_router.get("/invitations/{invitation_id}")
-async def get_invitation(tenant: str, invitation_id: int):
+@api_router.get("/invitations/{invitation_id}", response_model=InvitationDetailEnvelope,
+                responses={**_AUTH_ERR, **_NOT_FOUND_ERR})
+async def get_invitation(tenant: str, invitation_id: int, request: Request):
     """Single invitation plus a summary of its webhook deliveries."""
     validate_tenant_or_raise(tenant)
     log_api_call("GET", f"/invitations/{invitation_id}", tenant)
@@ -177,13 +260,14 @@ async def get_invitation(tenant: str, invitation_id: int):
         raise api_error("NOT_FOUND", f"Invitation {invitation_id} not found", status_code=404)
 
     deliveries = await WebhookDelivery.filter(invitation_id=invitation_id).order_by("id").all()
-    item = _to_api_dict(inv)
+    item = _to_api_dict(inv, request)
     item["webhook_deliveries"] = [_delivery_summary(d) for d in deliveries]
     return api_response(item)
 
 
-@api_router.post("/invitations/{invitation_id}/resend")
-async def resend_invitation(tenant: str, invitation_id: int):
+@api_router.post("/invitations/{invitation_id}/resend", response_model=InvitationEnvelope,
+                 responses={**_AUTH_ERR, **_NOT_FOUND_ERR})
+async def resend_invitation(tenant: str, invitation_id: int, request: Request):
     """Bump invited_at and re-fire the invite mail (best-effort)."""
     validate_tenant_or_raise(tenant)
     log_api_call("POST", f"/invitations/{invitation_id}/resend", tenant)
@@ -202,10 +286,11 @@ async def resend_invitation(tenant: str, invitation_id: int):
         await _send_mail_best_effort(tenant, invitation_to_dict(inv))
     except Exception as e:
         logger.error(f"persona invite resend mail failed (non-fatal) for {inv.code}: {e}")
-    return api_response(_to_api_dict(inv))
+    return api_response(_to_api_dict(inv, request))
 
 
-@api_router.delete("/invitations/{invitation_id}")
+@api_router.delete("/invitations/{invitation_id}", response_model=DeleteEnvelope,
+                   responses={**_AUTH_ERR, **_NOT_FOUND_ERR})
 async def delete_invitation(tenant: str, invitation_id: int):
     """Revoke (delete) an invitation and its webhook deliveries."""
     validate_tenant_or_raise(tenant)
