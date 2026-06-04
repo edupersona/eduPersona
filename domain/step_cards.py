@@ -1,9 +1,13 @@
-"""Step card components for the onboarding flow.
+"""Step card components for the onboarding flow (persona-mode).
 
 See cline_docs/step_cards.md for the full contract — lifecycle, StepResult,
 the MAY / MAY NOT rules, and the single-session invariant.
+
+Shape B (§2.7): OIDC steps write verified userinfo to state['outputs'][idp] (keyed
+by IdP name, gotcha 10); non-OIDC steps write to state['outputs'][step_id].
+FinalizeStep persists state['outputs'] to Invitation.step_outputs before accepting,
+so the webhook callback can read the verified facts. No Guest entity.
 """
-import json
 import re
 from dataclasses import dataclass
 from typing import Literal
@@ -15,12 +19,9 @@ from ng_rdm.utils import logger
 
 from services.i18n import _
 from services.oidc_mt.multitenant import start_oidc_login
-from services.auth.guest_auth import establish_guest_session_for_code
-from domain.invitations import accept_invitation, apply_invite_code_to_state
-from domain.invitations_persona import accept_persona_invitation, apply_persona_invite_to_state
-from domain.models import GuestAttribute, Invitation
-from domain.stores import get_invitation_store
 from services.persona_loader import get_persona_config
+from domain.invitations import accept_invitation, apply_invite_to_state
+from domain.models import Invitation
 
 
 Outcome = Literal['pending', 'in_progress', 'completed', 'failed', 'skipped']
@@ -42,34 +43,6 @@ def expandable_info(valdict: dict) -> None:
                 for key, value in valdict.items():
                     if value:
                         ui.label(f'{key}: {value}').style('font-size: 0.875rem;')
-
-
-userinfo_mapping = {
-    'identity': ['name', 'given_name', 'family_name', 'eduperson_principal_name', 'sub', 'uids'],
-    'email': ['email', 'email_verified'],
-    'affiliation': ['schac_home_organization', 'eduperson_affiliation'],
-    'authentication': ['acr']
-}
-
-
-async def update_guest_from_userinfo(tenant: str, invite_code: str, userinfo: dict, idp: str) -> None:
-    """Replace this guest's GuestAttribute row for `idp` with the new userinfo.
-
-    Args:
-        tenant: Tenant identifier
-        invite_code: Invitation code (32-char hex string)
-        userinfo: OIDC userinfo dict
-        idp: IdP identifier from settings.oidc (e.g., "eduid", "institutional")
-    """
-    invitation_store = get_invitation_store(tenant)
-    invitations = await invitation_store.read_items(filter_by={"code": invite_code})
-    if not invitations:
-        logger.warning(f"update_guest_from_userinfo: invitation not found for code: {invite_code}")
-        return
-    guest_id = invitations[0]["guest_id"]
-    # Replace any prior attributes from this IdP (re-acceptance must not accumulate)
-    await GuestAttribute.filter(guest_id=guest_id, name=idp).delete()
-    await GuestAttribute.create(guest_id=guest_id, name=idp, value=json.dumps(userinfo))
 
 
 # ──────────────────────────── base class ────────────────────────────
@@ -101,8 +74,7 @@ class StepCard:
     async def is_already_done(self) -> bool:
         """Override on verification-style steps that have a durable DB marker.
         Returning True at scenario startup → step is recorded as 'skipped'.
-        Default: never auto-skip. Subclasses read scenario context via `self.steps.context`.
-        """
+        Default: never auto-skip. No cross-persona auto-skip (§2.1)."""
         return False
 
     async def act(self) -> StepResult | None:
@@ -161,7 +133,7 @@ class StepCard:
 
 
 class VerifyInviteStep(StepCard):
-    """Validate the invitation code typed by the user and populate scenario context."""
+    """Validate the invitation code typed by the user and populate persona context."""
 
     async def act(self) -> StepResult | None:
         if not self.tenant:
@@ -170,7 +142,7 @@ class VerifyInviteStep(StepCard):
         invite_code = (self.state.get('invite_code_input') or '').strip()
         if not invite_code:
             return None
-        ok = await apply_invite_code_to_state(self.tenant, self.state, invite_code)
+        ok = await apply_invite_to_state(self.tenant, self.state, invite_code)
         if ok:
             from services.tenant import store_tenant_in_session
             store_tenant_in_session(self.tenant)
@@ -187,7 +159,8 @@ class VerifyInviteStep(StepCard):
 
 
 class OIDCLoginStep(StepCard):
-    """Generic OIDC login step. IdP, copy, and optional secondary CTA come from config."""
+    """Generic OIDC login step. Writes verified userinfo to state['outputs'][idp]
+    (keyed by IdP name, gotcha 10) — no GuestAttribute."""
 
     def __init__(self, config: dict):
         super().__init__(config)
@@ -228,28 +201,20 @@ class OIDCLoginStep(StepCard):
 
     def render_completed(self, state: dict) -> None:
         ui.label(self.completed_text).classes('text-success').style('margin-top: 0.5rem;')
-        userinfo = state.get('outputs', {}).get(self.step_id, {}).get('userinfo', {})
-        expandable_info(userinfo)
+        expandable_info(state.get('outputs', {}).get(self.idp, {}))
 
     async def result_handler(self, userinfo: dict, id_token_claims: dict, token_data: dict, next_url: str = "") -> None:
         logger.debug(f"{self.idp} login completed with userinfo: {userinfo}")
-        invite_code = self.state.get('invite_code')
-        if invite_code and self.tenant:
-            await update_guest_from_userinfo(self.tenant, invite_code, userinfo, self.idp)
+        self.state.setdefault('outputs', {})[self.idp] = userinfo
         if self.steps:
-            await self.steps.record(
-                self.step_id,
-                StepResult('completed', output={'userinfo': userinfo}),
-            )
+            await self.steps.record(self.step_id, StepResult('completed'))
 
 
 class VerifyAlumniDb(StepCard):
     """Verify alumni status against a (simulated) records lookup.
 
     Generic enough to be reused for any "two-field lookup with format + range
-    constraints" pattern. Config drives bounds, format, and copy; the class is
-    flavour-agnostic.
-    """
+    constraints" pattern. Writes its payload to state['outputs'][step_id]."""
 
     def __init__(self, config: dict):
         super().__init__(config)
@@ -317,103 +282,10 @@ class VerifyAlumniDb(StepCard):
 
 
 class FinalizeStep(StepCard):
-    """Terminal step: accept the invitation, establish guest session, render exit links.
-
-    Auto-runs once all preceding interactive steps reach completed/skipped state.
-    Idempotent — re-running is a no-op for invitations already in 'accepted'.
-    """
+    """Terminal step: persist state['outputs'] to Invitation.step_outputs, then accept
+    (which fires the webhook callback). Idempotent for already-accepted invitations."""
 
     kind = 'finalize'
-
-    async def act(self) -> StepResult | None:
-        if not self.tenant:
-            return StepResult('failed', error='tenant not set')
-        invite_code = self.state.get('invite_code')
-        if not invite_code:
-            return StepResult('failed', error='invite code missing')
-
-        # Idempotency: only call accept_invitation when the invitation is still pending.
-        invitations = await get_invitation_store(self.tenant).read_items(filter_by={"code": invite_code})
-        if invitations and invitations[0].get('status') == 'pending':
-            accepted = await accept_invitation(self.tenant, invite_code)
-            if not accepted:
-                return StepResult('failed', error='accept_invitation failed')
-
-        await establish_guest_session_for_code(self.tenant, invite_code)
-        return StepResult('completed')
-
-    def render_enabled(self, state: dict) -> None:
-        # FinalizeStep auto-runs; this branch is rarely reached. Show the title's
-        # completed_text as a holding message until the auto-run lands.
-        ui.label(self.completed_text).classes('text').style('margin-top: 0.5rem;')
-
-    def render_completed(self, state: dict) -> None:
-        ui.label(_('✓ Your eduID is now linked!')).classes('text-success')
-        role_assignments = state.get('role_assignments', [])
-        for ra in role_assignments:
-            role = ra.get('role', {})
-            redirect_url = role.get('redirect_url', '')
-            redirect_text = role.get('redirect_text', '')
-            if redirect_url and redirect_text:
-                ui.link(_('Go to my apps & services'), '/apps', new_tab=True) \
-                    .classes('btn-primary') \
-                    .style('padding: 0.5rem 1rem; border-radius: 0.25rem; font-size: 14pt; font-weight: 500; text-decoration: none; display: inline-block; margin-top: 0.5rem;')
-
-
-# ──────────────────────────── persona-mode variants (Phase G) ────────────────────────────
-# Same config class-names as role-mode, but Shape B behaviour: no Guest, outputs
-# flow into Invitation.step_outputs, acceptance fires the webhook callback.
-
-
-class PersonaVerifyInviteStep(VerifyInviteStep):
-    """Validate the code via persona-mode state population (no role_assignments)."""
-
-    async def act(self) -> StepResult | None:
-        if not self.tenant:
-            logger.error("Tenant not set in step card")
-            return StepResult('failed', error='tenant not set')
-        invite_code = (self.state.get('invite_code_input') or '').strip()
-        if not invite_code:
-            return None
-        ok = await apply_persona_invite_to_state(self.tenant, self.state, invite_code)
-        if ok:
-            from services.tenant import store_tenant_in_session
-            store_tenant_in_session(self.tenant)
-            return StepResult('completed')
-        ui.notify(_('Invalid invite code'), type='negative')
-        return None
-
-
-class PersonaOIDCLoginStep(OIDCLoginStep):
-    """OIDC login that writes userinfo to state['outputs'][idp] (gotcha 10) — no GuestAttribute."""
-
-    async def act(self) -> StepResult | None:
-        if not self.tenant:
-            logger.error("Tenant not set in step card")
-            return StepResult('failed', error='tenant not set')
-        await start_oidc_login(
-            tenant=self.tenant,
-            idp=self.idp,
-            callback_handler=self.result_handler,
-            next_url="/accept/p",
-            force_login=True,
-        )
-        return None
-
-    async def result_handler(self, userinfo: dict, id_token_claims: dict, token_data: dict, next_url: str = "") -> None:
-        logger.debug(f"{self.idp} persona login completed with userinfo: {userinfo}")
-        # Key by IdP name, not step id — this is the callback_outputs key (§2.7, gotcha 10).
-        self.state.setdefault('outputs', {})[self.idp] = userinfo
-        if self.steps:
-            await self.steps.record(self.step_id, StepResult('completed'))
-
-    def render_completed(self, state: dict) -> None:
-        ui.label(self.completed_text).classes('text-success').style('margin-top: 0.5rem;')
-        expandable_info(state.get('outputs', {}).get(self.idp, {}))
-
-
-class PersonaFinalizeStep(FinalizeStep):
-    """Persist state['outputs'] to Invitation.step_outputs, then accept (fires callback)."""
 
     async def act(self) -> StepResult | None:
         if not self.tenant:
@@ -430,10 +302,14 @@ class PersonaFinalizeStep(FinalizeStep):
             # Persist outputs BEFORE accept so the webhook envelope can read them (§2.7).
             inv.step_outputs = dict(self.state.get('outputs', {})) or None
             await inv.save()
-            accepted = await accept_persona_invitation(self.tenant, invite_code)
+            accepted = await accept_invitation(self.tenant, invite_code)
             if not accepted:
-                return StepResult('failed', error='accept_persona_invitation failed')
+                return StepResult('failed', error='accept_invitation failed')
         return StepResult('completed')
+
+    def render_enabled(self, state: dict) -> None:
+        # FinalizeStep auto-runs; this branch is rarely reached.
+        ui.label(self.completed_text).classes('text').style('margin-top: 0.5rem;')
 
     def render_completed(self, state: dict) -> None:
         redirect_url = None
@@ -461,15 +337,6 @@ STEP_CARD_CLASSES = {
     'FinalizeStep': FinalizeStep,
 }
 
-# Persona-mode maps the SAME config class-names to the Shape-B variants, so persona
-# settings reuse the role-mode `steps` config shape unchanged.
-PERSONA_STEP_CARD_CLASSES = {
-    'VerifyInviteStep': PersonaVerifyInviteStep,
-    'OIDCLoginStep': PersonaOIDCLoginStep,
-    'VerifyAlumniDb': VerifyAlumniDb,   # reused verbatim — already writes outputs[step_id]
-    'FinalizeStep': PersonaFinalizeStep,
-}
-
 
 class Steps:
     """Onboarding orchestrator.
@@ -477,18 +344,12 @@ class Steps:
     Owns: scenario instantiation, completion bookkeeping (`state['outcomes']`),
     output storage (`state['outputs']`), prerequisite evaluation (positional),
     and the terminal hook that auto-runs the `FinalizeStep` when ready.
-
-    Steps signal completion by returning a StepResult from `act()` or by calling
-    `self.steps.record(step_id, result)` from a result handler.
     """
 
-    # Overridden by PersonaSteps to instantiate the Shape-B variants.
-    step_card_classes = STEP_CARD_CLASSES
-
-    def __init__(self, tenant: str, state: dict, scenario_config: dict):
+    def __init__(self, tenant: str, state: dict, persona_config: dict):
         self.tenant = tenant
         self.state = state
-        self.scenario_config = scenario_config
+        self.scenario_config = persona_config
         self.state.setdefault('outcomes', {})
         self.state.setdefault('outputs', {})
         self.step_instances = self._create_steps()
@@ -504,33 +365,28 @@ class Steps:
             'tenant': self.tenant,
             'invite_code': self.state.get('invite_code', ''),
             'invitation_id': self.state.get('invitation_id'),
-            'role_assignments': self.state.get('role_assignments', []),
+            'persona_key': self.state.get('persona_key'),
         }
 
     def _create_steps(self) -> list[StepCard]:
         instances: list[StepCard] = []
         for i, step_config in enumerate(self.scenario_config['steps']):
             step_class_name = step_config['class']
-            if step_class_name not in self.step_card_classes:
+            if step_class_name not in STEP_CARD_CLASSES:
                 raise ValueError(f"Unknown step card class: {step_class_name}")
-            step_class = self.step_card_classes[step_class_name]
+            step_class = STEP_CARD_CLASSES[step_class_name]
             step_instance = step_class(step_config['config'])
             step_instance.step_id = step_config.get('id', str(i))
             step_instance.steps = self
             step_instance.state = self.state
             step_instance.tenant = self.tenant
-            # Config-level `kind` overrides the class default; lets a scenario mark
-            # an arbitrary step as the finalize step (kept simple — we only use the
-            # class default in practice).
             if 'kind' in step_config:
                 step_instance.kind = step_config['kind']
             instances.append(step_instance)
         return instances
 
     async def startup(self) -> None:
-        """Replay durable markers. Any step whose `is_already_done` returns True
-        is recorded as 'skipped' before the first render. Then the finalize hook
-        is consulted in case the replay already satisfies its prerequisites."""
+        """Replay durable markers, then consult the finalize hook."""
         for step in self.step_instances:
             if self.outcomes.get(step.step_id) in ('completed', 'skipped'):
                 continue
@@ -539,8 +395,7 @@ class Steps:
         await self._maybe_run_finalize()
 
     async def record(self, step_id: str, result: StepResult) -> None:
-        """The single state-mutation funnel. Steps must call this instead of
-        writing to `state['outcomes']` or `state['steps_completed']` directly."""
+        """The single state-mutation funnel."""
         self.outcomes[step_id] = result.outcome
         if result.output is not None:
             self.state['outputs'][step_id] = result.output
@@ -575,36 +430,6 @@ class Steps:
                 self.state['outputs'][finalize_step.step_id] = result.output
 
     def _render_heading(self) -> None:
-        suffix = ''
-        if self.state.get('role_name'):
-            suffix = ' ' + _('as') + ' ' + self.state['role_name']
-
-        ui.label(_('Welcome{suffix}', suffix=suffix)).classes('page-title')
-        ui.label(
-            _('Follow the step-by-step plan below to accept your invitation{suffix}.', suffix=suffix)
-        ).classes('page-subtitle')
-
-    @ui.refreshable
-    def render(self) -> None:
-        self._render_heading()
-
-        for i, step in enumerate(self.step_instances):
-            outcome = self.outcomes.get(step.step_id, 'pending')
-            is_enabled = all(
-                self.outcomes.get(self.step_instances[j].step_id) in ('completed', 'skipped')
-                for j in range(i)
-            )
-            step.render(self.state, outcome, is_enabled)
-
-
-class PersonaSteps(Steps):
-    """Persona-mode orchestrator: instantiates Shape-B step variants and renders a
-    persona-aware heading. No cross-persona auto-skip — every persona runs its full
-    scenario (§2.1), so the inherited default `is_already_done` (False) is correct."""
-
-    step_card_classes = PERSONA_STEP_CARD_CLASSES
-
-    def _render_heading(self) -> None:
         persona_label = ''
         persona_key = self.state.get('persona_key')
         if persona_key and self.tenant:
@@ -622,3 +447,15 @@ class PersonaSteps(Steps):
         ui.label(
             _('Follow the step-by-step plan below to accept your invitation{suffix}.', suffix=suffix)
         ).classes('page-subtitle')
+
+    @ui.refreshable
+    def render(self) -> None:
+        self._render_heading()
+
+        for i, step in enumerate(self.step_instances):
+            outcome = self.outcomes.get(step.step_id, 'pending')
+            is_enabled = all(
+                self.outcomes.get(self.step_instances[j].step_id) in ('completed', 'skipped')
+                for j in range(i)
+            )
+            step.render(self.state, outcome, is_enabled)

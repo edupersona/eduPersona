@@ -9,8 +9,8 @@ point (no-op when the invitation has no callback_url); it is intentionally dead
 code until Phase D wires it into the accept flow.
 """
 
+import asyncio
 from datetime import timedelta
-from typing import Any
 
 import httpx
 
@@ -116,3 +116,17 @@ async def process_pending(limit: int = 20) -> int:
     for delivery in due:
         await _deliver(delivery.id)
     return len(due)
+
+
+async def webhook_retry_loop(interval: int = 60) -> None:
+    """App-level background loop re-firing due webhook failures (§7).
+
+    Registered from main.py's production entrypoint via app.on_startup. Uses
+    asyncio.sleep (not ui.timer) — it is app-level, not page-bound.
+    """
+    while True:
+        await asyncio.sleep(interval)
+        try:
+            await process_pending()
+        except Exception as e:
+            logger.error(f"webhook_retry_loop: {e}")

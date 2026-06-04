@@ -1,232 +1,126 @@
-"""
-Invitation lifecycle: create, accept, resend, delete (incl. junction cleanup), query with roles.
-"""
-import json
-import uuid
+"""Invitation lifecycle (persona-mode) — the only invitation surface post-cutover.
 
-from domain.models import GuestAttribute, RoleAssignment, InvitationRoleAssignment
-from domain.stores import (
-    get_guest_store,
-    get_invitation_store,
-    get_role_assignment_store,
-    get_role_store,
-)
+Shape B (§2.7, gotcha 9): an invitation is the only entity. These functions write
+the `Invitation` model directly — no Guest find-or-create. `given_name`/`family_name`
+are display strings from the client app, never refined from eduID.
+"""
+
+import uuid
+from typing import Optional
+
+from domain.models import Invitation
 from ng_rdm.store.multitenancy import valid_tenants
 from ng_rdm.utils import logger
-from ng_rdm.utils.helpers import now_utc, utc_datetime_to_str
+from ng_rdm.utils.helpers import now_utc
+from services.persona_loader import get_persona_config, validate_persona_params
+from services.webhook import enqueue_callback
 
 
-async def find_invitation_by_code(code: str) -> tuple[str, dict] | None:
-    """Resolve `(tenant, invitation)` for an invitation code, scanning all tenants."""
+async def find_invitation_tenant(code: str) -> Optional[str]:
+    """Resolve the tenant owning invitation `code`, scanning all tenants."""
     for tenant in valid_tenants:
-        items = await get_invitation_store(tenant).read_items(filter_by={"code": code})
-        if items:
-            return tenant, items[0]
+        if await Invitation.exists(tenant=tenant, code=code):
+            return tenant
     return None
 
 
-async def apply_invite_code_to_state(tenant: str, state: dict, invite_code: str) -> bool:
-    """Validate an invite code and populate scenario context on `state`.
-
-    Returns True if the code was valid and state was populated; False otherwise.
-    Pure state mutation — no UI side effects; callers handle notifications.
-    """
-    invitation = await get_invitation_with_roles(tenant, invite_code.strip())
-    if not invitation:
-        logger.warning(f"Invalid invite_code attempted: {invite_code}")
-        return False
-
-    role_assignments = invitation.get("role_assignments", [])
-    if not role_assignments:
-        logger.error(f"No role assignments for invitation code: {invite_code}")
-        return False
-
-    role_names = [ra.get("role", {}).get("name", "") for ra in role_assignments if ra.get("role")]
-
-    state['invite_code'] = invite_code
-    state['invitation_id'] = invitation['id']
-    state['role_assignments'] = role_assignments
-    state['role_name'] = ", ".join(role_names) if role_names else ""
-    return True
-
-
-async def _promote_eduid_pseudonym(tenant: str, guest_id: int) -> None:
-    """Promote uids[0] from the eduID GuestAttribute to Guest.eduid_pseudonym.
-
-    Called at onboarding completion — marks the guest as reliably verified and
-    enables later login via /apps matching against eduid_pseudonym.
-
-    Source of truth is the single `name="eduid"` attribute row. On re-acceptance
-    the row has already been replaced by update_guest_from_userinfo, so this
-    simply overwrites with the fresh uids[0].
-    """
-    attr = await GuestAttribute.filter(guest_id=guest_id, name="eduid").first()
-    if attr is None:
-        logger.warning(f"promote_eduid_pseudonym: no eduid attribute for guest {guest_id}")
-        return
-    try:
-        uids = json.loads(attr.value).get("uids") or []
-    except (ValueError, TypeError):
-        uids = []
-    if not uids:
-        logger.warning(f"promote_eduid_pseudonym: no uids in eduid attribute for guest {guest_id}")
-        return
-    await get_guest_store(tenant).update_item(guest_id, {"eduid_pseudonym": uids[0]})
-    logger.info(f"promote_eduid_pseudonym: set for guest {guest_id}")
+def invitation_to_dict(inv: Invitation) -> dict:
+    return {
+        "id": inv.id,
+        "code": inv.code,
+        "status": inv.status,
+        "persona_key": inv.persona_key,
+        "client_ref": inv.client_ref,
+        "invitation_email": inv.invitation_email,
+        "given_name": inv.given_name,
+        "family_name": inv.family_name,
+        "persona_params": inv.persona_params or {},
+        "callback_url": inv.callback_url,
+        "sender_email": inv.sender_email,
+        "sender_name": inv.sender_name,
+    }
 
 
 async def create_invitation(
-    tenant: str, guest_id: int, role_assignment_ids: list[int],
-    invitation_email: str, personal_message: str = "",
+    tenant: str,
+    persona_key: str,
+    email: str,
+    *,
+    given_name: Optional[str] = None,
+    family_name: Optional[str] = None,
+    client_ref: Optional[str] = None,
+    persona_params: Optional[dict] = None,
+    sender_email: Optional[str] = None,
+    sender_name: Optional[str] = None,
+    callback_url: Optional[str] = None,
 ) -> dict:
-    """Create an invitation for existing role assignments.
+    """Create an invitation row directly (no Guest entity).
 
-    Generates invitation code and creates junction records.
-    Returns the created invitation dict.
+    Validates the persona and its params via the loader (UnknownPersonaError /
+    PersonaParamsError, both ValueError). `callback_url` falls back to the persona's
+    configured default. Re-invites are never deduplicated (§2.1).
     """
-    invitation_store = get_invitation_store(tenant)
+    cfg = get_persona_config(tenant, persona_key)          # UnknownPersonaError if absent
+    coerced = validate_persona_params(cfg, persona_params)  # PersonaParamsError on violation
 
-    invitation_data = {
-        "code": uuid.uuid4().hex,
-        "guest_id": guest_id,
-        "invitation_email": invitation_email,
-        "status": "pending",
-        "personal_message": personal_message,
-    }
-
-    invitation = await invitation_store.create_item(invitation_data)
-    if not invitation:
-        raise ValueError("Failed to create invitation")
-
-    # Create junction records linking invitation to role assignments
-    for ra_id in role_assignment_ids:
-        await InvitationRoleAssignment.create(
-            invitation_id=invitation["id"],
-            role_assignment_id=ra_id,
-        )
-
-    return invitation
+    inv = await Invitation.create(
+        tenant=tenant,
+        code=uuid.uuid4().hex,
+        invitation_email=email,
+        status="pending",
+        persona_key=persona_key,
+        given_name=given_name,
+        family_name=family_name,
+        client_ref=client_ref,
+        persona_params=coerced or None,
+        sender_email=sender_email,
+        sender_name=sender_name,
+        callback_url=callback_url or cfg.callback_url,
+    )
+    return invitation_to_dict(inv)
 
 
 async def accept_invitation(tenant: str, code: str) -> bool:
-    """Accept invitation: update status and provision linked role assignments to SCIM.
+    """Mark a pending invitation accepted and fire its callback.
 
-    Args:
-        tenant: Tenant identifier
-        code: Invitation code
-
-    Returns:
-        True if successful
+    Callback failure is logged, never raised — it must not roll back acceptance.
     """
-    invitation_store = get_invitation_store(tenant)
-
-    # Find invitation by code
-    invitations = await invitation_store.read_items(filter_by={"code": code})
-    if not invitations:
+    inv = await Invitation.get_or_none(tenant=tenant, code=code)
+    if inv is None:
         logger.warning(f"accept_invitation: invitation not found for code={code}")
         return False
-
-    invitation = invitations[0]
-    if invitation["status"] != "pending":
-        logger.warning(f"accept_invitation: invitation {invitation['id']} not pending (status={invitation['status']})")
+    if inv.status != "pending":
+        logger.warning(f"accept_invitation: invitation {inv.id} not pending (status={inv.status})")
         return False
 
-    # Update invitation status
-    updated = await invitation_store.update_item(
-        invitation["id"],
-        {
-            "status": "accepted",
-            "accepted_at": utc_datetime_to_str(now_utc())
-        }
-    )
+    inv.status = "accepted"
+    inv.accepted_at = now_utc()   # native datetime — build_payload reads it as ISO (gotcha 7)
+    await inv.save()
 
-    if not updated:
-        logger.error(f"accept_invitation: failed to update invitation {invitation['id']}")
-        return False
-
-    # Promote eduID pseudonym now that onboarding is fully verified
-    await _promote_eduid_pseudonym(tenant, invitation["guest_id"])
-
-    # Get linked role assignments via junction table
-    junctions = await InvitationRoleAssignment.filter(invitation_id=invitation["id"]).all()
-    role_assignment_ids = [j.role_assignment_id for j in junctions]         # type: ignore
-
-    # SCIM provisioning for each linked role assignment
-    from services.scim_observer import get_scim_observer
-    observer = get_scim_observer()
-    if observer:
-        for ra_id in role_assignment_ids:
-            ra = await RoleAssignment.get(id=ra_id)
-            await observer.provision_guest_on_first_acceptance(ra.guest_id, ra.role_id)     # type: ignore
-
+    if inv.callback_url:
+        try:
+            await enqueue_callback(tenant, inv.id)
+        except Exception as e:  # delivery is best-effort; acceptance already committed
+            logger.error(f"accept_invitation: callback enqueue failed for {inv.id}: {e}")
     return True
 
 
-async def resend_invitation(tenant: str, invitation_id: int) -> dict | None:
-    """Resend invitation: update invited_at timestamp.
+async def apply_invite_to_state(tenant: str, state: dict, code: str) -> bool:
+    """Populate session `state` with persona context for the accept flow (§5.3).
 
-    Args:
-        tenant: Tenant identifier
-        invitation_id: Invitation ID
-
-    Returns:
-        Updated invitation dict, or None if not found
+    Sets invite_code, invitation_id, persona_key, persona_params, guest_email,
+    given_name, family_name. Pure mutation.
     """
-    invitation_store = get_invitation_store(tenant)
+    inv = await Invitation.get_or_none(tenant=tenant, code=code.strip())
+    if inv is None:
+        logger.warning(f"apply_invite_to_state: invalid code attempted: {code}")
+        return False
 
-    updated = await invitation_store.update_item(
-        invitation_id,
-        {"invited_at": utc_datetime_to_str(now_utc())}
-    )
-
-    return updated
-
-
-async def delete_invitation(tenant: str, invitation: dict) -> None:
-    """Delete an invitation and its junction rows.
-
-    Junction cleanup happens first (FK constraint), then the invitation itself
-    is deleted via the store — so observers see a StoreEvent("delete").
-    """
-    await InvitationRoleAssignment.filter(invitation_id=invitation["id"]).delete()
-    await get_invitation_store(tenant).delete_item(invitation)
-
-
-async def get_invitation_with_roles(tenant: str, code: str) -> dict | None:
-    """Get invitation by code with linked role assignments and role details.
-
-    Args:
-        tenant: Tenant identifier
-        code: Invitation code
-
-    Returns:
-        Invitation dict with 'role_assignments' list containing role details, or None
-    """
-    invitation_store = get_invitation_store(tenant)
-    role_assignment_store = get_role_assignment_store(tenant)
-    role_store = get_role_store(tenant)
-
-    invitations = await invitation_store.read_items(filter_by={"code": code})
-    if not invitations:
-        return None
-
-    invitation = invitations[0]
-
-    # Get linked role assignments via junction table
-    junctions = await InvitationRoleAssignment.filter(invitation_id=invitation["id"]).all()
-    role_assignment_ids = [j.role_assignment_id for j in junctions]       # type: ignore
-
-    # Get full role assignment details with role info
-    role_assignments = []
-    for ra_id in role_assignment_ids:
-        ra_list = await role_assignment_store.read_items(filter_by={"id": ra_id})
-        if ra_list:
-            ra = ra_list[0]
-            # Enrich with role details
-            role = await role_store.read_item_by_id(ra["role_id"])
-            if role:
-                ra["role"] = role
-            role_assignments.append(ra)
-
-    invitation["role_assignments"] = role_assignments
-    return invitation
+    state["invite_code"] = inv.code
+    state["invitation_id"] = inv.id
+    state["persona_key"] = inv.persona_key
+    state["persona_params"] = inv.persona_params or {}
+    state["guest_email"] = inv.invitation_email
+    state["given_name"] = inv.given_name
+    state["family_name"] = inv.family_name
+    return True

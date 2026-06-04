@@ -36,7 +36,7 @@ def _persona(callback_outputs: list[str]) -> PersonaConfig:
 async def _mk_inv(tenant: str, **kw) -> Invitation:
     _n["i"] += 1
     base: dict = dict(
-        tenant=tenant, code=f"WBK{_n['i']}", guest=None,
+        tenant=tenant, code=f"WBK{_n['i']}",
         invitation_email="anna@example.org", persona_key="gastdocent",
         callback_url="https://client.example.org/hook",
     )

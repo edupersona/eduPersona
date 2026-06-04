@@ -11,13 +11,13 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-import domain.invitations_persona as ip
-from domain.invitations_persona import (
-    apply_persona_invite_to_state,
-    create_persona_invitation,
+import domain.invitations as ip
+from domain.invitations import (
+    apply_invite_to_state,
+    create_invitation,
 )
 from domain.models import Invitation
-from domain.step_cards import PersonaOIDCLoginStep, PersonaSteps, StepResult
+from domain.step_cards import OIDCLoginStep, Steps, StepResult
 from services.persona_loader import get_persona_config
 
 USERINFO = {"sub": "abc", "uids": ["anna"], "given_name": "Anna"}
@@ -25,24 +25,24 @@ USERINFO = {"sub": "abc", "uids": ["anna"], "given_name": "Anna"}
 
 async def _build_steps(tenant, code):
     state: dict = {}
-    await apply_persona_invite_to_state(tenant, state, code)
+    await apply_invite_to_state(tenant, state, code)
     cfg = get_persona_config(tenant, "gastdocent")
-    steps = PersonaSteps(tenant, state, {"steps": cfg.steps})
+    steps = Steps(tenant, state, {"steps": cfg.steps})
     # mirror the route: first step (verify_invite) is auto-recorded completed
     await steps.record(steps.step_instances[0].step_id, StepResult("completed"))
     return steps
 
 
-async def _oidc_step(steps) -> PersonaOIDCLoginStep:
+async def _oidc_step(steps) -> OIDCLoginStep:
     step = next(s for s in steps.step_instances if s.step_id == "eduid_login")
-    assert isinstance(step, PersonaOIDCLoginStep)
+    assert isinstance(step, OIDCLoginStep)
     return step
 
 
 async def test_lifecycle_persists_outputs_and_fires_callback(test_tenant, monkeypatch):
     enqueue = AsyncMock()
     monkeypatch.setattr(ip, "enqueue_callback", enqueue)
-    created = await create_persona_invitation(
+    created = await create_invitation(
         test_tenant, "gastdocent", "anna@example.org", callback_url="https://client/hook",
     )
     steps = await _build_steps(test_tenant, created["code"])
@@ -62,7 +62,7 @@ async def test_lifecycle_persists_outputs_and_fires_callback(test_tenant, monkey
 async def test_lifecycle_no_callback_when_unconfigured(test_tenant, monkeypatch):
     enqueue = AsyncMock()
     monkeypatch.setattr(ip, "enqueue_callback", enqueue)
-    created = await create_persona_invitation(test_tenant, "gastdocent", "a@example.org")  # no callback_url
+    created = await create_invitation(test_tenant, "gastdocent", "a@example.org")  # no callback_url
     steps = await _build_steps(test_tenant, created["code"])
 
     oidc = await _oidc_step(steps)
@@ -76,7 +76,7 @@ async def test_lifecycle_no_callback_when_unconfigured(test_tenant, monkeypatch)
 
 async def test_oidc_output_keyed_by_idp_not_step_id(test_tenant, monkeypatch):
     monkeypatch.setattr(ip, "enqueue_callback", AsyncMock())
-    created = await create_persona_invitation(test_tenant, "gastdocent", "a@example.org")
+    created = await create_invitation(test_tenant, "gastdocent", "a@example.org")
     steps = await _build_steps(test_tenant, created["code"])
     oidc = await _oidc_step(steps)
     await oidc.result_handler(USERINFO, {}, {})
@@ -88,10 +88,10 @@ async def test_oidc_output_keyed_by_idp_not_step_id(test_tenant, monkeypatch):
 
 @pytest.mark.ui
 async def test_accept_persona_page_renders(user, test_tenant):
-    created = await create_persona_invitation(
+    created = await create_invitation(
         test_tenant, "gastdocent", "anna@example.org", given_name="Anna",
     )
-    await user.open(f"/accept/p/{created['code']}")
+    await user.open(f"/accept/{created['code']}")
     await user.should_see("Welkom")      # heading (Dutch)
     await user.should_see("Anna")        # given_name in heading
     await user.should_see("Gastdocent")  # persona display_name
@@ -100,5 +100,5 @@ async def test_accept_persona_page_renders(user, test_tenant):
 
 @pytest.mark.ui
 async def test_accept_persona_invalid_code_shows_form(user, test_tenant):
-    await user.open("/accept/p/does-not-exist")
+    await user.open("/accept/does-not-exist")
     await user.should_see("Uitnodiging accepteren")  # spartan code-entry form

@@ -1,43 +1,59 @@
-# /accept route: self-service page showing onboarding progress
+# /accept route: persona-mode self-service onboarding page.
 
 from nicegui import ui
 
+from domain.invitations import apply_invite_to_state, find_invitation_tenant
+from domain.models import Invitation
 from domain.step_cards import Steps, StepResult
+from services.i18n import _
+from services.persona_loader import get_persona_config
 from services.session_manager import initialize_state
-from services.settings import get_scenario_config
-from domain.invitations import find_invitation_by_code, apply_invite_code_to_state
 from services.tenant import get_default_tenant, store_tenant_in_session
 from services.theme import frame
-from services.i18n import _
+
+
+def _code_entry_form() -> None:
+    """Spartan code-entry form for bare /accept or an invalid code (§5.3)."""
+    ui.label(_('Accept invitation')).classes('page-title')
+    code_input = ui.input(
+        _('Enter your invitation code here'),
+        placeholder=_('Invitation code'),
+    ).classes('form-input')
+    ui.button(
+        _('Confirm code'),
+        on_click=lambda: ui.navigate.to(f"/accept/{(code_input.value or '').strip()}"),
+    ).style('margin-top: 0.5rem;')
 
 
 @ui.page('/accept')
 @ui.page('/accept/{invite_code}')
-async def accept_invitation(invite_code: str = ""):
-    """Guest invitation entry. Tenant is resolved from the invitation code;
-    bare /accept renders with the default-tenant theme until a code is entered."""
+async def accept_invitation_page(invite_code: str = ""):
+    """Guest invitation entry. Tenant resolves from the invitation code; bare /accept
+    (or an invalid code) shows a code-entry form."""
+    code = invite_code.strip()
     tenant = get_default_tenant()
-    if invite_code:
-        match = await find_invitation_by_code(invite_code.strip())
-        if match:
-            tenant = match[0]
+    if code:
+        resolved = await find_invitation_tenant(code)
+        if resolved:
+            tenant = resolved
 
     with frame('accept', tenant):
         await ui.context.client.connected()
 
+        inv = await Invitation.get_or_none(tenant=tenant, code=code) if code else None
+        if inv is None:
+            _code_entry_form()
+            return
+
         state = initialize_state()
-        scenario_config = get_scenario_config(tenant)
+        cfg = get_persona_config(tenant, inv.persona_key)
+        steps = Steps(tenant, state, {"steps": cfg.steps})
 
-        steps = Steps(tenant, state, scenario_config)
-
-        if invite_code:
-            applied = await apply_invite_code_to_state(tenant, state, invite_code)
-            if applied:
-                store_tenant_in_session(tenant)
-                if steps.step_instances:
-                    await steps.record(steps.step_instances[0].step_id, StepResult('completed'))
-            else:
-                ui.notify(_('Invalid invite code'), type='negative')
+        applied = await apply_invite_to_state(tenant, state, code)
+        if applied:
+            store_tenant_in_session(tenant)
+            if steps.step_instances:
+                await steps.record(steps.step_instances[0].step_id, StepResult('completed'))
 
         await steps.startup()
         steps.render()  # type: ignore

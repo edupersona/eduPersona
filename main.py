@@ -3,9 +3,7 @@ from nicegui import app, ui
 # from tortoise import Tortoise
 # register routes
 import routes.accept
-import routes.accept_persona  # persona-mode accept flow (/accept/p)
 import routes.api
-import routes.apps
 from routes.api import api_router
 import routes.landing
 import routes.m  # all /m routes
@@ -49,6 +47,9 @@ ui.tab_panels.default_props('animated=false')
 
 # call this to run in production (from uvicorn)
 def run(fastapi_app) -> None:
+    import asyncio
+    from services.webhook import webhook_retry_loop
+
     # Initialize Tortoise ORM with SQLite database
     init_db(
         fastapi_app,
@@ -57,6 +58,7 @@ def run(fastapi_app) -> None:
         generate_schemas=True,
     )
     app.on_startup(run_migrations)
+    app.on_startup(lambda: asyncio.create_task(webhook_retry_loop()))
     ui.run_with(fastapi_app, storage_secret=STORAGE_SECRET, title='eduPersona')
 
 

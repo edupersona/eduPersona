@@ -1,15 +1,11 @@
-"""Phase E — persona-mode invitation API.
-
-Exercises POST/GET/list/resend/DELETE over HTTP via the ASGI test client. Both
-the persona API and the legacy /invitations API are operational at this phase.
-"""
+"""Invitation API — POST/GET/list/resend/DELETE over HTTP via the ASGI test client."""
 
 import pytest
 
-import routes.api.persona_invitations as ep
+import routes.api.invitations as ep
 from domain.models import Invitation, WebhookDelivery
 
-BASE = "/api/v1/hvh/persona-invitations"
+BASE = "/api/v1/hvh/invitations"
 
 
 @pytest.fixture(autouse=True)
@@ -35,7 +31,7 @@ async def test_post_happy(api_client):
     assert data["persona_key"] == "gastdocent"
     assert data["client_ref"] == "EMP-42"
     assert data["status"] == "pending"
-    assert data["accept_url"].endswith(f"/accept/p/{data['code']}")
+    assert data["accept_url"].endswith(f"/accept/{data['code']}")
     assert await Invitation.filter(code=data["code"]).count() == 1
 
 

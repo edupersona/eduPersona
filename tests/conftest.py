@@ -14,7 +14,6 @@ from ng_rdm.store.multitenancy import set_valid_tenants
 from services.auth.dependencies import (
     require_admin_auth,
     require_invite_auth,
-    require_role_admin_auth,
 )
 
 # NOTE: Do NOT import main here - let the test plugin handle it to avoid route registration conflicts
@@ -156,55 +155,6 @@ def mock_smtp(monkeypatch):
     return mock_send
 
 
-@pytest.fixture
-async def sample_guest(test_tenant):
-    """Create a sample guest for testing"""
-    from domain.stores import get_guest_store
-
-    guest_store = get_guest_store(test_tenant)
-    guest = await guest_store.create_item({
-        "tenant": test_tenant,
-        "user_id": "testguest@example.com",
-        "given_name": "Test",
-        "family_name": "Guest",
-        "email": "testguest@example.com",
-    })
-    return guest
-
-
-@pytest.fixture
-async def sample_role(test_tenant):
-    """Create a sample role for testing"""
-    from datetime import date, timedelta
-    from domain.stores import get_role_store
-
-    role_store = get_role_store(test_tenant)
-    role = await role_store.create_item({
-        "tenant": test_tenant,
-        "scim_id": "test-role-scim-id",
-        "name": "Test Role",
-        "redirect_url": "https://example.com/test",
-        "redirect_text": "Go to Test",
-        "mail_sender_email": "test@edupersona.nl",
-        "mail_sender_name": "Test Sender",
-        "role_end_date": (date.today() + timedelta(days=365)).isoformat(),
-    })
-    return role
-
-
-@pytest.fixture
-async def sample_role_assignment(test_tenant, sample_guest, sample_role):
-    """Create a sample role assignment for testing"""
-    from domain.assignments import create_role_assignment
-
-    role_assignment = await create_role_assignment(
-        test_tenant,
-        sample_guest["id"],
-        sample_role["id"],
-    )
-    return role_assignment
-
-
 def _create_auth_user(user: User, test_tenant: str, authz: list[str]):
     """Helper to wrap user.open with storage setup after page loads."""
     original_open = user.open
@@ -247,47 +197,11 @@ async def authenticated_invite_user(user: User, test_tenant):
 
 
 @pytest.fixture
-async def authenticated_role_admin_user(user: User, test_tenant):
-    """User with roles authorization.
-
-    Use for routes with Depends(require_role_admin_auth).
-    """
-    app.dependency_overrides[require_role_admin_auth] = lambda: test_tenant
-    yield _create_auth_user(user, test_tenant, authz=['roles'])
-    app.dependency_overrides.clear()
-
-
-@pytest.fixture
-async def authenticated_full_admin_user(user: User, test_tenant):
-    """User with full admin access (both invitations and roles).
-
-    Use when testing across multiple protected pages.
-    """
-    app.dependency_overrides[require_admin_auth] = lambda: test_tenant
-    app.dependency_overrides[require_invite_auth] = lambda: test_tenant
-    app.dependency_overrides[require_role_admin_auth] = lambda: test_tenant
-    yield _create_auth_user(user, test_tenant, authz=['invitations', 'roles'])
-    app.dependency_overrides.clear()
-
-
-@pytest.fixture
-async def sample_invitation(test_tenant, sample_role_assignment):
-    """Create a sample invitation for testing (linked to role assignment)"""
+async def sample_invitation(test_tenant):
+    """Create a sample persona invitation; returns its code."""
     from domain.invitations import create_invitation
-    from domain.stores import get_guest_store
-
-    # Get guest_id from role_assignment
-    guest_id = sample_role_assignment["guest_id"]
-
-    # Get guest email
-    guest_store = get_guest_store(test_tenant)
-    guests = await guest_store.read_items(filter_by={"id": guest_id})
-    guest_email = guests[0]["email"] if guests else "test@example.com"
 
     invitation = await create_invitation(
-        test_tenant,
-        guest_id,
-        [sample_role_assignment["id"]],  # list of role_assignment_ids
-        guest_email,
+        test_tenant, "gastdocent", "sample@example.org", given_name="Sample",
     )
     return invitation["code"]

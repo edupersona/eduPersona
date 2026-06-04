@@ -6,13 +6,11 @@ from nicegui import app, ui
 from services.settings import get_tenant_config
 
 pages = {
-    # possible menu entries, depending on authz (order: guests - roles - invitations):
+    # possible menu entries, depending on authz.
     # `tenanted=True` → URL becomes /m/{tenant}/<path>; otherwise <path> is used as-is.
-    'guests':      {'path': 'guests',      'label': 'gasten',         'tenanted': True},
-    'roles':       {'path': 'roles',       'label': 'rollen',         'tenanted': True},
     'invitations': {'path': 'invitations', 'label': 'uitnodigingen',  'tenanted': True},
+    'simulator':   {'path': 'simulator',   'label': 'simulator',      'tenanted': True},
     'accept':      {'path': '/accept',     'label': 'accepteren',     'tenanted': False},
-    'apps':        {'path': '/apps',       'label': 'mijn diensten',  'tenanted': False},
     'login':       {'path': 'login',       'label': 'inloggen',       'tenanted': True},
     'register':    {'path': '/register',   'label': 'aanmelden',      'tenanted': False},
     'home':        {'path': '/',           'label': 'home',           'tenanted': False},

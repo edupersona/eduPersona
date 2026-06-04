@@ -10,9 +10,9 @@ from services.tenant import get_default_tenant
 def landing_page():
     """Landing page - tenant-agnostic entry point.
 
-    End-user routes (/accept, /apps) are tenant-less; tenant is derived
-    from the invitation code or session. The admin link uses the
-    derived default tenant for `/m/{tenant}/guests`.
+    The end-user route (/accept) is tenant-less; tenant is derived from the
+    invitation code or session. The admin link uses the derived default tenant
+    for `/m/{tenant}/invitations`.
     """
     logger.debug("Landing page accessed")
     rdm_init()
@@ -43,15 +43,8 @@ def landing_page():
                         ui.label(_('Accept an invitation')).classes('card-title')
                         ui.label(_("Click here if you've received an invitation")).classes('text')
 
-                with ui.card().classes('card-clickable') as apps_card:
-                    with Col(classes='card-content'):
-                        Icon('mortarboard').classes('icon-primary')
-                        ui.label(_('Access your apps')).classes('card-title')
-                        ui.label(_("Note: you will need an eduID for this")).classes('text')
-
             with Row().classes('admin-link'):
-                ui.link(_('Admin access'), f'/m/{default_tenant}/guests')
+                ui.link(_('Admin access'), f'/m/{default_tenant}/invitations')
 
-        # Make entire cards clickable
+        # Make entire card clickable
         accept_card.on('click', lambda: ui.navigate.to('/accept'))
-        apps_card.on('click', lambda: ui.navigate.to('/apps?relogin=1'))

@@ -1,40 +1,15 @@
-"""
-Domain layer: models, stores, business logic, and API schemas.
-"""
+"""Domain layer: models and invitation lifecycle (persona-mode)."""
 
-from .models import (
-    Guest, GuestAttribute, Role, RoleAssignment,
-    Invitation, InvitationRoleAssignment, InvitationStatus,
-)
-from .stores import (
-    initialize_multitenancy,
-    get_guest_store, get_role_store, get_role_assignment_store,
-    get_invitation_store, get_guest_attribute_store,
-)
-from .assignments import (
-    create_role_assignment, update_role_assignment, delete_role_assignment,
-    assign_role, revoke_role, validate_assignment_end_date,
-)
+from .models import Invitation, WebhookDelivery, InvitationStatus
+from .stores import initialize_multitenancy
 from .invitations import (
-    create_invitation, accept_invitation, delete_invitation,
-    resend_invitation, get_invitation_with_roles,
+    create_invitation, accept_invitation, apply_invite_to_state,
+    find_invitation_tenant, invitation_to_dict,
 )
-from .guests import delete_guest
 
 __all__ = [
-    # Models
-    'Guest', 'GuestAttribute', 'Role', 'RoleAssignment',
-    'Invitation', 'InvitationRoleAssignment', 'InvitationStatus',
-    # Stores
+    'Invitation', 'WebhookDelivery', 'InvitationStatus',
     'initialize_multitenancy',
-    'get_guest_store', 'get_role_store', 'get_role_assignment_store',
-    'get_invitation_store', 'get_guest_attribute_store',
-    # Assignments
-    'create_role_assignment', 'update_role_assignment', 'delete_role_assignment',
-    'assign_role', 'revoke_role', 'validate_assignment_end_date',
-    # Invitations
-    'create_invitation', 'accept_invitation', 'delete_invitation',
-    'resend_invitation', 'get_invitation_with_roles',
-    # Guests
-    'delete_guest',
+    'create_invitation', 'accept_invitation', 'apply_invite_to_state',
+    'find_invitation_tenant', 'invitation_to_dict',
 ]
