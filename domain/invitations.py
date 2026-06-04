@@ -9,9 +9,10 @@ import uuid
 from typing import Optional
 
 from domain.models import Invitation
+from domain.stores import get_invitation_store
 from ng_rdm.store.multitenancy import valid_tenants
 from ng_rdm.utils import logger
-from ng_rdm.utils.helpers import now_utc
+from ng_rdm.utils.helpers import now_utc, utc_datetime_to_str
 from services.persona_loader import get_persona_config, validate_persona_params
 from services.webhook import enqueue_callback
 
@@ -63,20 +64,23 @@ async def create_invitation(
     cfg = get_persona_config(tenant, persona_key)          # UnknownPersonaError if absent
     coerced = validate_persona_params(cfg, persona_params)  # PersonaParamsError on violation
 
-    inv = await Invitation.create(
-        tenant=tenant,
-        code=uuid.uuid4().hex,
-        invitation_email=email,
-        status="pending",
-        persona_key=persona_key,
-        given_name=given_name,
-        family_name=family_name,
-        client_ref=client_ref,
-        persona_params=coerced or None,
-        sender_email=sender_email,
-        sender_name=sender_name,
-        callback_url=callback_url or cfg.callback_url,
-    )
+    # Persist through the store so its StoreEvent reaches any open invitations table.
+    created = await get_invitation_store(tenant).create_item({
+        "code": uuid.uuid4().hex,
+        "invitation_email": email,
+        "status": "pending",
+        "persona_key": persona_key,
+        "given_name": given_name,
+        "family_name": family_name,
+        "client_ref": client_ref,
+        "persona_params": coerced or None,
+        "sender_email": sender_email,
+        "sender_name": sender_name,
+        "callback_url": callback_url or cfg.callback_url,
+    })
+    if created is None:
+        raise ValueError(f"invitation persistence failed for persona '{persona_key}'")
+    inv = await Invitation.get(tenant=tenant, id=created["id"])
     return invitation_to_dict(inv)
 
 
@@ -93,15 +97,21 @@ async def accept_invitation(tenant: str, code: str) -> bool:
         logger.warning(f"accept_invitation: invitation {inv.id} not pending (status={inv.status})")
         return False
 
-    inv.status = "accepted"
-    inv.accepted_at = now_utc()   # native datetime — build_payload reads it as ISO (gotcha 7)
-    await inv.save()
+    # Through the store so the status flip repaints any open invitations table. The
+    # store round-trips datetimes as strings; build_payload's _iso normalizes either way.
+    await get_invitation_store(tenant).update_item(
+        inv.id, {"status": "accepted", "accepted_at": utc_datetime_to_str(now_utc())})
 
     if inv.callback_url:
         try:
             await enqueue_callback(tenant, inv.id)
         except Exception as e:  # delivery is best-effort; acceptance already committed
             logger.error(f"accept_invitation: callback enqueue failed for {inv.id}: {e}")
+
+    # Dormant opt-in: push the bare verified user to the client's IGA over SCIM.
+    # No-op unless the tenant configures an enabled `scim` block (never raises).
+    from services.scim_observer import push_verified_user
+    await push_verified_user(tenant, inv)
     return True
 
 

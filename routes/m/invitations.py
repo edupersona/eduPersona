@@ -1,99 +1,144 @@
-# /m/{tenant}/invitations — persona-mode invitations list (view, resend, revoke).
+# /m/{tenant}/invitations — persona-mode invitations list (view, resend, delete),
+# built on the ng_rdm ViewStack → ListTable → DetailCard widgets. Creation lives in
+# /m/{tenant}/simulator, so this page has no add-dialog.
 
+import httpx
+import jinja2
 from fastapi import Depends
-from nicegui import ui
+from nicegui import ui, html
 
-from ng_rdm.utils import logger
+from ng_rdm.components import (
+    Button, Column, TableConfig,
+    ViewStack, ListTable, DetailCard,
+    none_as_text, Col, Row, Separator,
+)
+
 from domain.invitations import invitation_to_dict
 from domain.models import Invitation, WebhookDelivery
+from domain.stores import get_invitation_store
 from services.auth.dependencies import require_invite_auth
 from services.i18n import _
 from services.persona_loader import get_persona_config
 from services.postmark.postmark import send_invitation_mail
+from services.ui_errors import ui_guard
 from services.theme import frame
 
 
-def _persona_label(tenant: str, persona_key: str) -> str:
-    try:
-        return get_persona_config(tenant, persona_key).label("nl")
-    except Exception:
-        return persona_key
-
-
-def _guest_name(inv: Invitation) -> str:
-    name = " ".join(p for p in (inv.given_name, inv.family_name) if p).strip()
-    return name or inv.invitation_email
+def render_status(row: dict) -> None:
+    """Render status as a colored chip (styled by .status-chip-* under .invitations-page)."""
+    status = row.get("status", "") or ""
+    ui.html(f'<span class="status-chip status-chip-{status}">{_(status)}</span>', sanitize=False)
 
 
 @ui.page("/m/{tenant}/invitations")
 async def invitations_page(tenant: str = Depends(require_invite_auth)):
-    ui.label(_("Invitations")).classes("page-title")
+    invitation_store = get_invitation_store(tenant)
+    ui_state = {"viewstack": {}, "detail_card": {}}
 
-    columns = [
-        {"name": "guest", "label": _("Guest"), "field": "guest", "align": "left"},
-        {"name": "persona", "label": _("Persona"), "field": "persona", "align": "left"},
-        {"name": "invited_at", "label": _("Invited"), "field": "invited_at", "align": "left"},
-        {"name": "accepted_at", "label": _("Accepted"), "field": "accepted_at", "align": "left"},
-        {"name": "status", "label": _("Status"), "field": "status", "align": "left"},
-    ]
+    def persona_label(key: str) -> str:
+        try:
+            return get_persona_config(tenant, key).label("nl")
+        except ValueError:
+            return key
 
-    @ui.refreshable
-    async def render_table() -> None:
-        rows_data = await Invitation.filter(tenant=tenant).order_by("-id").all()
-        rows = [{
-            "id": inv.id,
-            "code": inv.code,
-            "guest": _guest_name(inv),
-            "persona": _persona_label(tenant, inv.persona_key),
-            "invited_at": inv.invited_at.isoformat(sep=" ", timespec="minutes") if inv.invited_at else "",
-            "accepted_at": inv.accepted_at.isoformat(sep=" ", timespec="minutes") if inv.accepted_at else "—",
-            "status": inv.status,
-        } for inv in rows_data]
+    def render_persona(row: dict) -> None:
+        ui.label(persona_label(row.get("persona_key") or ""))
 
-        table = ui.table(columns=columns, rows=rows, row_key="id").classes("w-full")
-        table.add_slot("body-cell-actions", "")  # placeholder; actions handled via row click below
+    table_config = TableConfig(
+        columns=[
+            Column(name="calc_guest_name", label=_("Guest"), width_percent=24),
+            Column(name="persona_key", label=_("Persona"), width_percent=18, render=render_persona),
+            Column(name="invited_at", label=_("Invited"), width_percent=20, formatter=none_as_text),
+            Column(name="accepted_at", label=_("Accepted"), width_percent=20, formatter=none_as_text),
+            Column(name="status", label=_("Status"), width_percent=12, render=render_status),
+        ],
+        empty_message=_("No invitations found."),
+    )
 
-        async def show_detail(inv_id: int) -> None:
-            inv = await Invitation.get_or_none(id=inv_id)
-            if inv is None:
-                return
-            with ui.dialog() as dialog, ui.card().style("min-width: 28rem;"):
-                ui.label(f"{_guest_name(inv)} — {_persona_label(tenant, inv.persona_key)}").classes("step-title")
-                for label, value in [
-                    (_("Email"), inv.invitation_email),
-                    (_("Code"), inv.code),
-                    (_("Client reference"), inv.client_ref or "—"),
-                    (_("Status"), inv.status),
-                ]:
-                    ui.label(f"{label}: {value}")
-                if inv.persona_params:
+    async def render_summary(item: dict) -> None:
+        status = item.get("status", "") or ""
+        with Row(classes="rdm-detail-header"):
+            ui.icon("mail", size="xl").classes("rdm-detail-icon")
+            with Col(classes="rdm-detail-title-group"):
+                ui.label(item.get("calc_guest_name") or "").classes("rdm-detail-title")
+                ui.html(f'<span class="status-chip status-chip-{status}">{_(status)}</span>', sanitize=False)
+
+        Separator()
+
+        with Row(classes="rdm-detail-columns"):
+            with Col(classes="rdm-detail-column"):
+                ui.label(_("Invitation details")).classes("rdm-detail-section-label")
+                for label, value in (
+                    (_("Email"), item.get("invitation_email")),
+                    (_("Invited at"), none_as_text(item.get("invited_at", ""))),
+                    (_("Accepted at"), none_as_text(item.get("accepted_at", ""))),
+                    (_("Code"), item.get("code")),
+                    (_("Client reference"), item.get("client_ref")),
+                ):
+                    if value:
+                        ui.label(f"{label}: {value}").classes("rdm-detail-text-sm")
+
+            with Col(classes="rdm-detail-column"):
+                ui.label(_("Persona")).classes("rdm-detail-section-label")
+                ui.label(persona_label(item.get("persona_key") or "")).classes("rdm-detail-text-sm")
+                params = item.get("persona_params") or {}
+                if params:
                     with ui.expansion(_("Persona parameters"), icon="tune"):
-                        for k, v in inv.persona_params.items():
-                            ui.label(f"{k}: {v}").style("font-size: 0.875rem;")
-                if inv.step_outputs:
+                        for k, v in params.items():
+                            ui.label(f"{k}: {v}").classes("rdm-detail-text-sm")
+                outputs = item.get("step_outputs") or {}
+                if outputs:
                     with ui.expansion(_("Verified facts"), icon="verified"):
-                        ui.code(str(inv.step_outputs)).style("white-space: pre-wrap;")
+                        ui.code(str(outputs)).classes("rdm-detail-text-sm")
 
-                with ui.row():
-                    async def do_resend() -> None:
-                        ok = await send_invitation_mail(tenant, invitation_to_dict(inv))
-                        ui.notify(_("Email sent successfully!") if ok else _("Failed to send email"),
-                                  type="positive" if ok else "negative")
+    async def do_resend(item: dict) -> None:
+        inv = await Invitation.get_or_none(id=item.get("id"), tenant=tenant)
+        ok = False
+        with ui_guard(_("Failed to send email"),
+                      catch=(ValueError, jinja2.TemplateError, httpx.HTTPError)):
+            ok = bool(inv) and await send_invitation_mail(tenant, invitation_to_dict(inv))  # type: ignore[arg-type]
+        if ok:
+            ui.notify(_("Email sent successfully!"), type="positive")
 
-                    async def do_delete() -> None:
-                        await WebhookDelivery.filter(invitation_id=inv.id).delete()
-                        await inv.delete()
-                        dialog.close()
-                        render_table.refresh()
-                        ui.notify(_("Deleted"), type="positive")
+    async def do_delete(item: dict) -> None:
+        await WebhookDelivery.filter(invitation_id=item.get("id")).delete()
+        await invitation_store.delete_item(item)
 
-                    ui.button(_("Resend"), on_click=do_resend)
-                    ui.button(_("Delete"), on_click=do_delete).props("color=negative")
-                    ui.button(_("Close"), on_click=dialog.close).props("flat")
-            dialog.open()
+    async def render_related(item: dict) -> None:
+        with html.div().classes("rdm-detail-actions"):
+            Button(_("Resend"), on_click=lambda _e, i=item: do_resend(i))
 
-        table.on("rowClick", lambda e: show_detail(e.args[1]["id"]))
+    async def render_list(vs: ViewStack) -> None:
+        async def on_click(row_id) -> None:
+            items = await invitation_store.read_items(filter_by={"id": row_id})
+            if items:
+                vs.show_detail(items[0])
+
+        table = ListTable(data_source=invitation_store, config=table_config, on_click=on_click)
+        await table.build()
+
+    async def render_detail(vs: ViewStack, item: dict) -> None:
+        detail = DetailCard(
+            data_source=invitation_store,
+            render_summary=render_summary,
+            state=ui_state["detail_card"],
+            render_related=render_related,
+            on_delete=do_delete,
+            on_deleted=vs.show_list,
+            show_edit=False,
+        )
+        detail.set_item(item)
+        await detail.build()
+
+    async def render_edit(_vs: ViewStack, _item: dict | None) -> None:
+        pass  # invitations are not editable
+
+    stack = ViewStack(
+        state=ui_state["viewstack"],
+        render_list=render_list,
+        render_detail=render_detail,
+        render_edit=render_edit,
+    )
 
     with frame("invitations", tenant):
-        await ui.context.client.connected()
-        await render_table()
+        await stack.build()

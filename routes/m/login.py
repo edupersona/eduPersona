@@ -22,9 +22,8 @@ async def admin_login_page(client: Client, tenant: str, next_url: str | None = N
     # Validate tenant from path parameter
     validate_tenant(tenant)
 
-    # Default next_url to tenant-scoped guests page
     if not next_url:
-        next_url = f"/m/{tenant}/guests"
+        next_url = f"/m/{tenant}/invitations"
 
     # Clear any existing admin session
     if app.storage.user.get("user_type") == "admin":

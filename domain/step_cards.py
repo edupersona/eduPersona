@@ -300,8 +300,10 @@ class FinalizeStep(StepCard):
 
         if inv.status == 'pending':
             # Persist outputs BEFORE accept so the webhook envelope can read them (§2.7).
-            inv.step_outputs = dict(self.state.get('outputs', {})) or None
-            await inv.save()
+            # Through the store (like every other write) so open tables stay live.
+            from domain.stores import get_invitation_store
+            await get_invitation_store(self.tenant).update_item(
+                inv.id, {"step_outputs": dict(self.state.get('outputs', {})) or None})
             accepted = await accept_invitation(self.tenant, invite_code)
             if not accepted:
                 return StepResult('failed', error='accept_invitation failed')
@@ -375,8 +377,14 @@ class Steps:
             if step_class_name not in STEP_CARD_CLASSES:
                 raise ValueError(f"Unknown step card class: {step_class_name}")
             step_class = STEP_CARD_CLASSES[step_class_name]
-            step_instance = step_class(step_config['config'])
-            step_instance.step_id = step_config.get('id', str(i))
+            step_id = step_config.get('id', str(i))
+            try:
+                step_instance = step_class(step_config['config'])
+            except KeyError as e:
+                raise ValueError(
+                    f"step '{step_id}' ({step_class_name}) is missing required config key {e}"
+                ) from e
+            step_instance.step_id = step_id
             step_instance.steps = self
             step_instance.state = self.state
             step_instance.tenant = self.tenant

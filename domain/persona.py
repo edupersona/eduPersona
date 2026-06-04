@@ -11,6 +11,7 @@ loads/validates instances from per-tenant settings; the API and accept flow cons
 `PersonaConfig` instances, not raw dicts.
 """
 
+from dataclasses import dataclass, field
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, model_validator
@@ -76,29 +77,35 @@ class ExpectedParam(BaseModel):
         raise ValueError(f"unknown param type {self.type!r}")  # unreachable; Literal guards it
 
 
-class MailRef(BaseModel):
+@dataclass(frozen=True)
+class MailRef:
     """References to the per-tenant layout frame and per-persona body template."""
-
-    model_config = ConfigDict(extra="forbid")
 
     layout: str
     body: str
 
 
-class PersonaConfig(BaseModel):
-    """The full typed persona definition (one entry under a tenant's `personas`)."""
+@dataclass(frozen=True)
+class PersonaConfig:
+    """The full persona definition (one entry under a tenant's `personas`).
 
-    model_config = ConfigDict(extra="forbid")
+    A plain dataclass, not a pydantic model: the persona config is developer-authored
+    settings, and its correctness is enforced at startup by
+    `services.persona_loader.validate_personas_or_raise` (which builds the real `Steps`
+    and resolves templates — covering the variant `steps` a schema can't model). Only
+    `ExpectedParam` stays pydantic, because that schema validates *incoming client*
+    `persona_params` at the API boundary. The loader builds these instances via
+    `_build_persona_config`, which does the shape checks (required + unknown keys).
+    """
 
     display_name: dict[str, str]
-    # `scenarios.steps` array — kept as raw step dicts; the step-card framework
-    # owns their inner shape, so we don't re-model it here.
+    # `steps` array — raw step dicts; the step-card framework owns their inner shape.
     steps: list[dict[str, Any]]
     mail: MailRef
     success_redirect_url: str | None = None
     callback_url: str | None = None
-    expected_params: dict[str, ExpectedParam] = {}
-    callback_outputs: list[CallbackOutputKey] = []
+    expected_params: dict[str, ExpectedParam] = field(default_factory=dict)
+    callback_outputs: list[CallbackOutputKey] = field(default_factory=list)
 
     def label(self, lang: str = "nl") -> str:
         """Display label for a language, falling back to any defined name then key-less '?'."""

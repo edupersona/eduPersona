@@ -228,6 +228,10 @@ translations: dict[str, dict[str, str]] = {
         'Five digits required': 'Vijf cijfers vereist',
         'No matching alumni record found — check your details and try again.':
             'Geen alumnigegevens gevonden — controleer je gegevens en probeer het opnieuw.',
+        'This invitation cannot be processed right now.':
+            'Deze uitnodiging kan op dit moment niet worden verwerkt.',
+        'Please contact the sender of your invitation.':
+            'Neem contact op met de afzender van je uitnodiging.',
 
         # Apps page (routes/apps.py)
         'No services found': 'Geen diensten beschikbaar',

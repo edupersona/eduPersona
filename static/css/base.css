@@ -236,6 +236,14 @@ a.btn-primary:hover {
   margin-bottom: 1rem;
 }
 
+.simulator-page {
+  /* stacked form column */
+  .simulator-form {
+    gap: 0.6rem;
+    max-width: 30rem;
+  }
+}
+
 /* ===== Guest Attributes (OIDC flow data) ===== */
 
 .guests-page, .roles-page {

@@ -21,6 +21,14 @@ from domain.step_cards import OIDCLoginStep, Steps, StepResult
 from services.persona_loader import get_persona_config
 
 USERINFO = {"sub": "abc", "uids": ["anna"], "given_name": "Anna"}
+INST_USERINFO = {"sub": "inst-1", "schac_home_organization": "hvh.nl"}
+
+
+async def _drive_oidc(steps, step_id, userinfo) -> None:
+    """Simulate an OIDC step returning its userinfo (keyed by IdP name)."""
+    step = next(s for s in steps.step_instances if s.step_id == step_id)
+    assert isinstance(step, OIDCLoginStep)
+    await step.result_handler(userinfo, {}, {})
 
 
 async def _build_steps(tenant, code):
@@ -47,14 +55,14 @@ async def test_lifecycle_persists_outputs_and_fires_callback(test_tenant, monkey
     )
     steps = await _build_steps(test_tenant, created["code"])
 
-    # simulate the eduID OIDC return
-    oidc = await _oidc_step(steps)
-    await oidc.result_handler(USERINFO, {}, {})
+    # simulate both OIDC returns (eduID then institutional) → finalize runs
+    await _drive_oidc(steps, "eduid_login", USERINFO)
+    await _drive_oidc(steps, "institutional_login", INST_USERINFO)
 
     inv = await Invitation.get(id=created["id"])
     assert inv.status == "accepted"
     # OIDC output keyed by IdP name, not step id (gotcha 10)
-    assert inv.step_outputs == {"eduid": USERINFO}
+    assert inv.step_outputs == {"eduid": USERINFO, "institutional": INST_USERINFO}
     assert steps.outcomes["finalize"] == "completed"
     enqueue.assert_awaited_once_with(test_tenant, created["id"])
 
@@ -65,12 +73,12 @@ async def test_lifecycle_no_callback_when_unconfigured(test_tenant, monkeypatch)
     created = await create_invitation(test_tenant, "gastdocent", "a@example.org")  # no callback_url
     steps = await _build_steps(test_tenant, created["code"])
 
-    oidc = await _oidc_step(steps)
-    await oidc.result_handler(USERINFO, {}, {})
+    await _drive_oidc(steps, "eduid_login", USERINFO)
+    await _drive_oidc(steps, "institutional_login", INST_USERINFO)
 
     inv = await Invitation.get(id=created["id"])
     assert inv.status == "accepted"
-    assert inv.step_outputs == {"eduid": USERINFO}
+    assert inv.step_outputs == {"eduid": USERINFO, "institutional": INST_USERINFO}
     enqueue.assert_not_called()
 
 
@@ -102,3 +110,19 @@ async def test_accept_persona_page_renders(user, test_tenant):
 async def test_accept_persona_invalid_code_shows_form(user, test_tenant):
     await user.open("/accept/does-not-exist")
     await user.should_see("Uitnodiging accepteren")  # spartan code-entry form
+
+
+@pytest.mark.ui
+async def test_accept_missing_persona_shows_friendly_card(user, test_tenant, monkeypatch):
+    """A valid invite whose persona is gone → friendly card, not a 500 (ui_guard)."""
+    from services.persona_loader import UnknownPersonaError
+
+    created = await create_invitation(test_tenant, "gastdocent", "anna@example.org")
+
+    def _boom(tenant, key):
+        raise UnknownPersonaError(f"Unknown persona '{key}'")
+
+    monkeypatch.setattr("routes.accept.get_persona_config", _boom)
+    await user.open(f"/accept/{created['code']}")
+    await user.should_see("kan op dit moment niet worden verwerkt")  # friendly fallback card
+    await user.should_not_see("Welkom")  # the steps heading never renders

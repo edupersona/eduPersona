@@ -11,7 +11,7 @@ from fastapi import Query, Request
 from pydantic import BaseModel
 
 from ng_rdm.utils import logger
-from ng_rdm.utils.helpers import now_utc
+from ng_rdm.utils.helpers import now_utc, utc_datetime_to_str
 from domain.invitations import create_invitation
 from domain.models import Invitation, WebhookDelivery
 from services.persona_loader import PersonaParamsError, UnknownPersonaError
@@ -192,8 +192,10 @@ async def resend_invitation(tenant: str, invitation_id: int):
     if inv is None:
         raise api_error("NOT_FOUND", f"Invitation {invitation_id} not found", status_code=404)
 
-    # queryset update — invited_at is auto_now_add, which model.save() won't re-write
-    await Invitation.filter(id=invitation_id).update(invited_at=now_utc())
+    # Through the store (auto_now_add won't re-write invited_at on save) so the bump
+    # repaints any open invitations table.
+    from domain.stores import get_invitation_store
+    await get_invitation_store(tenant).update_item(invitation_id, {"invited_at": utc_datetime_to_str(now_utc())})
     inv = await Invitation.get(id=invitation_id)
     from domain.invitations import invitation_to_dict
     try:
@@ -214,5 +216,6 @@ async def delete_invitation(tenant: str, invitation_id: int):
         raise api_error("NOT_FOUND", f"Invitation {invitation_id} not found", status_code=404)
 
     await WebhookDelivery.filter(invitation_id=invitation_id).delete()
-    await inv.delete()
+    from domain.stores import get_invitation_store
+    await get_invitation_store(tenant).delete_item({"id": invitation_id})
     return api_response({"deleted": True, "id": invitation_id})

@@ -50,7 +50,9 @@ def test_get_persona_config_happy():
     assert cfg.callback_outputs == ["eduid"]
     assert set(cfg.expected_params) == {"department", "personal_message"}
     assert cfg.expected_params["department"].type == "string"
-    assert [s["id"] for s in cfg.steps] == ["verify_invite", "eduid_login", "finalize"]
+    assert [s["id"] for s in cfg.steps] == [
+        "verify_invite", "eduid_login", "institutional_login", "finalize",
+    ]
 
 
 # --- miss: unknown persona raises with the documented message prefix ---
@@ -160,13 +162,15 @@ def test_enum_values_only_for_enum_type():
         ExpectedParam(type="string", enum=["a"])
 
 
-# --- contract: unknown config keys are rejected (typed contract, not a bag) ---
+# --- contract: the loader rejects unknown config keys (typed contract, not a bag) ---
 
-def test_persona_config_forbids_unknown_keys():
-    with pytest.raises(ValidationError):
-        PersonaConfig(
-            display_name={"en": "X"},
-            steps=[],
-            mail=MailRef(layout="l", body="b"),
-            surprise="nope",  # type: ignore[reportCallIssue]  # intentional: assert extra keys are rejected
-        )
+def test_loader_forbids_unknown_keys():
+    from services.persona_loader import _build_persona_config
+
+    with pytest.raises(ValueError, match="unknown persona config key"):
+        _build_persona_config({
+            "display_name": {"en": "X"},
+            "steps": [],
+            "mail": {"layout": "l", "body": "b"},
+            "surprise": "nope",  # intentional: assert extra keys are rejected
+        })

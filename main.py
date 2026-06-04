@@ -14,6 +14,7 @@ from ng_rdm.utils import logger, configure_logging
 from services.auth.oidc import init_edupersona_oidc
 from services.exception_handlers import register_exception_handlers
 from services.settings import config
+from services.persona_loader import validate_personas_or_raise
 from domain.migrations import run_migrations
 from domain.stores import initialize_multitenancy
 
@@ -36,6 +37,7 @@ app.include_router(api_router)
 register_exception_handlers(app)
 init_edupersona_oidc()
 initialize_multitenancy()
+validate_personas_or_raise()  # fail fast on broken persona/step/mail config
 
 # repairing butt ugly Quasar/Material defaults
 # note: any default_styles are hard-coded into element styles

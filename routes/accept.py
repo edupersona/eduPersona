@@ -8,6 +8,7 @@ from domain.step_cards import Steps, StepResult
 from services.i18n import _
 from services.persona_loader import get_persona_config
 from services.session_manager import initialize_state
+from services.ui_errors import ui_guard
 from services.tenant import get_default_tenant, store_tenant_in_session
 from services.theme import frame
 
@@ -46,8 +47,15 @@ async def accept_invitation_page(invite_code: str = ""):
             return
 
         state = initialize_state()
-        cfg = get_persona_config(tenant, inv.persona_key)
-        steps = Steps(tenant, state, {"steps": cfg.steps})
+        steps = None
+        with ui_guard(notify=False):  # default catch=ValueError (unknown persona / bad step config)
+            cfg = get_persona_config(tenant, inv.persona_key)
+            steps = Steps(tenant, state, {"steps": cfg.steps})
+        if steps is None:
+            ui.icon('error_outline', size='3em').classes('text-red-600')
+            ui.label(_('This invitation cannot be processed right now.')).classes('page-title')
+            ui.label(_('Please contact the sender of your invitation.')).classes('page-subtitle')
+            return
 
         applied = await apply_invite_to_state(tenant, state, code)
         if applied:
