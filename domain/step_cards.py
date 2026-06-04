@@ -177,7 +177,7 @@ class OIDCLoginStep(StepCard):
             tenant=self.tenant,
             idp=self.idp,
             callback_handler=self.result_handler,
-            next_url="/accept",
+            next_url=f"/accept/{self.state.get('invite_code', '')}",
             force_login=True,
         )
         # Completion arrives asynchronously via result_handler; no immediate result.
@@ -323,10 +323,12 @@ class FinalizeStep(StepCard):
                 redirect_url = None
         ui.label(self.completed_text).classes('text-success')
         if redirect_url:
-            ui.link(_('Continue'), redirect_url) \
-                .classes('btn-primary') \
-                .style('padding: 0.5rem 1rem; border-radius: 0.25rem; font-size: 14pt; '
-                       'font-weight: 500; text-decoration: none; display: inline-block; margin-top: 0.5rem;')
+            Button(_('Continue'), on_click=lambda: ui.navigate.to(redirect_url)).style('margin-top: 0.5rem;')
+
+            # ui.link(_('Continue'), redirect_url) \
+            #     .classes('btn-primary') \
+            #     .style('padding: 0.5rem 1rem; border-radius: 0.25rem; font-size: 14pt; '
+            #            'font-weight: 500; text-decoration: none; display: inline-block; margin-top: 0.5rem;')
 
 
 # ──────────────────────────── registry + orchestrator ────────────────────────────
