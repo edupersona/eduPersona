@@ -132,6 +132,46 @@ async def test_accept_expired_shows_dead_end(user, test_tenant):
     await user.should_not_see("Welkom")     # onboarding heading never renders
 
 
+async def test_expire_overdue_invitations_sweep(test_tenant):
+    """Sweep flips overdue pending invites to expired; future/NULL untouched. Through the store."""
+    from datetime import timedelta
+    from ng_rdm.utils.helpers import now_utc
+    from domain.invitations import expire_overdue_invitations
+
+    overdue = await create_invitation(test_tenant, "gastdocent", "a@example.org",
+                                      expiry_date=now_utc() - timedelta(days=1))
+    future = await create_invitation(test_tenant, "gastdocent", "b@example.org",
+                                     expiry_date=now_utc() + timedelta(days=5))
+    never = await create_invitation(test_tenant, "gastdocent", "c@example.org",
+                                    expiry_date=None)  # falls to tenant default (14d, future)
+
+    n = await expire_overdue_invitations(test_tenant)
+    assert n == 1
+    assert (await Invitation.get(tenant=test_tenant, code=overdue["code"])).status == "expired"
+    assert (await Invitation.get(tenant=test_tenant, code=future["code"])).status == "pending"
+    assert (await Invitation.get(tenant=test_tenant, code=never["code"])).status == "pending"
+
+
+async def test_zero_duration_never_expires(test_tenant, monkeypatch):
+    """expiry_duration <= 0 → expiry_date None (never expires)."""
+    import domain.invitations as di
+    monkeypatch.setattr(di, "get_tenant_config", lambda t: {"expiry_duration": 0})
+    created = await create_invitation(test_tenant, "gastdocent", "a@example.org")
+    assert (await Invitation.get(tenant=test_tenant, code=created["code"])).expiry_date is None
+
+
+@pytest.mark.ui
+async def test_accept_past_expiry_swept_on_claim(user, test_tenant):
+    """A still-pending invite past its expiry_date is swept to expired on claim → dead-end."""
+    from datetime import timedelta
+    from ng_rdm.utils.helpers import now_utc
+    created = await create_invitation(test_tenant, "gastdocent", "anna@example.org",
+                                      expiry_date=now_utc() - timedelta(hours=1))
+    await user.open(f"/accept/{created['code']}")
+    await user.should_see("verlopen")
+    await user.should_not_see("Welkom")
+
+
 @pytest.mark.ui
 async def test_accept_missing_persona_shows_friendly_card(user, test_tenant, monkeypatch):
     """A valid invite whose persona is gone → friendly card, not a 500 (ui_guard)."""

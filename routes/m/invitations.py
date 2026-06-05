@@ -46,10 +46,11 @@ async def invitations_page(tenant: str = Depends(require_invite_auth)):
 
     table_config = TableConfig(
         columns=[
-            Column(name="calc_guest_name", label=_("Guest"), width_percent=24),
-            Column(name="persona_key", label=_("Persona"), width_percent=18, render=render_persona),
-            Column(name="invited_at", label=_("Invited"), width_percent=20, formatter=none_as_text),
-            Column(name="accepted_at", label=_("Accepted"), width_percent=20, formatter=none_as_text),
+            Column(name="calc_guest_name", label=_("Guest"), width_percent=22),
+            Column(name="persona_key", label=_("Persona"), width_percent=16, render=render_persona),
+            Column(name="invited_at", label=_("Invited"), width_percent=16, formatter=none_as_text),
+            Column(name="expiry_date", label=_("Expires"), width_percent=14, formatter=none_as_text),
+            Column(name="accepted_at", label=_("Accepted"), width_percent=16, formatter=none_as_text),
             Column(name="status", label=_("Status"), width_percent=12, render=render_status),
         ],
         empty_message=_("No invitations found."),
@@ -71,6 +72,7 @@ async def invitations_page(tenant: str = Depends(require_invite_auth)):
                 for label, value in (
                     (_("Email"), item.get("invitation_email")),
                     (_("Invited at"), none_as_text(item.get("invited_at", ""))),
+                    (_("Expires at"), none_as_text(item.get("expiry_date", ""))),
                     (_("Accepted at"), none_as_text(item.get("accepted_at", ""))),
                     (_("Code"), item.get("code")),
                     (_("Client reference"), item.get("client_ref")),

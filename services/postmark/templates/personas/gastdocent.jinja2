@@ -21,6 +21,10 @@
             padding:12px 22px; border-radius:6px; font-size:15px;">Accepteer je uitnodiging</a>
 </p>
 
+{% if expiry_date %}
+<p style="font-size:13px; color:#777; margin:0 0 16px;">Deze uitnodiging verloopt op {{ expiry_date.split(' / ')[0] }}.</p>
+{% endif %}
+
 <p style="font-size:13px; color:#777; margin:0;">
   Werkt de knop niet? Kopieer deze link in je browser:<br>
   <a href="{{ accept_url }}" style="color:#0a4d8c;">{{ accept_url }}</a>

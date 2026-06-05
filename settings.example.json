@@ -14,13 +14,13 @@
     "token": "your-postmark-token-here",
     "message_stream": "your-message-stream-name"
   },
-  "invitation_expiration_days": 14,
   "cleanup_api_key": "your-cleanup-api-key-here",
   "_default_tenant_comment": "Optional. Only used when multiple tenants are configured. If exactly one tenant is defined, that one is the default automatically.",
   "default_tenant": "hvh",
   "tenants": {
     "hvh": {
       "api_key": "your-tenant-api-key-here",
+      "expiry_duration": 14,
       "theme": {
         "primary_color": "rgb(59, 130, 246)",
         "secondary_color": "#26a69a",

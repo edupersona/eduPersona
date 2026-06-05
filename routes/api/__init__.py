@@ -21,6 +21,9 @@ api_router = APIRouter()
 # Import tenant-scoped route modules (register on tenant_api_router)
 from . import invitations  # noqa: E402,F401
 
+# Import top-level route modules (register on api_router directly)
+from . import maintenance  # noqa: E402,F401
+
 # Nest tenant router into top-level router
 api_router.include_router(tenant_api_router)
 

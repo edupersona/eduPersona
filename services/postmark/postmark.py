@@ -60,6 +60,7 @@ async def prepare_invite_message(invitation: dict, tenant: str) -> dict:
         "family_name": invitation.get("family_name"),
         "sender_name": from_name,
         "guest_email": invitation.get("invitation_email", ""),
+        "expiry_date": invitation.get("expiry_date"),
     }
 
     env = Environment(loader=FileSystemLoader(str(_TEMPLATE_DIR)), autoescape=True)

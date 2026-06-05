@@ -26,6 +26,7 @@ class Invitation(MultitenantRdmModel):
     family_name = fields.CharField(max_length=255, null=True)  # display string from client app; not verified
     invited_at = fields.DatetimeField(auto_now_add=True)
     accepted_at = fields.DatetimeField(null=True)
+    expiry_date = fields.DatetimeField(null=True)  # null = never expires; sweep flips overdue → expired
     status = fields.CharField(max_length=50, default="pending")  # see InvitationStatus
 
     persona_key = fields.CharField(max_length=64)

@@ -6,15 +6,31 @@ are display strings from the client app, never refined from eduID.
 """
 
 import uuid
+from datetime import datetime, timedelta
 from typing import Optional
+
+import pytz
 
 from domain.models import Invitation
 from domain.stores import get_invitation_store
 from ng_rdm.store.multitenancy import valid_tenants
 from ng_rdm.utils import logger
-from ng_rdm.utils.helpers import now_utc, utc_datetime_to_str
+from ng_rdm.utils.helpers import now_utc, str_to_utc_datetime, utc_datetime_to_str
 from services.persona_loader import get_persona_config, validate_persona_params
+from services.settings import get_tenant_config
 from services.webhook import enqueue_callback
+
+
+DEFAULT_EXPIRY_DAYS = 14
+
+
+def _expiry_str_for(tenant: str) -> str | None:
+    """Store-format expiry timestamp from the tenant's `expiry_duration` (days).
+    0 / unset → None (never expires)."""
+    days = get_tenant_config(tenant).get("expiry_duration", DEFAULT_EXPIRY_DAYS)
+    if not days or int(days) <= 0:
+        return None
+    return utc_datetime_to_str(now_utc() + timedelta(days=int(days)))
 
 
 async def find_invitation_tenant(code: str) -> Optional[str]:
@@ -23,6 +39,23 @@ async def find_invitation_tenant(code: str) -> Optional[str]:
         if await Invitation.exists(tenant=tenant, code=code):
             return tenant
     return None
+
+
+async def expire_overdue_invitations(tenant: str | None = None) -> int:
+    """Flip pending invitations past their `expiry_date` to 'expired'. Scans one tenant
+    or all. Reads and writes both go through the store so open tables stay coherent;
+    NULL expiry → never expires."""
+    tenants = [tenant] if tenant else list(valid_tenants)
+    now = now_utc()
+    n = 0
+    for t in tenants:
+        store = get_invitation_store(t)
+        for item in await store.read_items(filter_by={"status": "pending"}):
+            raw = item.get("expiry_date")  # store-hydrated 'YYYY-MM-DD / HH:MM:SS'
+            if raw and str_to_utc_datetime(raw) <= now:
+                await store.update_item(item["id"], {"status": "expired"})
+                n += 1
+    return n
 
 
 def invitation_to_dict(inv: Invitation) -> dict:
@@ -39,6 +72,7 @@ def invitation_to_dict(inv: Invitation) -> dict:
         "callback_url": inv.callback_url,
         "sender_email": inv.sender_email,
         "sender_name": inv.sender_name,
+        "expiry_date": utc_datetime_to_str(inv.expiry_date) if inv.expiry_date else None,
     }
 
 
@@ -54,15 +88,24 @@ async def create_invitation(
     sender_email: Optional[str] = None,
     sender_name: Optional[str] = None,
     callback_url: Optional[str] = None,
+    expiry_date: Optional[datetime] = None,
 ) -> dict:
     """Create an invitation row directly (no Guest entity).
 
     Validates the persona and its params via the loader (UnknownPersonaError /
     PersonaParamsError, both ValueError). `callback_url` falls back to the persona's
-    configured default. Re-invites are never deduplicated (§2.1).
+    configured default. `expiry_date` overrides the tenant default duration (naive →
+    treated as UTC). Re-invites are never deduplicated (§2.1).
     """
     cfg = get_persona_config(tenant, persona_key)          # UnknownPersonaError if absent
     coerced = validate_persona_params(cfg, persona_params)  # PersonaParamsError on violation
+
+    if expiry_date is not None:
+        if expiry_date.tzinfo is None:
+            expiry_date = expiry_date.replace(tzinfo=pytz.utc)
+        expiry_str = utc_datetime_to_str(expiry_date.astimezone(pytz.utc))
+    else:
+        expiry_str = _expiry_str_for(tenant)
 
     # Persist through the store so its StoreEvent reaches any open invitations table.
     created = await get_invitation_store(tenant).create_item({
@@ -77,6 +120,7 @@ async def create_invitation(
         "sender_email": sender_email,
         "sender_name": sender_name,
         "callback_url": callback_url or cfg.callback_url,
+        "expiry_date": expiry_str,
     })
     if created is None:
         raise ValueError(f"invitation persistence failed for persona '{persona_key}'")

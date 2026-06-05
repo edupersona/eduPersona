@@ -4,7 +4,7 @@ from nicegui import ui
 
 from ng_rdm.components import Col, Button
 
-from domain.invitations import apply_invite_to_state, find_invitation_tenant
+from domain.invitations import apply_invite_to_state, expire_overdue_invitations, find_invitation_tenant
 from domain.models import Invitation
 from domain.step_cards import Steps
 from services.i18n import _
@@ -75,6 +75,8 @@ async def accept_invitation_page(invite_code: str = ""):
         async def render() -> None:
             code = typed['code'].strip()
             t = (await find_invitation_tenant(code) if code else None) or tenant
+            if code:
+                await expire_overdue_invitations(t)  # claim-time sweep — flips overdue → expired first
             inv = await Invitation.get_or_none(tenant=t, code=code) if code else None
             if inv is None:
                 if code:  # supplied but unresolved — notify and let them retry

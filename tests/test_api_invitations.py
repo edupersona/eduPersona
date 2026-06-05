@@ -135,3 +135,50 @@ async def test_requires_api_key():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as anon:
         r = await anon.post(BASE, json={"persona_key": "gastdocent", "email": "a@example.org"})
     assert r.status_code in (401, 403)
+
+
+# ── expiry ──────────────────────────────────────────────────────────────────
+
+async def test_post_sets_default_expiry(api_client):
+    """No expiry_date in the body → tenant default duration applied."""
+    r = await _post(api_client, persona_key="gastdocent", email="a@example.org")
+    assert r.json()["data"]["expiry_date"] is not None
+
+
+async def test_post_explicit_expiry_override(api_client):
+    """Client-supplied expiry_date is honoured."""
+    r = await _post(api_client, persona_key="gastdocent", email="a@example.org",
+                    expiry_date="2030-01-15T00:00:00+00:00")
+    assert "2030-01-15" in r.json()["data"]["expiry_date"]
+
+
+async def test_resend_bumps_expiry(api_client):
+    """A resent invite gets a fresh deadline, even if it was nearly/already expired."""
+    from datetime import timedelta
+    from ng_rdm.utils.helpers import now_utc
+    created = (await _post(api_client, persona_key="gastdocent", email="a@example.org",
+                           expiry_date=(now_utc() - timedelta(days=1)).isoformat())).json()["data"]
+    r = await api_client.post(f"{BASE}/{created['id']}/resend")
+    new_inv = await Invitation.get(id=created["id"])
+    assert new_inv.expiry_date is not None and new_inv.expiry_date > now_utc()
+
+
+async def test_maintenance_requires_key(api_client):
+    r = await api_client.post("/maintenance", headers={"X-Cleanup-Key": "wrong"})
+    assert r.status_code == 401
+
+
+async def test_maintenance_expires_overdue(api_client):
+    """POST /maintenance with the cleanup key flips overdue pending invites to expired."""
+    from datetime import timedelta
+    from ng_rdm.utils.helpers import now_utc
+    from services.settings import config
+    overdue = (await _post(api_client, persona_key="gastdocent", email="a@example.org",
+                           expiry_date=(now_utc() - timedelta(days=1)).isoformat())).json()["data"]
+    fresh = (await _post(api_client, persona_key="gastdocent", email="b@example.org")).json()["data"]
+
+    r = await api_client.post("/maintenance", headers={"X-Cleanup-Key": config.get("cleanup_api_key")})
+    assert r.status_code == 200
+    assert r.json()["data"]["expired_count"] >= 1
+    assert (await Invitation.get(id=overdue["id"])).status == "expired"
+    assert (await Invitation.get(id=fresh["id"])).status == "pending"

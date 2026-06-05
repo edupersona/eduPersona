@@ -7,12 +7,14 @@
     POST   /api/v1/{tenant}/invitations/{id}/resend - bump invited_at, re-fire mail
     DELETE /api/v1/{tenant}/invitations/{id}        - revoke
 """
+from datetime import datetime
+
 from fastapi import Query, Request
 from pydantic import BaseModel
 
 from ng_rdm.utils import logger
 from ng_rdm.utils.helpers import now_utc, utc_datetime_to_str
-from domain.invitations import create_invitation
+from domain.invitations import _expiry_str_for, create_invitation
 from domain.models import Invitation, WebhookDelivery
 from services.persona_loader import PersonaParamsError, UnknownPersonaError
 from services.postmark.postmark import send_invitation_mail
@@ -33,6 +35,7 @@ class InvitationCreate(BaseModel):
     sender_email: str | None = None
     sender_name: str | None = None
     callback_url: str | None = None
+    expiry_date: datetime | None = None  # ISO-8601 override; omit to use tenant default duration
 
 
 # ── response models (drive /docs + /redoc; success payloads use the {data, meta} envelope) ──
@@ -51,6 +54,7 @@ class InvitationData(BaseModel):
     callback_url: str | None = None
     invited_at: str | None = None
     accepted_at: str | None = None
+    expiry_date: str | None = None
     accept_url: str
 
 
@@ -144,6 +148,7 @@ def _to_api_dict(inv: Invitation, request: Request) -> dict:
         "callback_url": inv.callback_url,
         "invited_at": _iso(inv.invited_at),
         "accepted_at": _iso(inv.accepted_at),
+        "expiry_date": _iso(inv.expiry_date),
         "accept_url": _accept_url(request, inv.code),
     }
 
@@ -177,7 +182,7 @@ async def create_invitation_endpoint(tenant: str, data: InvitationCreate, reques
             given_name=data.given_name, family_name=data.family_name,
             client_ref=data.client_ref, persona_params=data.persona_params,
             sender_email=data.sender_email, sender_name=data.sender_name,
-            callback_url=data.callback_url,
+            callback_url=data.callback_url, expiry_date=data.expiry_date,
         )
     except UnknownPersonaError as e:
         raise api_error("NOT_FOUND", str(e), status_code=404)
@@ -277,9 +282,13 @@ async def resend_invitation(tenant: str, invitation_id: int, request: Request):
         raise api_error("NOT_FOUND", f"Invitation {invitation_id} not found", status_code=404)
 
     # Through the store (auto_now_add won't re-write invited_at on save) so the bump
-    # repaints any open invitations table.
+    # repaints any open invitations table. Recompute expiry so a resent invite isn't
+    # born already-expired.
     from domain.stores import get_invitation_store
-    await get_invitation_store(tenant).update_item(invitation_id, {"invited_at": utc_datetime_to_str(now_utc())})
+    await get_invitation_store(tenant).update_item(invitation_id, {
+        "invited_at": utc_datetime_to_str(now_utc()),
+        "expiry_date": _expiry_str_for(tenant),
+    })
     inv = await Invitation.get(id=invitation_id)
     from domain.invitations import invitation_to_dict
     try:

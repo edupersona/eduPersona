@@ -160,6 +160,8 @@ translations: dict[str, dict[str, str]] = {
         'pending': 'verstuurd',
         #
         'Accepted': 'geaccepteerd',
+        'Expires': 'verloopt',
+        'Expires at': 'verloopt op',
         'All fields are required': 'Alle velden zijn verplicht',
         'code': 'code',
         'Create Invitation': 'Uitnodiging aanmaken',
