@@ -107,15 +107,6 @@
           "callback_url": null,
           "steps": [
             {
-              "class": "VerifyInviteStep",
-              "id": "verify_invite",
-              "config": {
-                "title": "Stap 1. Kopieer en plak hier de code die je per mail hebt ontvangen",
-                "completed_text": "✓ Code ontvangen en bevestigd",
-                "disabled_text": null
-              }
-            },
-            {
               "class": "OIDCLoginStep",
               "id": "eduid_login",
               "config": {
@@ -168,15 +159,6 @@
           "success_redirect_url": "https://example.org/alumni/welcome",
           "callback_url": null,
           "steps": [
-            {
-              "class": "VerifyInviteStep",
-              "id": "verify_invite",
-              "config": {
-                "title": "Stap 1. Kopieer en plak hier de code die je per mail hebt ontvangen",
-                "completed_text": "✓ Code ontvangen en bevestigd",
-                "disabled_text": null
-              }
-            },
             {
               "class": "OIDCLoginStep",
               "id": "eduid_login",

@@ -2,9 +2,11 @@
 
 from nicegui import ui
 
+from ng_rdm.components import Col, Button
+
 from domain.invitations import apply_invite_to_state, find_invitation_tenant
 from domain.models import Invitation
-from domain.step_cards import Steps, StepResult
+from domain.step_cards import Steps
 from services.i18n import _
 from services.persona_loader import get_persona_config
 from services.session_manager import initialize_state
@@ -13,55 +15,93 @@ from services.tenant import get_default_tenant, store_tenant_in_session
 from services.theme import frame
 
 
-def _code_entry_form() -> None:
-    """Spartan code-entry form for bare /accept or an invalid code (§5.3)."""
-    ui.label(_('Accept invitation')).classes('page-title')
-    code_input = ui.input(
-        _('Enter your invitation code here'),
-        placeholder=_('Invitation code'),
-    ).classes('form-input')
-    ui.button(
-        _('Confirm code'),
-        on_click=lambda: ui.navigate.to(f"/accept/{(code_input.value or '').strip()}"),
-    ).style('margin-top: 0.5rem;')
+def _code_entry_form(typed: dict, on_submit) -> None:
+    """Code-entry gate for bare /accept or an unknown code (§5.3).
+
+    Resolving the code resolves the tenant + persona, so code-entry is a gate that
+    runs before any step list exists — never a step card. The input binds to `typed`;
+    submitting re-renders the page in place (no navigation), and validation happens
+    once, in the page's `render` refreshable."""
+    with Col(style='gap: 0.75rem; max-width: 24rem;'):
+        ui.label(_('Accept invitation')).classes('page-title')
+        ui.input(
+            _('Enter your invitation code here'),
+            placeholder=_('Invitation code'),
+        ).classes('form-input').bind_value(typed, 'code')
+        Button(_('Confirm code'), on_click=on_submit)
+
+
+def _invite_expired() -> None:
+    """Terminal screen for an expired invitation — nothing left to onboard."""
+    ui.icon('error_outline', size='3em').classes('text-red-600')
+    ui.label(_('This invitation has expired.')).classes('page-title')
+    ui.label(_('Please contact the sender of your invitation.')).classes('page-subtitle')
+
+
+def _already_completed(tenant: str, persona_key: str) -> None:
+    """Shown when a returning user reopens an already-accepted invitation, so they
+    land on a success screen instead of a fresh (and pointless) onboarding."""
+    try:
+        redirect_url = get_persona_config(tenant, persona_key).success_redirect_url
+    except Exception:
+        redirect_url = None
+    with Col(style='gap: 0.75rem;'):
+        ui.icon('check_circle', color='positive', size='3em')
+        ui.label(_('Your onboarding has already been completed successfully.')).classes('page-title')
+        if redirect_url:
+            Button(_('Continue'), on_click=lambda: ui.navigate.to(redirect_url))
 
 
 @ui.page('/accept')
 @ui.page('/accept/{invite_code}')
 async def accept_invitation_page(invite_code: str = ""):
     """Guest invitation entry. Tenant resolves from the invitation code; bare /accept
-    (or an invalid code) shows a code-entry form."""
-    code = invite_code.strip()
+    (or an unknown code) shows the code-entry gate and re-renders in place on submit."""
+    typed = {'code': invite_code.strip()}
+
+    # Frame branding is fixed at load; resolve tenant from the URL code so the common
+    # email-link path (/accept/{code}) is branded correctly.
     tenant = get_default_tenant()
-    if code:
-        resolved = await find_invitation_tenant(code)
+    if typed['code']:
+        resolved = await find_invitation_tenant(typed['code'])
         if resolved:
             tenant = resolved
 
     with frame('accept', tenant):
         await ui.context.client.connected()
+        state = initialize_state()  # setdefault-only — preserves any in-flight session (§5.3)
 
-        inv = await Invitation.get_or_none(tenant=tenant, code=code) if code else None
-        if inv is None:
-            _code_entry_form()
-            return
+        @ui.refreshable
+        async def render() -> None:
+            code = typed['code'].strip()
+            t = (await find_invitation_tenant(code) if code else None) or tenant
+            inv = await Invitation.get_or_none(tenant=t, code=code) if code else None
+            if inv is None:
+                if code:  # supplied but unresolved — notify and let them retry
+                    ui.notify(_('Invalid invite code'), type='negative')
+                _code_entry_form(typed, render.refresh)
+                return
 
-        state = initialize_state()
-        steps = None
-        with ui_guard(notify=False):  # default catch=ValueError (unknown persona / bad step config)
-            cfg = get_persona_config(tenant, inv.persona_key)
-            steps = Steps(tenant, state, {"steps": cfg.steps})
-        if steps is None:
-            ui.icon('error_outline', size='3em').classes('text-red-600')
-            ui.label(_('This invitation cannot be processed right now.')).classes('page-title')
-            ui.label(_('Please contact the sender of your invitation.')).classes('page-subtitle')
-            return
+            if inv.status == 'accepted':  # returning user — show success, not a fresh flow
+                _already_completed(t, inv.persona_key)
+                return
+            if inv.status == 'expired':  # nothing to onboard — dead-end, not a fresh flow
+                _invite_expired()
+                return
 
-        applied = await apply_invite_to_state(tenant, state, code)
-        if applied:
-            store_tenant_in_session(tenant)
-            if steps.step_instances:
-                await steps.record(steps.step_instances[0].step_id, StepResult('completed'))
+            steps = None
+            with ui_guard(notify=False):  # default catch=ValueError (unknown persona / bad step config)
+                cfg = get_persona_config(t, inv.persona_key)
+                steps = Steps(t, state, {"steps": cfg.steps})
+            if steps is None:
+                ui.icon('error_outline', size='3em').classes('text-red-600')
+                ui.label(_('This invitation cannot be processed right now.')).classes('page-title')
+                ui.label(_('Please contact the sender of your invitation.')).classes('page-subtitle')
+                return
 
-        await steps.startup()
-        steps.render()  # type: ignore
+            if await apply_invite_to_state(t, state, code):
+                store_tenant_in_session(t)
+            await steps.startup()
+            steps.render()  # type: ignore
+
+        await render()

@@ -20,7 +20,7 @@ from ng_rdm.utils import logger
 from services.i18n import _
 from services.oidc_mt.multitenant import start_oidc_login
 from services.persona_loader import get_persona_config
-from domain.invitations import accept_invitation, apply_invite_to_state
+from domain.invitations import accept_invitation
 from domain.models import Invitation
 
 
@@ -130,32 +130,6 @@ class StepCard:
 
 
 # ──────────────────────────── concrete cards ────────────────────────────
-
-
-class VerifyInviteStep(StepCard):
-    """Validate the invitation code typed by the user and populate persona context."""
-
-    async def act(self) -> StepResult | None:
-        if not self.tenant:
-            logger.error("Tenant not set in step card")
-            return StepResult('failed', error='tenant not set')
-        invite_code = (self.state.get('invite_code_input') or '').strip()
-        if not invite_code:
-            return None
-        ok = await apply_invite_to_state(self.tenant, self.state, invite_code)
-        if ok:
-            from services.tenant import store_tenant_in_session
-            store_tenant_in_session(self.tenant)
-            return StepResult('completed')
-        ui.notify(_('Invalid invite code'), type='negative')
-        return None
-
-    def render_enabled(self, state: dict) -> None:
-        ui.input(
-            _('Enter your invitation code here'),
-            placeholder=_('Invitation code')
-        ).classes('form-input').bind_value(self.state, 'invite_code_input')
-        Button(_('Confirm code'), on_click=self._handle_click).style('margin-top: 0.5rem;')
 
 
 class OIDCLoginStep(StepCard):
@@ -335,7 +309,6 @@ class FinalizeStep(StepCard):
 
 
 STEP_CARD_CLASSES = {
-    'VerifyInviteStep': VerifyInviteStep,
     'OIDCLoginStep': OIDCLoginStep,
     'VerifyAlumniDb': VerifyAlumniDb,
     'FinalizeStep': FinalizeStep,

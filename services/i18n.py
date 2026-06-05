@@ -204,6 +204,10 @@ translations: dict[str, dict[str, str]] = {
         'Click here to log in to {app}': 'Klik hier om in te loggen op {app}',
         "Come back here after you've created it!": "Kom hier terug als je 'm hebt aangemaakt!",
         'Confirm code': 'Code bevestigen',
+        'Continue': 'Doorgaan',
+        'This invitation has expired.': 'Deze uitnodiging is verlopen.',
+        'Your onboarding has already been completed successfully.':
+            'Je onboarding is al succesvol afgerond.',
         'Create one here': 'Maak hem hier aan',
         'Enter your invitation code here': 'Voer hier uw uitnodigingscode in',
         'Follow the step-by-step plan below to accept your invitation{suffix}.':

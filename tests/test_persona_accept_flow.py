@@ -113,6 +113,26 @@ async def test_accept_persona_invalid_code_shows_form(user, test_tenant):
 
 
 @pytest.mark.ui
+async def test_accept_already_accepted_shows_completed_screen(user, test_tenant):
+    """Reopening an accepted invitation shows a success screen, not a fresh flow."""
+    created = await create_invitation(test_tenant, "gastdocent", "anna@example.org")
+    await Invitation.filter(tenant=test_tenant, code=created["code"]).update(status="accepted")
+    await user.open(f"/accept/{created['code']}")
+    await user.should_see("al succesvol afgerond")  # completed message
+    await user.should_not_see("Welkom")             # onboarding heading never renders
+
+
+@pytest.mark.ui
+async def test_accept_expired_shows_dead_end(user, test_tenant):
+    """An expired invitation gets a dead-end screen, not a fresh flow."""
+    created = await create_invitation(test_tenant, "gastdocent", "anna@example.org")
+    await Invitation.filter(tenant=test_tenant, code=created["code"]).update(status="expired")
+    await user.open(f"/accept/{created['code']}")
+    await user.should_see("verlopen")       # expired message
+    await user.should_not_see("Welkom")     # onboarding heading never renders
+
+
+@pytest.mark.ui
 async def test_accept_missing_persona_shows_friendly_card(user, test_tenant, monkeypatch):
     """A valid invite whose persona is gone → friendly card, not a 500 (ui_guard)."""
     from services.persona_loader import UnknownPersonaError
