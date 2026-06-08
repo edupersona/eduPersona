@@ -55,7 +55,6 @@ async def simulator_page(tenant: str = Depends(require_invite_auth)):
             ui.input(_("Guest ID")).bind_value(form, "guest_id").classes("form-input")
             ui.input(_("Sender email")).bind_value(form, "sender_email").classes("form-input")
             ui.input(_("Sender name")).bind_value(form, "sender_name").classes("form-input")
-            ui.input(_("Callback URL")).bind_value(form, "callback_url").classes("form-input")
 
             @ui.refreshable
             def dynamic_fields() -> None:
@@ -75,6 +74,8 @@ async def simulator_page(tenant: str = Depends(require_invite_auth)):
                         elif spec.type == "enum":
                             ui.select(spec.enum or [], label=label).bind_value(
                                 form["persona_params"], name).classes("form-input")
+                        elif spec.type == "text":
+                            ui.textarea(label).bind_value(form["persona_params"], name).classes("form-input")
                         else:
                             ui.input(label).bind_value(form["persona_params"], name).classes("form-input")
 

@@ -2,6 +2,17 @@
 """
 Shared pytest fixtures for edupersona tests.
 """
+# Point the settings service at the frozen test fixture BEFORE anything imports
+# services.settings (its module-global `config` binds at import time). This
+# isolates the suite from the developer's working settings.json — see
+# tests/data/settings.test.json.
+import os
+from pathlib import Path
+
+os.environ.setdefault(
+    "EDUPERSONA_SETTINGS_FILE", str(Path(__file__).parent / "data" / "settings.test.json")
+)
+
 import pytest
 from unittest.mock import Mock, AsyncMock
 from tortoise import Tortoise

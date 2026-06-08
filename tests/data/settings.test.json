@@ -123,6 +123,17 @@
               }
             },
             {
+              "class": "OIDCLoginStep",
+              "id": "institutional_login",
+              "config": {
+                "idp": "institutional",
+                "primary_button_label": "Inloggen met instellingsaccount",
+                "title": "Stap 2. Inloggen met instellingsaccount",
+                "completed_text": "✓ Institutioneel ingelogd",
+                "disabled_text": "Voltooi eerst stap 1"
+              }
+            },
+            {
               "class": "FinalizeStep",
               "id": "finalize",
               "config": {
@@ -204,5 +215,6 @@
         }
       }
     }
-  }
+  },
+  "_comment": "Frozen test config — the contract tests assert against. Owned by the suite, NOT a dev scratchpad. Change only when intentionally changing a test contract. Seeded from settings.example.json."
 }

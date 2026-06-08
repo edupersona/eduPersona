@@ -16,7 +16,8 @@ is [`domain/persona.py`](../domain/persona.py) → `PersonaConfig`:
 - `mail: {layout, body}` — per-tenant layout frame + per-persona body, both Jinja2
   under [`services/postmark/templates/`](../services/postmark/templates/).
 - `expected_params: {name: ExpectedParam}` — schema for client-supplied
-  `persona_params` (`type` ∈ string/int/bool/enum, `required`, `enum`).
+  `persona_params` (`type` ∈ string/text/int/bool/enum, `required`, `enum`).
+  `text` is a multiline string (renders as a textarea in the simulator; coerced like `string`).
 - `callback_outputs: [...]` — which `step_outputs` keys surface in the webhook.
 - `success_redirect_url`, `callback_url` — optional.
 

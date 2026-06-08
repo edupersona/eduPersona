@@ -2,6 +2,7 @@
 settings.json
 settings.*.json
 !settings.example.json
+!tests/data/settings.test.json
 
 # Python
 __pycache__/

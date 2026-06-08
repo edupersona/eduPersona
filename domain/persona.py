@@ -21,7 +21,7 @@ from pydantic import BaseModel, ConfigDict, model_validator
 # so callers read intent, not just `str`.
 CallbackOutputKey = str
 
-ParamType = Literal["string", "int", "bool", "enum"]
+ParamType = Literal["string", "text", "int", "bool", "enum"]
 
 
 class ExpectedParam(BaseModel):
@@ -48,7 +48,7 @@ class ExpectedParam(BaseModel):
 
     def coerce(self, value: Any) -> Any:
         """Coerce a raw value to this param's type. Raises ValueError on mismatch."""
-        if self.type == "string":
+        if self.type in ("string", "text"):
             return str(value)
         if self.type == "int":
             # bool is an int subclass; reject so True doesn't silently become 1.

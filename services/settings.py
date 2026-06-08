@@ -1,6 +1,7 @@
 """Unified settings service - single source of truth for all configuration"""
 
 import json
+import os
 from pathlib import Path
 from typing import Any
 
@@ -29,12 +30,21 @@ class DotDict(dict):
 _settings_cache: DotDict | None = None
 
 
+def _settings_path() -> Path:
+    """Resolve the settings file: $EDUPERSONA_SETTINGS_FILE override, else settings.json.
+
+    The override lets tests (and alternate deployments) point at a frozen config
+    without touching the developer's working settings.json.
+    """
+    override = os.environ.get("EDUPERSONA_SETTINGS_FILE")
+    return Path(override) if override else Path(__file__).parent.parent / 'settings.json'
+
+
 def _load_settings() -> DotDict:
-    """Load and cache settings.json as DotDict"""
+    """Load and cache the settings file as DotDict"""
     global _settings_cache
     if _settings_cache is None:
-        settings_file = Path(__file__).parent.parent / 'settings.json'
-        with open(settings_file, 'r') as f:
+        with open(_settings_path(), 'r') as f:
             _settings_cache = DotDict(json.load(f))
     return _settings_cache
 
