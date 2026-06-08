@@ -35,9 +35,10 @@ def test_get_alumnus_persona():
     """Lock in the demo alumnus persona (eduid + alumni_db outputs)."""
     cfg = get_persona_config("hvh", "alumnus")
     assert cfg.label("nl") == "Alumnus"
-    assert [s["id"] for s in cfg.steps] == ["eduid_login", "alumni_db", "finalize"]
+    assert [s["id"] for s in cfg.steps] == ["eduid_login", "alumni_db"]
     assert cfg.callback_outputs == ["eduid", "alumni_db"]
     assert cfg.expected_params["graduation_year"].type == "int"
+    assert cfg.cta("nl") == "Naar het alumniportaal"
 
 
 def test_get_persona_config_happy():
@@ -51,8 +52,9 @@ def test_get_persona_config_happy():
     assert set(cfg.expected_params) == {"department", "personal_message"}
     assert cfg.expected_params["department"].type == "string"
     assert [s["id"] for s in cfg.steps] == [
-        "eduid_login", "institutional_login", "finalize",
+        "eduid_login", "institutional_login",
     ]
+    assert cfg.completion_text("nl").startswith("Je onboarding is voltooid")
 
 
 # --- miss: unknown persona raises with the documented message prefix ---

@@ -5,8 +5,10 @@ the MAY / MAY NOT rules, and the single-session invariant.
 
 Shape B (§2.7): OIDC steps write verified userinfo to state['outputs'][idp] (keyed
 by IdP name, gotcha 10); non-OIDC steps write to state['outputs'][step_id].
-FinalizeStep persists state['outputs'] to Invitation.step_outputs before accepting,
-so the webhook callback can read the verified facts. No Guest entity.
+Finalization is a built-in orchestrator side effect (Steps._finalize): once every
+step is completed/skipped it persists state['outputs'] to Invitation.step_outputs and
+accepts (firing the webhook). Completion then renders a persona welcome screen
+(render_welcome) instead of any step card. No Guest entity.
 """
 import re
 from dataclasses import dataclass
@@ -54,9 +56,6 @@ class StepCard:
     Steps signal completion exclusively via the orchestrator's `record(step_id, result)`
     funnel — never by mutating state directly.
     """
-
-    # 'interactive' (default) or 'finalize'. May be overridden on subclass or in config.
-    kind: str = 'interactive'
 
     def __init__(self, config: dict):
         self.config = config
@@ -255,54 +254,33 @@ class VerifyAlumniDb(StepCard):
             })
 
 
-class FinalizeStep(StepCard):
-    """Terminal step: persist state['outputs'] to Invitation.step_outputs, then accept
-    (which fires the webhook callback). Idempotent for already-accepted invitations."""
+# ──────────────────────────── completion screen ────────────────────────────
 
-    kind = 'finalize'
 
-    async def act(self) -> StepResult | None:
-        if not self.tenant:
-            return StepResult('failed', error='tenant not set')
-        invite_code = self.state.get('invite_code')
-        if not invite_code:
-            return StepResult('failed', error='invite code missing')
+def render_welcome(tenant: str | None, persona_key: str | None, given_name: str | None = None) -> None:
+    """Terminal success screen shown once onboarding is complete.
 
-        inv = await Invitation.get_or_none(tenant=self.tenant, code=invite_code)
-        if inv is None:
-            return StepResult('failed', error='invitation not found')
-
-        if inv.status == 'pending':
-            # Persist outputs BEFORE accept so the webhook envelope can read them (§2.7).
-            # Through the store (like every other write) so open tables stay live.
-            from domain.stores import get_invitation_store
-            await get_invitation_store(self.tenant).update_item(
-                inv.id, {"step_outputs": dict(self.state.get('outputs', {})) or None})
-            accepted = await accept_invitation(self.tenant, invite_code)
-            if not accepted:
-                return StepResult('failed', error='accept_invitation failed')
-        return StepResult('completed')
-
-    def render_enabled(self, state: dict) -> None:
-        # FinalizeStep auto-runs; this branch is rarely reached.
-        ui.label(self.completed_text).classes('text').style('margin-top: 0.5rem;')
-
-    def render_completed(self, state: dict) -> None:
-        redirect_url = None
-        persona_key = state.get('persona_key')
-        if self.tenant and persona_key:
-            try:
-                redirect_url = get_persona_config(self.tenant, persona_key).success_redirect_url
-            except Exception:
-                redirect_url = None
-        ui.label(self.completed_text).classes('text-success')
+    Shared by the in-session path (`Steps.render`) and the returning-user path
+    (`routes/accept` on status=='accepted'), so both render identically. Message and
+    CTA label are per-persona (localized); the CTA links to `success_redirect_url`.
+    All persona lookups are guarded so a vanished persona still degrades to defaults.
+    """
+    message = cta_label = redirect_url = None
+    if tenant and persona_key:
+        try:
+            cfg = get_persona_config(tenant, persona_key)
+            message = cfg.completion_text('nl')
+            cta_label = cfg.cta('nl')
+            redirect_url = cfg.success_redirect_url
+        except Exception:
+            pass
+    with Col(classes='accept-terminal'):
+        ui.icon('check_circle', color='positive', size='3em')
+        heading = f"{_('Welcome')}, {given_name}!" if given_name else _('Welcome')
+        ui.label(heading).classes('page-title')
+        ui.label(message or _('Your onboarding has been completed successfully.')).classes('page-subtitle')
         if redirect_url:
-            Button(_('Continue'), on_click=lambda: ui.navigate.to(redirect_url)).style('margin-top: 0.5rem;')
-
-            # ui.link(_('Continue'), redirect_url) \
-            #     .classes('btn-primary') \
-            #     .style('padding: 0.5rem 1rem; border-radius: 0.25rem; font-size: 14pt; '
-            #            'font-weight: 500; text-decoration: none; display: inline-block; margin-top: 0.5rem;')
+            Button(cta_label or _('Continue'), on_click=lambda: ui.navigate.to(redirect_url))
 
 
 # ──────────────────────────── registry + orchestrator ────────────────────────────
@@ -311,7 +289,6 @@ class FinalizeStep(StepCard):
 STEP_CARD_CLASSES = {
     'OIDCLoginStep': OIDCLoginStep,
     'VerifyAlumniDb': VerifyAlumniDb,
-    'FinalizeStep': FinalizeStep,
 }
 
 
@@ -320,7 +297,7 @@ class Steps:
 
     Owns: scenario instantiation, completion bookkeeping (`state['outcomes']`),
     output storage (`state['outputs']`), prerequisite evaluation (positional),
-    and the terminal hook that auto-runs the `FinalizeStep` when ready.
+    and the built-in finalize side effect that runs once every step is done.
     """
 
     def __init__(self, tenant: str, state: dict, persona_config: dict):
@@ -334,6 +311,11 @@ class Steps:
     @property
     def outcomes(self) -> dict[str, str]:
         return self.state['outcomes']
+
+    @property
+    def is_complete(self) -> bool:
+        """True once every step is done and the finalize side effect has succeeded."""
+        return self.state.get('completed') is True
 
     @property
     def context(self) -> dict:
@@ -363,8 +345,6 @@ class Steps:
             step_instance.steps = self
             step_instance.state = self.state
             step_instance.tenant = self.tenant
-            if 'kind' in step_config:
-                step_instance.kind = step_config['kind']
             instances.append(step_instance)
         return instances
 
@@ -375,7 +355,7 @@ class Steps:
                 continue
             if await step.is_already_done():
                 self.outcomes[step.step_id] = 'skipped'
-        await self._maybe_run_finalize()
+        await self._maybe_finalize()
 
     async def record(self, step_id: str, result: StepResult) -> None:
         """The single state-mutation funnel."""
@@ -383,34 +363,53 @@ class Steps:
         if result.output is not None:
             self.state['outputs'][step_id] = result.output
         if result.outcome == 'completed':
-            await self._maybe_run_finalize()
+            await self._maybe_finalize()
         # Refresh if a live render exists; OIDC callback context has no live render.
         try:
             self.render.refresh()
         except Exception:
             pass
 
-    async def _maybe_run_finalize(self) -> None:
-        finalize_step = next((s for s in self.step_instances if s.kind == 'finalize'), None)
-        if finalize_step is None:
+    async def _maybe_finalize(self) -> None:
+        """Run the terminal side effect once every step is completed/skipped.
+
+        Replaces the old FinalizeStep: no longer a card, just the scenario-wide
+        accept + webhook. Idempotent — guarded by the `completed`/`finalize_failed`
+        flags within the session and by the invitation's own status across sessions.
+        """
+        if self.state.get('completed') or self.state.get('finalize_failed'):
             return
-        if self.outcomes.get(finalize_step.step_id) in ('completed', 'failed'):
-            return
-        others_done = all(
-            self.outcomes.get(s.step_id) in ('completed', 'skipped')
-            for s in self.step_instances if s is not finalize_step
-        )
-        if not others_done:
+        if not all(o in ('completed', 'skipped') for o in
+                   (self.outcomes.get(s.step_id) for s in self.step_instances)):
             return
         try:
-            result = await finalize_step.act()
+            ok = await self._finalize()
         except Exception as e:
-            logger.error(f"FinalizeStep '{finalize_step.step_id}' raised: {e}")
+            logger.error(f"finalize raised: {e}")
+            self.state['finalize_failed'] = True
             return
-        if result is not None:
-            self.outcomes[finalize_step.step_id] = result.outcome
-            if result.output is not None:
-                self.state['outputs'][finalize_step.step_id] = result.output
+        self.state['completed' if ok else 'finalize_failed'] = True
+
+    async def _finalize(self) -> bool:
+        """Persist state['outputs'] to Invitation.step_outputs, then accept (fires the
+        webhook). Idempotent for already-accepted invitations. Returns success."""
+        if not self.tenant:
+            return False
+        invite_code = self.state.get('invite_code')
+        if not invite_code:
+            return False
+        inv = await Invitation.get_or_none(tenant=self.tenant, code=invite_code)
+        if inv is None:
+            return False
+        if inv.status == 'pending':
+            # Persist outputs BEFORE accept so the webhook envelope can read them (§2.7).
+            # Through the store (like every other write) so open tables stay live.
+            from domain.stores import get_invitation_store
+            await get_invitation_store(self.tenant).update_item(
+                inv.id, {"step_outputs": dict(self.state.get('outputs', {})) or None})
+            if not await accept_invitation(self.tenant, invite_code):
+                return False
+        return True
 
     def _render_heading(self) -> None:
         persona_label = ''
@@ -433,8 +432,17 @@ class Steps:
 
     @ui.refreshable
     def render(self) -> None:
-        self._render_heading()
+        if self.is_complete:
+            render_welcome(self.tenant, self.state.get('persona_key'), self.state.get('given_name'))
+            return
+        if self.state.get('finalize_failed'):
+            with Col(classes='accept-terminal'):
+                ui.icon('error_outline', size='3em').classes('icon-error')
+                ui.label(_('This invitation cannot be processed right now.')).classes('page-title')
+                ui.label(_('Please contact the sender of your invitation.')).classes('page-subtitle')
+            return
 
+        self._render_heading()
         for i, step in enumerate(self.step_instances):
             outcome = self.outcomes.get(step.step_id, 'pending')
             is_enabled = all(

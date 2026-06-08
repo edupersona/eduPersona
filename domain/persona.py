@@ -106,7 +106,24 @@ class PersonaConfig:
     callback_url: str | None = None
     expected_params: dict[str, ExpectedParam] = field(default_factory=dict)
     callback_outputs: list[CallbackOutputKey] = field(default_factory=list)
+    # Post-completion welcome screen copy (localized, optional). The CTA links to
+    # `success_redirect_url`; both fall back to translated defaults when unset.
+    completion_message: dict[str, str] = field(default_factory=dict)
+    cta_label: dict[str, str] = field(default_factory=dict)
+
+    @staticmethod
+    def _localized(d: dict[str, str], lang: str) -> str:
+        """First the requested language, then any defined value, then empty."""
+        return d.get(lang) or next(iter(d.values()), "")
 
     def label(self, lang: str = "nl") -> str:
         """Display label for a language, falling back to any defined name then key-less '?'."""
         return self.display_name.get(lang) or next(iter(self.display_name.values()), "?")
+
+    def completion_text(self, lang: str = "nl") -> str:
+        """Per-persona welcome message; empty when none configured (caller defaults)."""
+        return self._localized(self.completion_message, lang)
+
+    def cta(self, lang: str = "nl") -> str:
+        """Per-persona CTA button label; empty when none configured (caller defaults)."""
+        return self._localized(self.cta_label, lang)

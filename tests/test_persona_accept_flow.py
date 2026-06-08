@@ -63,7 +63,7 @@ async def test_lifecycle_persists_outputs_and_fires_callback(test_tenant, monkey
     assert inv.status == "accepted"
     # OIDC output keyed by IdP name, not step id (gotcha 10)
     assert inv.step_outputs == {"eduid": USERINFO, "institutional": INST_USERINFO}
-    assert steps.outcomes["finalize"] == "completed"
+    assert steps.is_complete  # built-in finalize ran once every step was done
     enqueue.assert_awaited_once_with(test_tenant, created["id"])
 
 
@@ -113,13 +113,14 @@ async def test_accept_persona_invalid_code_shows_form(user, test_tenant):
 
 
 @pytest.mark.ui
-async def test_accept_already_accepted_shows_completed_screen(user, test_tenant):
-    """Reopening an accepted invitation shows a success screen, not a fresh flow."""
+async def test_accept_already_accepted_shows_welcome_screen(user, test_tenant):
+    """Reopening an accepted invitation shows the persona welcome screen, not a fresh flow."""
     created = await create_invitation(test_tenant, "gastdocent", "anna@example.org", "EMP-1")
     await Invitation.filter(tenant=test_tenant, code=created["code"]).update(status="accepted")
     await user.open(f"/accept/{created['code']}")
-    await user.should_see("al succesvol afgerond")  # completed message
-    await user.should_not_see("Welkom")             # onboarding heading never renders
+    await user.should_see("toegang tot de leeromgeving")  # per-persona completion_message
+    await user.should_see("Naar de leeromgeving")         # per-persona cta_label
+    await user.should_not_see("Inloggen met eduID")       # no step cards — onboarding is done
 
 
 @pytest.mark.ui

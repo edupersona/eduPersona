@@ -50,7 +50,7 @@ Returning `None` from `act()` means "no immediate transition" — useful for OID
 
 - Read or write other steps' completion state (`state['outcomes']` is orchestrator-owned).
 - Hardcode IdP names, URLs, or copy. All of these come from config.
-- Perform scenario-terminal actions (invitation acceptance, session establishment). Those belong to `FinalizeStep`.
+- Perform scenario-terminal actions (invitation acceptance, session establishment). Those belong to the orchestrator's built-in finalize (`Steps._finalize`).
 - Assume its own position in the sequence. The step works whether it's at position 0 or 99.
 
 ## `is_already_done()`
@@ -66,15 +66,15 @@ Owns:
 - The completion map `state['outcomes']` and output store `state['outputs']`.
 - Prerequisite evaluation — positional ("all prior steps completed or skipped").
 - The single state-mutation funnel `record(step_id, result)`.
-- The terminal hook `_maybe_run_finalize()` — auto-invokes the `FinalizeStep`'s `act()` once all other steps are in a terminal-OK state.
+- The terminal hook `_maybe_finalize()` — runs the built-in `_finalize()` side effect once *every* step is in a terminal-OK state.
 
 Steps must call `await self.steps.record(self.step_id, result)` whenever they want to signal an outcome.
 
-## The `FinalizeStep`
+## Finalization & the welcome screen
 
-A declarative terminal step (`kind = 'finalize'`) that owns the scenario-wide side effects: `accept_invitation` + `establish_guest_session_for_code`. Auto-runs when its prerequisites are met. Idempotent — re-running is a no-op for already-accepted invitations.
+Finalization is **not** a step — it's a built-in orchestrator side effect (`Steps._finalize`): once every step is `completed`/`skipped`, it persists `state['outputs']` to `Invitation.step_outputs` and calls `accept_invitation` (which fires the webhook callback). Idempotent — guarded by `state['completed']`/`state['finalize_failed']` within a session and by the invitation's own status across sessions.
 
-Putting terminal logic here (instead of in the last interactive step) keeps the orchestrator scenario-agnostic. A scenario that needs different terminal behavior swaps the step class in config; no orchestrator changes.
+On success the orchestrator's `render()` stops showing step cards and renders `render_welcome(tenant, persona_key, given_name)` — a per-persona, localized success screen (`PersonaConfig.completion_message` + `cta_label`, CTA linking to `success_redirect_url`). The same `render_welcome` is reused by `routes/accept.py` for a returning user who reopens an already-accepted invitation, so both paths render identically.
 
 ## Scenarios
 
@@ -85,9 +85,8 @@ Today every tenant has a single scenario keyed `"default"`. The structure (`tena
 1. Subclass `StepCard`. Implement `render_enabled()` at minimum; override `render_completed()` if you need a richer success view.
 2. If the step takes a user action: override `act()` to return a `StepResult`.
 3. If the step has an out-of-band durable marker (verification-style): override `is_already_done()` with a cheap DB read.
-4. If the step terminates the scenario: set `kind = 'finalize'` and implement `act()` to perform the side effects.
-5. Register the class in `STEP_CARD_CLASSES`.
-6. Add an entry to the relevant scenario in `settings.json` (and `settings.example.json`). All copy, IdP names, URLs go in `config` — never hardcoded in Python.
+4. Register the class in `STEP_CARD_CLASSES`.
+5. Add an entry to the relevant scenario in `settings.json` (and `settings.example.json`). All copy, IdP names, URLs go in `config` — never hardcoded in Python.
 
 ## State keys (per-session, `app.storage.tab`)
 

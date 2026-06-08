@@ -6,7 +6,7 @@ from ng_rdm.components import Col, Button
 
 from domain.invitations import apply_invite_to_state, expire_overdue_invitations, find_invitation_tenant
 from domain.models import Invitation
-from domain.step_cards import Steps
+from domain.step_cards import Steps, render_welcome
 from services.i18n import _
 from services.persona_loader import get_persona_config
 from services.session_manager import initialize_state
@@ -40,18 +40,6 @@ def _terminal_error(title: str, subtitle: str) -> None:
         ui.label(subtitle).classes('page-subtitle')
 
 
-def _already_completed(tenant: str, persona_key: str) -> None:
-    """Shown when a returning user reopens an already-accepted invitation, so they
-    land on a success screen instead of a fresh (and pointless) onboarding."""
-    try:
-        redirect_url = get_persona_config(tenant, persona_key).success_redirect_url
-    except Exception:
-        redirect_url = None
-    with Col(classes='accept-terminal'):
-        ui.icon('check_circle', color='positive', size='3em')
-        ui.label(_('Your onboarding has already been completed successfully.')).classes('page-title')
-        if redirect_url:
-            Button(_('Continue'), on_click=lambda: ui.navigate.to(redirect_url))
 
 
 @ui.page('/accept')
@@ -86,8 +74,8 @@ async def accept_invitation_page(invite_code: str = ""):
                 _code_entry_form(typed, render.refresh)
                 return
 
-            if inv.status == 'accepted':  # returning user — show success, not a fresh flow
-                _already_completed(t, inv.persona_key)
+            if inv.status == 'accepted':  # returning user — same welcome screen as in-session completion
+                render_welcome(t, inv.persona_key, inv.given_name)
                 return
             if inv.status == 'expired':  # nothing to onboard — dead-end, not a fresh flow
                 _terminal_error(_('This invitation has expired.'),

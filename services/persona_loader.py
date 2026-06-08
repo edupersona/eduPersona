@@ -19,6 +19,7 @@ from services.settings import get_tenant_config
 _PERSONA_KEYS = {
     "display_name", "steps", "mail", "success_redirect_url",
     "callback_url", "expected_params", "callback_outputs",
+    "completion_message", "cta_label",
 }
 
 
@@ -64,6 +65,8 @@ def _build_persona_config(raw: dict) -> PersonaConfig:
         callback_url=raw.get("callback_url"),
         expected_params=expected,
         callback_outputs=list(raw.get("callback_outputs") or []),
+        completion_message=dict(raw.get("completion_message") or {}),
+        cta_label=dict(raw.get("cta_label") or {}),
     )
 
 

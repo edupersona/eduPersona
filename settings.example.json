@@ -105,6 +105,14 @@
           ],
           "success_redirect_url": "https://example.org/lms/welcome",
           "callback_url": null,
+          "completion_message": {
+            "nl": "Je onboarding als gastdocent is voltooid. Je hebt nu toegang tot de leeromgeving.",
+            "en": "Your onboarding as a visiting lecturer is complete. You now have access to the learning environment."
+          },
+          "cta_label": {
+            "nl": "Naar de leeromgeving",
+            "en": "Go to the learning environment"
+          },
           "steps": [
             {
               "class": "OIDCLoginStep",
@@ -120,15 +128,6 @@
                   "url": "https://test.eduid.nl/home",
                   "hint": "Come back here after you've created it!"
                 }
-              }
-            },
-            {
-              "class": "FinalizeStep",
-              "id": "finalize",
-              "config": {
-                "title": "Stap 3. Toegang naar de applicatie",
-                "completed_text": "✓ Uw onboarding is voltooid!",
-                "disabled_text": "Voltooi eerst de vorige stappen"
               }
             }
           ]
@@ -158,6 +157,14 @@
           ],
           "success_redirect_url": "https://example.org/alumni/welcome",
           "callback_url": null,
+          "completion_message": {
+            "nl": "Je alumni-onboarding is voltooid. Welkom terug in de alumnicommunity!",
+            "en": "Your alumni onboarding is complete. Welcome back to the alumni community!"
+          },
+          "cta_label": {
+            "nl": "Naar het alumniportaal",
+            "en": "Go to the alumni portal"
+          },
           "steps": [
             {
               "class": "OIDCLoginStep",
@@ -189,15 +196,6 @@
                 "dob_min_year": 1960,
                 "dob_max_year": 1990,
                 "student_number_pattern": "^\\d{5}$"
-              }
-            },
-            {
-              "class": "FinalizeStep",
-              "id": "finalize",
-              "config": {
-                "title": "Stap 4. Toegang verleend",
-                "completed_text": "✓ Je alumni-onboarding is voltooid!",
-                "disabled_text": "Voltooi eerst de vorige stappen"
               }
             }
           ]

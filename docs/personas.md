@@ -20,6 +20,9 @@ is [`domain/persona.py`](../domain/persona.py) → `PersonaConfig`:
   `text` is a multiline string (renders as a textarea in the simulator; coerced like `string`).
 - `callback_outputs: [...]` — which `step_outputs` keys surface in the webhook.
 - `success_redirect_url`, `callback_url` — optional.
+- `completion_message: {lang: str}`, `cta_label: {lang: str}` — optional, localized
+  copy for the post-completion welcome screen (`render_welcome`). The CTA button
+  links to `success_redirect_url`; both fall back to translated defaults when unset.
 
 Personas live per-tenant under `settings.json` → `tenants.<t>.personas.<key>`
 (see `settings.example.json` for `gastdocent` + `alumnus`). They are loaded and
@@ -40,9 +43,10 @@ deprovisioning — those live in the client app's IAM/IGA.
 2. **Accept** — guest opens `/accept/{code}` ([`routes/accept.py`](../routes/accept.py)).
    `Steps` runs the persona's step cards. OIDC steps write verified userinfo to
    `state['outputs'][idp]`; non-OIDC steps to `state['outputs'][step_id]`.
-3. **Finalize** — `FinalizeStep` persists `state['outputs']` to
-   `Invitation.step_outputs`, then `accept_invitation` flips status and enqueues the
-   webhook.
+3. **Finalize** — once every step is done the orchestrator's built-in `_finalize`
+   persists `state['outputs']` to `Invitation.step_outputs`, then `accept_invitation`
+   flips status and enqueues the webhook. The guest then sees the persona welcome
+   screen (`render_welcome`) instead of any step card.
 4. **Callback** — [`services/webhook/payload.py:build_payload`](../services/webhook/payload.py)
    builds the envelope (universal fields + one `verifications` entry per
    `callback_outputs` key, read verbatim from `step_outputs`).

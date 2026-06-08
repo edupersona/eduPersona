@@ -100,7 +100,7 @@ translations: dict[str, dict[str, str]] = {
         'Welcome': 'Welkom',
         'Welcome{suffix}': 'Welkom{suffix}',
         'YES! I already have a (test!) eduID': 'JA! Ik heb al een (test!) eduID',
-        'Your onboarding has already been completed successfully.': 'Je onboarding is al succesvol afgerond.',
+        'Your onboarding has been completed successfully.': 'Je onboarding is succesvol afgerond.',
 
         # Registration (routes/register.py)
         'Could not send your request — please try again later': 'Je aanvraag kon niet worden verstuurd — probeer het later opnieuw',
