@@ -44,7 +44,7 @@ async def simulator_page(tenant: str = Depends(require_invite_auth)):
     _load_persona_defaults()
 
     with frame("simulator", tenant):
-        ui.label(_("Guest simulator")).classes("page-title")
+        ui.label(_("Guest data")).classes("page-title")
 
         with Col(classes="simulator-form"):
             persona_select = ui.select(options, label=_("Persona")) \
@@ -65,7 +65,7 @@ async def simulator_page(tenant: str = Depends(require_invite_auth)):
                 with ui_guard(_("Could not load persona parameters")):
                     expected = get_persona_config(tenant, key).expected_params
                     if expected:
-                        ui.label(_("Persona parameters")).classes("text")
+                        ui.label(_("Invitation parameters")).classes("parameters text")
                     for name, spec in expected.items():
                         label = name + (" *" if spec.required else "")
                         if spec.type == "bool":

@@ -251,6 +251,11 @@ a.btn-primary:hover {
   .simulator-form {
     gap: 0.6rem;
     max-width: 30rem;
+    .parameters {
+      font-size: 1.125rem;
+      font-weight: 600;
+      margin-top: 2rem;      
+    }
   }
 }
 
