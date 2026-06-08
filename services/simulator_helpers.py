@@ -40,9 +40,9 @@ def build_request_body(
     *,
     persona_key: str,
     email: str,
+    guest_id: str,
     given_name: str | None = None,
     family_name: str | None = None,
-    client_ref: str | None = None,
     sender_email: str | None = None,
     sender_name: str | None = None,
     callback_url: str | None = None,
@@ -50,15 +50,14 @@ def build_request_body(
 ) -> dict:
     """Assemble the POST /persona-invitations body, stripping empty optionals.
 
-    persona_key and email are always present; other top-level fields are included
-    only when non-empty; persona_params drops empty values and is omitted entirely
-    when nothing remains.
+    persona_key, email and guest_id are always present; other top-level fields are
+    included only when non-empty; persona_params drops empty values and is omitted
+    entirely when nothing remains.
     """
-    body: dict[str, Any] = {"persona_key": persona_key, "email": email}
+    body: dict[str, Any] = {"persona_key": persona_key, "email": email, "guest_id": guest_id}
     optionals = {
         "given_name": given_name,
         "family_name": family_name,
-        "client_ref": client_ref,
         "sender_email": sender_email,
         "sender_name": sender_name,
         "callback_url": callback_url,

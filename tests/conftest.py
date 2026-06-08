@@ -202,6 +202,6 @@ async def sample_invitation(test_tenant):
     from domain.invitations import create_invitation
 
     invitation = await create_invitation(
-        test_tenant, "gastdocent", "sample@example.org", given_name="Sample",
+        test_tenant, "gastdocent", "sample@example.org", "EMP-1", given_name="Sample",
     )
     return invitation["code"]

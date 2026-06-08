@@ -119,7 +119,7 @@ async def invitations_page(tenant: str = Depends(require_invite_auth)):
                     (_("Expires at"), none_as_text(item.get("expiry_date", ""))),
                     (_("Accepted at"), none_as_text(item.get("accepted_at", ""))),
                     (_("Code"), item.get("code")),
-                    (_("Client reference"), item.get("client_ref")),
+                    (_("Guest ID"), item.get("guest_id")),
                 ):
                     if value:
                         ui.label(f"{label}: {value}").classes("rdm-detail-text-sm")

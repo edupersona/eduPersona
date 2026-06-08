@@ -58,7 +58,7 @@ def build_payload(invitation: Invitation, tenant: str) -> dict:
         "tenant": tenant,
         "persona": invitation.persona_key,
         "invitation_code": invitation.code,
-        "client_ref": invitation.client_ref,
+        "guest_id": invitation.guest_id,
         "completed_at": _iso(invitation.accepted_at),
         "email": invitation.invitation_email,
         "persona_params": invitation.persona_params or {},

@@ -176,7 +176,7 @@ translations: dict[str, dict[str, str]] = {
         'For more info, contact name (optional)': 'naam van contact voor meer info (optioneel)',
         'For more info, mail to (optional)': 'mailadres voor meer info (optioneel)',
         'Guest': 'gast',
-        'Guest ID': 'userid',
+        'Guest ID': 'guest_id',
         'Invitation details': 'Details van de uitnodiging',
         'Inputs': 'Inputs',
         'Invitation email': 'uitnodiging (mail)',

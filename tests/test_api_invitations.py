@@ -20,16 +20,17 @@ def _no_real_mail(monkeypatch):
 
 
 async def _post(api_client, **body):
+    body.setdefault("guest_id", "EMP-1")  # required field; tests that care pass their own
     return await api_client.post(BASE, json=body)
 
 
 async def test_post_happy(api_client):
     r = await _post(api_client, persona_key="gastdocent", email="anna@example.org",
-                    given_name="Anna", client_ref="EMP-42")
+                    given_name="Anna", guest_id="EMP-42")
     assert r.status_code == 200
     data = r.json()["data"]
     assert data["persona_key"] == "gastdocent"
-    assert data["client_ref"] == "EMP-42"
+    assert data["guest_id"] == "EMP-42"
     assert data["status"] == "pending"
     assert data["accept_url"].endswith(f"/accept/{data['code']}")
     assert await Invitation.filter(code=data["code"]).count() == 1
@@ -47,6 +48,16 @@ async def test_post_invalid_email_400(api_client):
     assert r.json()["detail"]["error"]["code"] == "VALIDATION_ERROR"
 
 
+async def test_post_missing_guest_id_422(api_client):
+    r = await api_client.post(BASE, json={"persona_key": "gastdocent", "email": "a@example.org"})
+    assert r.status_code == 422  # required by the pydantic schema
+
+
+async def test_post_blank_guest_id_422(api_client):
+    r = await _post(api_client, persona_key="gastdocent", email="a@example.org", guest_id="   ")
+    assert r.status_code == 422  # StringConstraints strips → empty → rejected
+
+
 async def test_post_invalid_params_400(api_client):
     r = await _post(api_client, persona_key="gastdocent", email="a@example.org",
                     persona_params={"bogus": "x"})
@@ -54,18 +65,18 @@ async def test_post_invalid_params_400(api_client):
     assert r.json()["detail"]["error"]["code"] == "VALIDATION_ERROR"
 
 
-async def test_post_same_client_ref_two_rows(api_client):
-    a = (await _post(api_client, persona_key="gastdocent", email="a@example.org", client_ref="R1")).json()["data"]
-    b = (await _post(api_client, persona_key="gastdocent", email="a@example.org", client_ref="R1")).json()["data"]
+async def test_post_same_guest_id_two_rows(api_client):
+    a = (await _post(api_client, persona_key="gastdocent", email="a@example.org", guest_id="R1")).json()["data"]
+    b = (await _post(api_client, persona_key="gastdocent", email="a@example.org", guest_id="R1")).json()["data"]
     assert a["id"] != b["id"]
-    assert await Invitation.filter(client_ref="R1").count() == 2
+    assert await Invitation.filter(guest_id="R1").count() == 2
 
 
 async def test_list_filters(api_client):
-    await _post(api_client, persona_key="gastdocent", email="x@example.org", client_ref="R1")
-    await _post(api_client, persona_key="gastdocent", email="y@example.org", client_ref="R2")
-    # filter by client_ref
-    r = await api_client.get(BASE, params={"client_ref": "R1"})
+    await _post(api_client, persona_key="gastdocent", email="x@example.org", guest_id="R1")
+    await _post(api_client, persona_key="gastdocent", email="y@example.org", guest_id="R2")
+    # filter by guest_id
+    r = await api_client.get(BASE, params={"guest_id": "R1"})
     assert r.status_code == 200
     body = r.json()
     assert body["meta"]["total"] == 1

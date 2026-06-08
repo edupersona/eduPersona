@@ -4,7 +4,9 @@ The webhook callback (services/webhook/) owns the *core* completion flow. This m
 is a **separate, opt-in** capability: when a tenant configures a `scim` block, an
 accepted invitation also pushes the *bare verified user* — eduID identity from
 `Invitation.step_outputs` plus the invitation email — to the client's IGA via SCIM.
-No groups, no roles, no local Guest entity (those live in the client's IAM/IGA).
+The invitation's `guest_id` (the client's own identifier for the guest) maps to the
+SCIM `externalId`. No groups, no roles, no local Guest entity (those live in the
+client's IAM/IGA).
 
 Dormant by default: `push_verified_user` is a no-op unless the tenant's `scim` block
 is present and enabled, so importing or shipping this module costs nothing. The
@@ -44,7 +46,7 @@ class SCIMClient:
         email = user.get("email") or ""
         return self.User(
             id=scim_id,  # type: ignore
-            external_id=user.get("user_id"),  # type: ignore
+            external_id=user.get("guest_id"),  # client's identifier for the guest  # type: ignore
             user_name=user.get("user_id") or "",  # type: ignore
             name={  # type: ignore
                 "formatted": display_name,
@@ -57,23 +59,23 @@ class SCIMClient:
         )
 
     def create_or_update_user(self, user: dict) -> str | None:
-        """Upsert a SCIM User by externalId; return its SCIM id, or None on failure."""
-        user_id = user.get("user_id")
-        if not user_id:
+        """Upsert a SCIM User by externalId (the client's guest_id); return its SCIM id, or None."""
+        guest_id = user.get("guest_id")
+        if not guest_id:
             return None
         try:
-            search = self.SearchRequest(filter=f'externalId eq "{user_id}"')  # type: ignore
+            search = self.SearchRequest(filter=f'externalId eq "{guest_id}"')  # type: ignore
             existing = self.client.query(self.User, query_parameters=search)
             if existing and getattr(existing, "resources", None):  # type: ignore
                 scim_id = existing.resources[0].id  # type: ignore
                 self.client.replace(self._build_user(user, scim_id))
-                logger.info(f"SCIM: replaced user {user_id} (SCIM id {scim_id})")
+                logger.info(f"SCIM: replaced user (externalId {guest_id}, SCIM id {scim_id})")
                 return scim_id
             created = self.client.create(self._build_user(user))
-            logger.info(f"SCIM: created user {user_id} (SCIM id {getattr(created, 'id', None)})")
+            logger.info(f"SCIM: created user (externalId {guest_id}, SCIM id {getattr(created, 'id', None)})")
             return getattr(created, "id", None)
         except Exception as e:
-            logger.error(f"SCIM: upsert of user {user_id} failed: {e}")
+            logger.error(f"SCIM: upsert (externalId {guest_id}) failed: {e}")
             return None
 
 
@@ -89,6 +91,7 @@ def _bare_user_from_invitation(invitation, identity_key: str) -> dict:
     """Flatten an accepted invitation's verified eduID identity into a user dict."""
     identity: dict = (invitation.step_outputs or {}).get(identity_key, {})
     return {
+        "guest_id": invitation.guest_id,  # → SCIM externalId
         "user_id": identity.get("sub") or invitation.invitation_email,
         "given_name": identity.get("given_name") or invitation.given_name,
         "family_name": identity.get("family_name") or invitation.family_name,

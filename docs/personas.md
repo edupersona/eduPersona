@@ -55,7 +55,7 @@ deprovisioning — those live in the client app's IAM/IGA.
 `Invitation` ([`domain/models.py`](../domain/models.py)) is the only first-class
 entity (§"invitation is the only entity"). `persona_params` and `step_outputs` are
 JSON pass-throughs, never queried at SQL level. Cross-invitation grouping is a
-`WHERE invitation_email = ?` / `WHERE client_ref = ?` query, not a Guest join.
+`WHERE invitation_email = ?` / `WHERE guest_id = ?` query, not a Guest join.
 
 ## Adding a persona
 

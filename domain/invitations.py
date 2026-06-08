@@ -64,7 +64,7 @@ def invitation_to_dict(inv: Invitation) -> dict:
         "code": inv.code,
         "status": inv.status,
         "persona_key": inv.persona_key,
-        "client_ref": inv.client_ref,
+        "guest_id": inv.guest_id,
         "invitation_email": inv.invitation_email,
         "given_name": inv.given_name,
         "family_name": inv.family_name,
@@ -80,10 +80,10 @@ async def create_invitation(
     tenant: str,
     persona_key: str,
     email: str,
+    guest_id: str,
     *,
     given_name: Optional[str] = None,
     family_name: Optional[str] = None,
-    client_ref: Optional[str] = None,
     persona_params: Optional[dict] = None,
     sender_email: Optional[str] = None,
     sender_name: Optional[str] = None,
@@ -92,11 +92,14 @@ async def create_invitation(
 ) -> dict:
     """Create an invitation row directly (no Guest entity).
 
-    Validates the persona and its params via the loader (UnknownPersonaError /
-    PersonaParamsError, both ValueError). `callback_url` falls back to the persona's
-    configured default. `expiry_date` overrides the tenant default duration (naive →
-    treated as UTC). Re-invites are never deduplicated (§2.1).
+    `guest_id` (the client app's identifier for the guest) is required — it maps to
+    the SCIM externalId on provisioning. Validates the persona and its params via the
+    loader (UnknownPersonaError / PersonaParamsError, both ValueError). `callback_url`
+    falls back to the persona's configured default. `expiry_date` overrides the tenant
+    default duration (naive → treated as UTC). Re-invites are never deduplicated (§2.1).
     """
+    if not (guest_id := (guest_id or "").strip()):
+        raise ValueError("guest_id is required")
     cfg = get_persona_config(tenant, persona_key)          # UnknownPersonaError if absent
     coerced = validate_persona_params(cfg, persona_params)  # PersonaParamsError on violation
 
@@ -115,7 +118,7 @@ async def create_invitation(
         "persona_key": persona_key,
         "given_name": given_name,
         "family_name": family_name,
-        "client_ref": client_ref,
+        "guest_id": guest_id,
         "persona_params": coerced or None,
         "sender_email": sender_email,
         "sender_name": sender_name,

@@ -20,6 +20,7 @@ class Invitation(MultitenantRdmModel):
     or are written to step_outputs by the step cards. No Guest entity.
     """
     id = fields.IntField(primary_key=True)
+    guest_id = fields.CharField(max_length=255, db_index=True)  # client app's identifier for the guest (required)
     code = fields.CharField(max_length=32, unique=True, db_index=True)
     invitation_email = fields.CharField(max_length=255, db_index=True)
     given_name = fields.CharField(max_length=255, null=True)   # display string from client app; not verified
@@ -30,7 +31,6 @@ class Invitation(MultitenantRdmModel):
     status = fields.CharField(max_length=50, default="pending")  # see InvitationStatus
 
     persona_key = fields.CharField(max_length=64)
-    client_ref = fields.CharField(max_length=255, null=True, db_index=True)
     persona_params = fields.JSONField(null=True)   # payload pass-through, never SQL-queried (§3.1)
     sender_email = fields.CharField(max_length=255, null=True)
     sender_name = fields.CharField(max_length=255, null=True)

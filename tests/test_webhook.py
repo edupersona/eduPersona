@@ -36,7 +36,7 @@ def _persona(callback_outputs: list[str]) -> PersonaConfig:
 async def _mk_inv(tenant: str, **kw) -> Invitation:
     _n["i"] += 1
     base: dict = dict(
-        tenant=tenant, code=f"WBK{_n['i']}",
+        tenant=tenant, code=f"WBK{_n['i']}", guest_id=f"G{_n['i']}",
         invitation_email="anna@example.org", persona_key="gastdocent",
         callback_url="https://client.example.org/hook",
     )
@@ -49,7 +49,7 @@ async def _mk_inv(tenant: str, **kw) -> Invitation:
 async def test_payload_universal_fields_and_verifications(test_tenant, monkeypatch):
     monkeypatch.setattr(payload_mod, "get_persona_config", lambda t, k: _persona(["eduid"]))
     inv = await _mk_inv(
-        test_tenant, client_ref="EMP-42",
+        test_tenant, guest_id="EMP-42",
         persona_params={"department": "CS"}, accepted_at=FIXED,
         step_outputs={"eduid": {"sub": "abc", "uids": ["anna"]}},
     )
@@ -57,7 +57,7 @@ async def test_payload_universal_fields_and_verifications(test_tenant, monkeypat
     assert p["tenant"] == test_tenant
     assert p["persona"] == "gastdocent"
     assert p["invitation_code"] == inv.code
-    assert p["client_ref"] == "EMP-42"
+    assert p["guest_id"] == "EMP-42"
     assert p["email"] == "anna@example.org"
     assert p["persona_params"] == {"department": "CS"}
     assert p["completed_at"] == FIXED.isoformat()

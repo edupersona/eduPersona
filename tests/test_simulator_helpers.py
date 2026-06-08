@@ -9,23 +9,23 @@ from services.simulator_helpers import _default_for_spec, _persona_options, buil
 
 
 def test_build_request_body_minimal():
-    body = build_request_body(persona_key="gastdocent", email="a@example.org")
-    assert body == {"persona_key": "gastdocent", "email": "a@example.org"}
+    body = build_request_body(persona_key="gastdocent", email="a@example.org", guest_id="EMP-1")
+    assert body == {"persona_key": "gastdocent", "email": "a@example.org", "guest_id": "EMP-1"}
 
 
 def test_build_request_body_strips_empty_optionals():
     body = build_request_body(
         persona_key="gastdocent", email="a@example.org",
-        given_name="", family_name=None, client_ref="EMP-1",
+        given_name="", family_name=None, guest_id="EMP-1",
     )
     assert "given_name" not in body
     assert "family_name" not in body
-    assert body["client_ref"] == "EMP-1"
+    assert body["guest_id"] == "EMP-1"
 
 
 def test_build_request_body_includes_names_when_present():
     body = build_request_body(
-        persona_key="gastdocent", email="a@example.org",
+        persona_key="gastdocent", email="a@example.org", guest_id="EMP-1",
         given_name="Anna", family_name="Verver",
     )
     assert body["given_name"] == "Anna"
@@ -34,7 +34,7 @@ def test_build_request_body_includes_names_when_present():
 
 def test_build_request_body_drops_empty_persona_params():
     body = build_request_body(
-        persona_key="gastdocent", email="a@example.org",
+        persona_key="gastdocent", email="a@example.org", guest_id="EMP-1",
         persona_params={"department": "", "personal_message": None},
     )
     assert "persona_params" not in body
@@ -42,7 +42,7 @@ def test_build_request_body_drops_empty_persona_params():
 
 def test_build_request_body_keeps_nonempty_persona_params():
     body = build_request_body(
-        persona_key="gastdocent", email="a@example.org",
+        persona_key="gastdocent", email="a@example.org", guest_id="EMP-1",
         persona_params={"department": "CS", "personal_message": ""},
     )
     assert body["persona_params"] == {"department": "CS"}

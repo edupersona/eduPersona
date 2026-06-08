@@ -8,9 +8,10 @@
     DELETE /api/v1/{tenant}/invitations/{id}        - revoke
 """
 from datetime import datetime
+from typing import Annotated
 
 from fastapi import Query, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, StringConstraints
 
 from ng_rdm.utils import logger
 from ng_rdm.utils.helpers import now_utc, utc_datetime_to_str
@@ -28,9 +29,10 @@ from .common import (
 class InvitationCreate(BaseModel):
     persona_key: str
     email: str
+    # client app's identifier for the guest (required, non-empty; → SCIM externalId)
+    guest_id: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
     given_name: str | None = None
     family_name: str | None = None
-    client_ref: str | None = None
     persona_params: dict | None = None
     sender_email: str | None = None
     sender_name: str | None = None
@@ -46,7 +48,7 @@ class InvitationData(BaseModel):
     code: str
     status: str
     persona_key: str
-    client_ref: str | None = None
+    guest_id: str
     invitation_email: str
     given_name: str | None = None
     family_name: str | None = None
@@ -140,7 +142,7 @@ def _to_api_dict(inv: Invitation, request: Request) -> dict:
         "code": inv.code,
         "status": inv.status,
         "persona_key": inv.persona_key,
-        "client_ref": inv.client_ref,
+        "guest_id": inv.guest_id,
         "invitation_email": inv.invitation_email,
         "given_name": inv.given_name,
         "family_name": inv.family_name,
@@ -180,7 +182,7 @@ async def create_invitation_endpoint(tenant: str, data: InvitationCreate, reques
         invitation = await create_invitation(
             tenant, data.persona_key, data.email,
             given_name=data.given_name, family_name=data.family_name,
-            client_ref=data.client_ref, persona_params=data.persona_params,
+            guest_id=data.guest_id, persona_params=data.persona_params,
             sender_email=data.sender_email, sender_name=data.sender_name,
             callback_url=data.callback_url, expiry_date=data.expiry_date,
         )
@@ -205,7 +207,7 @@ async def list_invitations(
     request: Request,
     status: str | None = None,
     persona_key: str | None = None,
-    client_ref: str | None = None,
+    guest_id: str | None = None,
     email: str | None = None,
     limit: int = Query(default=50, ge=1, le=500),
     offset: int = Query(default=0, ge=0),
@@ -219,8 +221,8 @@ async def list_invitations(
         qs = qs.filter(status=status)
     if persona_key:
         qs = qs.filter(persona_key=persona_key)
-    if client_ref:
-        qs = qs.filter(client_ref=client_ref)
+    if guest_id:
+        qs = qs.filter(guest_id=guest_id)
     if email:
         qs = qs.filter(invitation_email=email)
 

@@ -1,8 +1,8 @@
 """Phase D — persona-mode invitation lifecycle (create / accept / apply-to-state).
 
-Shape B: rows written directly, no Guest. Validates persona + params, leaves
-guest_id NULL, fires the callback only when configured, and never auto-skips
-across personas for the same email. enqueue_callback is patched to observe calls.
+Shape B: rows written directly, no Guest. Validates persona + params, requires a
+guest_id, fires the callback only when configured, and never auto-skips across
+personas for the same email. enqueue_callback is patched to observe calls.
 """
 
 from unittest.mock import AsyncMock
@@ -30,9 +30,10 @@ def _persona(callback_url=None) -> PersonaConfig:
 # --- create ---
 
 async def test_create_happy_minimal(test_tenant):
-    out = await create_invitation(test_tenant, "gastdocent", "anna@example.org")
+    out = await create_invitation(test_tenant, "gastdocent", "anna@example.org", "EMP-1")
     assert out["status"] == "pending"
     assert out["persona_key"] == "gastdocent"
+    assert out["guest_id"] == "EMP-1"
     assert out["given_name"] is None
     inv = await Invitation.get(id=out["id"])
     assert inv.persona_key == "gastdocent"  # Shape B: invitation is the only entity
@@ -41,43 +42,48 @@ async def test_create_happy_minimal(test_tenant):
 
 async def test_create_with_names_and_params(test_tenant):
     out = await create_invitation(
-        test_tenant, "gastdocent", "anna@example.org",
-        given_name="Anna", family_name="Verver", client_ref="EMP-42",
+        test_tenant, "gastdocent", "anna@example.org", "EMP-42",
+        given_name="Anna", family_name="Verver",
         persona_params={"department": "CS"},
     )
     assert out["given_name"] == "Anna"
     assert out["family_name"] == "Verver"
-    assert out["client_ref"] == "EMP-42"
+    assert out["guest_id"] == "EMP-42"
     assert out["persona_params"] == {"department": "CS"}
 
 
 async def test_create_unknown_persona_raises(test_tenant):
     with pytest.raises(UnknownPersonaError):
-        await create_invitation(test_tenant, "nope", "a@example.org")
+        await create_invitation(test_tenant, "nope", "a@example.org", "EMP-1")
 
 
 async def test_create_invalid_params_raises(test_tenant):
     with pytest.raises(PersonaParamsError):
         await create_invitation(
-            test_tenant, "gastdocent", "a@example.org", persona_params={"bogus": "x"},
+            test_tenant, "gastdocent", "a@example.org", "EMP-1", persona_params={"bogus": "x"},
         )
+
+
+async def test_create_blank_guest_id_raises(test_tenant):
+    with pytest.raises(ValueError):
+        await create_invitation(test_tenant, "gastdocent", "a@example.org", "  ")
 
 
 async def test_create_callback_url_falls_back_to_persona_default(test_tenant, monkeypatch):
     monkeypatch.setattr(ip, "get_persona_config", lambda t, k: _persona(callback_url="https://persona-default/hook"))
-    out = await create_invitation(test_tenant, "gastdocent", "a@example.org")
+    out = await create_invitation(test_tenant, "gastdocent", "a@example.org", "EMP-1")
     assert out["callback_url"] == "https://persona-default/hook"
     # explicit override wins
-    out2 = await create_invitation(test_tenant, "gastdocent", "a@example.org", callback_url="https://override/hook")
+    out2 = await create_invitation(test_tenant, "gastdocent", "a@example.org", "EMP-1", callback_url="https://override/hook")
     assert out2["callback_url"] == "https://override/hook"
 
 
-async def test_same_client_ref_produces_independent_rows(test_tenant):
-    a = await create_invitation(test_tenant, "gastdocent", "a@example.org", client_ref="REF1")
-    b = await create_invitation(test_tenant, "gastdocent", "a@example.org", client_ref="REF1")
+async def test_same_guest_id_produces_independent_rows(test_tenant):
+    a = await create_invitation(test_tenant, "gastdocent", "a@example.org", "REF1")
+    b = await create_invitation(test_tenant, "gastdocent", "a@example.org", "REF1")
     assert a["id"] != b["id"]
     assert a["code"] != b["code"]
-    assert await Invitation.filter(client_ref="REF1").count() == 2
+    assert await Invitation.filter(guest_id="REF1").count() == 2
 
 
 # --- accept ---
@@ -85,7 +91,7 @@ async def test_same_client_ref_produces_independent_rows(test_tenant):
 async def test_accept_flips_status_and_no_callback_when_unconfigured(test_tenant, monkeypatch):
     enqueue = AsyncMock()
     monkeypatch.setattr(ip, "enqueue_callback", enqueue)
-    out = await create_invitation(test_tenant, "gastdocent", "a@example.org")  # no callback_url
+    out = await create_invitation(test_tenant, "gastdocent", "a@example.org", "EMP-1")  # no callback_url
     ok = await accept_invitation(test_tenant, out["code"])
     assert ok is True
     inv = await Invitation.get(id=out["id"])
@@ -98,7 +104,7 @@ async def test_accept_enqueues_callback_when_configured(test_tenant, monkeypatch
     enqueue = AsyncMock()
     monkeypatch.setattr(ip, "enqueue_callback", enqueue)
     out = await create_invitation(
-        test_tenant, "gastdocent", "a@example.org", callback_url="https://client/hook",
+        test_tenant, "gastdocent", "a@example.org", "EMP-1", callback_url="https://client/hook",
     )
     await accept_invitation(test_tenant, out["code"])
     enqueue.assert_awaited_once_with(test_tenant, out["id"])
@@ -108,7 +114,7 @@ async def test_accept_callback_failure_does_not_raise(test_tenant, monkeypatch):
     boom = AsyncMock(side_effect=RuntimeError("boom"))
     monkeypatch.setattr(ip, "enqueue_callback", boom)
     out = await create_invitation(
-        test_tenant, "gastdocent", "a@example.org", callback_url="https://client/hook",
+        test_tenant, "gastdocent", "a@example.org", "EMP-1", callback_url="https://client/hook",
     )
     ok = await accept_invitation(test_tenant, out["code"])
     assert ok is True  # acceptance committed despite callback failure
@@ -118,7 +124,7 @@ async def test_accept_callback_failure_does_not_raise(test_tenant, monkeypatch):
 async def test_accept_unknown_or_non_pending_returns_false(test_tenant, monkeypatch):
     monkeypatch.setattr(ip, "enqueue_callback", AsyncMock())
     assert await accept_invitation(test_tenant, "no-such-code") is False
-    out = await create_invitation(test_tenant, "gastdocent", "a@example.org")
+    out = await create_invitation(test_tenant, "gastdocent", "a@example.org", "EMP-1")
     await accept_invitation(test_tenant, out["code"])
     assert await accept_invitation(test_tenant, out["code"]) is False  # already accepted
 
@@ -130,8 +136,8 @@ async def test_multi_persona_same_email_independent(test_tenant, monkeypatch):
     enqueue = AsyncMock()
     monkeypatch.setattr(ip, "enqueue_callback", enqueue)
 
-    a = await create_invitation(test_tenant, "gastdocent", "same@example.org")
-    b = await create_invitation(test_tenant, "alumnus", "same@example.org")
+    a = await create_invitation(test_tenant, "gastdocent", "same@example.org", "EMP-1")
+    b = await create_invitation(test_tenant, "alumnus", "same@example.org", "EMP-2")
     assert a["id"] != b["id"]
 
     await accept_invitation(test_tenant, a["code"])
@@ -145,7 +151,7 @@ async def test_multi_persona_same_email_independent(test_tenant, monkeypatch):
 
 async def test_apply_invite_to_state(test_tenant):
     out = await create_invitation(
-        test_tenant, "gastdocent", "anna@example.org",
+        test_tenant, "gastdocent", "anna@example.org", "EMP-1",
         given_name="Anna", family_name="Verver", persona_params={"department": "CS"},
     )
     state: dict = {}

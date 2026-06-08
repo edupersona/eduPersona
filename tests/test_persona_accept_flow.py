@@ -51,7 +51,7 @@ async def test_lifecycle_persists_outputs_and_fires_callback(test_tenant, monkey
     enqueue = AsyncMock()
     monkeypatch.setattr(ip, "enqueue_callback", enqueue)
     created = await create_invitation(
-        test_tenant, "gastdocent", "anna@example.org", callback_url="https://client/hook",
+        test_tenant, "gastdocent", "anna@example.org", "EMP-1", callback_url="https://client/hook",
     )
     steps = await _build_steps(test_tenant, created["code"])
 
@@ -70,7 +70,7 @@ async def test_lifecycle_persists_outputs_and_fires_callback(test_tenant, monkey
 async def test_lifecycle_no_callback_when_unconfigured(test_tenant, monkeypatch):
     enqueue = AsyncMock()
     monkeypatch.setattr(ip, "enqueue_callback", enqueue)
-    created = await create_invitation(test_tenant, "gastdocent", "a@example.org")  # no callback_url
+    created = await create_invitation(test_tenant, "gastdocent", "a@example.org", "EMP-1")  # no callback_url
     steps = await _build_steps(test_tenant, created["code"])
 
     await _drive_oidc(steps, "eduid_login", USERINFO)
@@ -84,7 +84,7 @@ async def test_lifecycle_no_callback_when_unconfigured(test_tenant, monkeypatch)
 
 async def test_oidc_output_keyed_by_idp_not_step_id(test_tenant, monkeypatch):
     monkeypatch.setattr(ip, "enqueue_callback", AsyncMock())
-    created = await create_invitation(test_tenant, "gastdocent", "a@example.org")
+    created = await create_invitation(test_tenant, "gastdocent", "a@example.org", "EMP-1")
     steps = await _build_steps(test_tenant, created["code"])
     oidc = await _oidc_step(steps)
     await oidc.result_handler(USERINFO, {}, {})
@@ -97,7 +97,7 @@ async def test_oidc_output_keyed_by_idp_not_step_id(test_tenant, monkeypatch):
 @pytest.mark.ui
 async def test_accept_persona_page_renders(user, test_tenant):
     created = await create_invitation(
-        test_tenant, "gastdocent", "anna@example.org", given_name="Anna",
+        test_tenant, "gastdocent", "anna@example.org", "EMP-1", given_name="Anna",
     )
     await user.open(f"/accept/{created['code']}")
     await user.should_see("Welkom")      # heading (Dutch)
@@ -115,7 +115,7 @@ async def test_accept_persona_invalid_code_shows_form(user, test_tenant):
 @pytest.mark.ui
 async def test_accept_already_accepted_shows_completed_screen(user, test_tenant):
     """Reopening an accepted invitation shows a success screen, not a fresh flow."""
-    created = await create_invitation(test_tenant, "gastdocent", "anna@example.org")
+    created = await create_invitation(test_tenant, "gastdocent", "anna@example.org", "EMP-1")
     await Invitation.filter(tenant=test_tenant, code=created["code"]).update(status="accepted")
     await user.open(f"/accept/{created['code']}")
     await user.should_see("al succesvol afgerond")  # completed message
@@ -125,7 +125,7 @@ async def test_accept_already_accepted_shows_completed_screen(user, test_tenant)
 @pytest.mark.ui
 async def test_accept_expired_shows_dead_end(user, test_tenant):
     """An expired invitation gets a dead-end screen, not a fresh flow."""
-    created = await create_invitation(test_tenant, "gastdocent", "anna@example.org")
+    created = await create_invitation(test_tenant, "gastdocent", "anna@example.org", "EMP-1")
     await Invitation.filter(tenant=test_tenant, code=created["code"]).update(status="expired")
     await user.open(f"/accept/{created['code']}")
     await user.should_see("verlopen")       # expired message
@@ -138,11 +138,11 @@ async def test_expire_overdue_invitations_sweep(test_tenant):
     from ng_rdm.utils.helpers import now_utc
     from domain.invitations import expire_overdue_invitations
 
-    overdue = await create_invitation(test_tenant, "gastdocent", "a@example.org",
+    overdue = await create_invitation(test_tenant, "gastdocent", "a@example.org", "EMP-1",
                                       expiry_date=now_utc() - timedelta(days=1))
-    future = await create_invitation(test_tenant, "gastdocent", "b@example.org",
+    future = await create_invitation(test_tenant, "gastdocent", "b@example.org", "EMP-1",
                                      expiry_date=now_utc() + timedelta(days=5))
-    never = await create_invitation(test_tenant, "gastdocent", "c@example.org",
+    never = await create_invitation(test_tenant, "gastdocent", "c@example.org", "EMP-1",
                                     expiry_date=None)  # falls to tenant default (14d, future)
 
     n = await expire_overdue_invitations(test_tenant)
@@ -156,7 +156,7 @@ async def test_zero_duration_never_expires(test_tenant, monkeypatch):
     """expiry_duration <= 0 → expiry_date None (never expires)."""
     import domain.invitations as di
     monkeypatch.setattr(di, "get_tenant_config", lambda t: {"expiry_duration": 0})
-    created = await create_invitation(test_tenant, "gastdocent", "a@example.org")
+    created = await create_invitation(test_tenant, "gastdocent", "a@example.org", "EMP-1")
     assert (await Invitation.get(tenant=test_tenant, code=created["code"])).expiry_date is None
 
 
@@ -165,7 +165,7 @@ async def test_accept_past_expiry_swept_on_claim(user, test_tenant):
     """A still-pending invite past its expiry_date is swept to expired on claim → dead-end."""
     from datetime import timedelta
     from ng_rdm.utils.helpers import now_utc
-    created = await create_invitation(test_tenant, "gastdocent", "anna@example.org",
+    created = await create_invitation(test_tenant, "gastdocent", "anna@example.org", "EMP-1",
                                       expiry_date=now_utc() - timedelta(hours=1))
     await user.open(f"/accept/{created['code']}")
     await user.should_see("verlopen")
@@ -177,7 +177,7 @@ async def test_accept_missing_persona_shows_friendly_card(user, test_tenant, mon
     """A valid invite whose persona is gone → friendly card, not a 500 (ui_guard)."""
     from services.persona_loader import UnknownPersonaError
 
-    created = await create_invitation(test_tenant, "gastdocent", "anna@example.org")
+    created = await create_invitation(test_tenant, "gastdocent", "anna@example.org", "EMP-1")
 
     def _boom(tenant, key):
         raise UnknownPersonaError(f"Unknown persona '{key}'")

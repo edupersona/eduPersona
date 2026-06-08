@@ -25,7 +25,7 @@ async def simulator_page(tenant: str = Depends(require_invite_auth)):
 
     form: dict = {
         "persona_key": next(iter(options), None),
-        "email": "", "given_name": "", "family_name": "", "client_ref": "",
+        "email": "", "given_name": "", "family_name": "", "guest_id": "",
         "sender_email": tenant_mail.get("sender_email", ""),
         "sender_name": tenant_mail.get("sender_name", ""),
         "callback_url": "",
@@ -52,7 +52,7 @@ async def simulator_page(tenant: str = Depends(require_invite_auth)):
             ui.input(_("Email"), placeholder="guest@example.org").bind_value(form, "email").classes("form-input")
             ui.input(_("Given name")).bind_value(form, "given_name").classes("form-input")
             ui.input(_("Family name")).bind_value(form, "family_name").classes("form-input")
-            ui.input(_("Client reference")).bind_value(form, "client_ref").classes("form-input")
+            ui.input(_("Guest ID")).bind_value(form, "guest_id").classes("form-input")
             ui.input(_("Sender email")).bind_value(form, "sender_email").classes("form-input")
             ui.input(_("Sender name")).bind_value(form, "sender_name").classes("form-input")
             ui.input(_("Callback URL")).bind_value(form, "callback_url").classes("form-input")
@@ -89,13 +89,15 @@ async def simulator_page(tenant: str = Depends(require_invite_auth)):
             result = Col(classes="result-area")
 
             async def submit() -> None:
-                if not form["persona_key"] or not (form["email"] or "").strip():
-                    ui.notify(_("Persona and email are required"), type="negative")
+                if not form["persona_key"] or not (form["email"] or "").strip() \
+                        or not (form["guest_id"] or "").strip():
+                    ui.notify(_("Persona, email and Guest ID are required"), type="negative")
                     return
                 body = build_request_body(
                     persona_key=form["persona_key"], email=form["email"].strip(),
+                    guest_id=form["guest_id"].strip(),
                     given_name=form["given_name"], family_name=form["family_name"],
-                    client_ref=form["client_ref"], sender_email=form["sender_email"],
+                    sender_email=form["sender_email"],
                     sender_name=form["sender_name"], callback_url=form["callback_url"],
                     persona_params=form["persona_params"],
                 )

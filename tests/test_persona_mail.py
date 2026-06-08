@@ -19,7 +19,7 @@ from services.persona_loader import UnknownPersonaError
 def _inv(**kw) -> dict:
     base = {
         "id": 1, "code": "ABC123", "status": "pending",
-        "persona_key": "gastdocent", "client_ref": None,
+        "persona_key": "gastdocent", "guest_id": "EMP-1",
         "invitation_email": "anna@example.org",
         "given_name": "Anna", "family_name": "Verver",
         "persona_params": {}, "callback_url": None,
