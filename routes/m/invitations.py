@@ -9,7 +9,7 @@ from nicegui import ui, html
 
 from ng_rdm.components import (
     Button, Column, TableConfig,
-    ViewStack, ListTable, DetailCard,
+    ViewStack, ListTable, DetailCard, Dialog,
     none_as_text, Col, Row, Separator,
 )
 
@@ -33,7 +33,8 @@ def render_status(row: dict) -> None:
 @ui.page("/m/{tenant}/invitations")
 async def invitations_page(tenant: str = Depends(require_invite_auth)):
     invitation_store = get_invitation_store(tenant)
-    ui_state = {"viewstack": {}, "detail_card": {}}
+    ui_state = {"viewstack": {}, "detail_card": {}, "params_dlg": {}, "facts_dlg": {}}
+    dlg_data: dict = {}  # current item's params/outputs, fed to the dialog bodies
 
     def persona_label(key: str) -> str:
         try:
@@ -43,6 +44,49 @@ async def invitations_page(tenant: str = Depends(require_invite_auth)):
 
     def render_persona(row: dict) -> None:
         ui.label(persona_label(row.get("persona_key") or ""))
+
+    def render_kv(data: dict) -> None:
+        with html.div().classes("facts-kv"):
+            for k, v in data.items():
+                ui.label(str(k)).classes("facts-kv-key")
+                ui.label(str(v)).classes("facts-kv-val")
+
+    # Detail-view dialogs are built ONCE here, not inside the refreshable detail
+    # body — Dialog attaches its backdrop to the client root layout, so rebuilding
+    # it per detail-navigation would leak backdrops. Bodies refresh from dlg_data.
+    @ui.refreshable
+    def params_body() -> None:
+        params = dlg_data.get("params") or {}
+        render_kv(params) if params else ui.label(_("No parameters.")).classes("rdm-detail-text-sm")
+
+    @ui.refreshable
+    def facts_body() -> None:
+        outputs = dlg_data.get("outputs") or {}
+        if not outputs:
+            ui.label(_("No collected facts.")).classes("rdm-detail-text-sm")
+        for section, facts in outputs.items():
+            with html.div().classes("facts-section"):
+                ui.label(section).classes("rdm-detail-section-label")
+                render_kv(facts) if isinstance(facts, dict) else ui.label(str(facts)).classes("facts-kv-val")
+
+    params_dlg = Dialog(state=ui_state["params_dlg"], title=_("Invitation parameters"),
+                        dialog_class="facts-dialog")
+    with params_dlg:
+        params_body()
+    facts_dlg = Dialog(state=ui_state["facts_dlg"], title=_("Verified facts"),
+                       dialog_class="facts-dialog")
+    with facts_dlg:
+        facts_body()
+
+    def open_params(item: dict) -> None:
+        dlg_data["params"] = item.get("persona_params") or {}
+        params_body.refresh()
+        params_dlg.open()
+
+    def open_facts(item: dict) -> None:
+        dlg_data["outputs"] = item.get("step_outputs") or {}
+        facts_body.refresh()
+        facts_dlg.open()
 
     table_config = TableConfig(
         columns=[
@@ -82,15 +126,13 @@ async def invitations_page(tenant: str = Depends(require_invite_auth)):
 
             with Col(classes="rdm-detail-column"):
                 ui.label("Persona: " + persona_label(item.get("persona_key") or "")).classes("rdm-detail-section-label")
-                params = item.get("persona_params") or {}
-                if params:
-                    with ui.expansion(_("Invitation parameters"), icon="tune"):
-                        for k, v in params.items():
-                            ui.label(f"{k}: {v}").classes("rdm-detail-text-sm")
-                outputs = item.get("step_outputs") or {}
-                if outputs:
-                    with ui.expansion(_("Collected facts"), icon="verified"):
-                        ui.code(str(outputs)).classes("rdm-detail-text-sm")
+                with Row(classes="rdm-detail-actions"):
+                    if item.get("persona_params"):
+                        Button(_("Inputs") + "…", color="secondary", icon="input",
+                               on_click=lambda _e, i=item: open_params(i))
+                    if item.get("step_outputs"):
+                        Button(_("Outputs") + "…", color="secondary", icon="output",
+                               on_click=lambda _e, i=item: open_facts(i))
 
     async def do_resend(item: dict) -> None:
         inv = await Invitation.get_or_none(id=item.get("id"), tenant=tenant)

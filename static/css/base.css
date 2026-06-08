@@ -6,6 +6,8 @@
 
 :root {
   --rdm-font-size-sm: 16px !important;
+  --max-width: 1250px;   /* main page band width (body, header) */
+  --page-inset: 127px;   /* left inset of .page-content; collapses < 768px */
 }
 
 body {
@@ -16,8 +18,8 @@ body {
 
 /* Page structure */
 .page-content {
-  width: calc(100% - 127px);
-  margin-left: 127px !important;
+  width: calc(100% - var(--page-inset));
+  margin-left: var(--page-inset) !important;
   row-gap: 0;
 }
 
@@ -390,6 +392,32 @@ a.btn-primary:hover {
   .status-chip-revoked  { background: #e5e7eb; color: #374151; }
 }
 
+/* Invitation-detail dialogs (parameters / collected facts). Mirror the main page
+   band — left-aligned, --max-width wide, inset by --page-inset — so the dialog
+   lines up with .page-content (inset collapses < 768px, see media query below).
+   Scoped on the dialog's own class, not .invitations-page: Dialog mounts its
+   backdrop on the client root layout, a sibling of the .invitations-page Col. */
+.rdm-dialog-backdrop:has(.facts-dialog) {
+  justify-content: flex-start;
+  padding-left: var(--page-inset);
+}
+
+.rdm-dialog-backdrop .facts-dialog.rdm-dialog {
+  max-width: calc(var(--max-width) - var(--page-inset));
+}
+
+.facts-dialog {
+  .facts-section { margin-bottom: var(--rdm-spacing-lg); }
+
+  .facts-kv {
+    display: grid;
+    grid-template-columns: minmax(120px, 35%) 1fr;
+    gap: 4px var(--rdm-spacing-lg);
+  }
+  .facts-kv-key { font-size: 14px; color: var(--rdm-text-secondary); }
+  .facts-kv-val { font-size: 14px; word-break: break-word; }
+}
+
 /* GuestStatus chips */
 .status-chip-active_roles { background: #dbeafe; color: #1e40af; }
 .status-chip-invited        { background: #fef3c7; color: #92400e; }
@@ -670,6 +698,11 @@ textarea.q-field__native {
   /* remove left margin */
     width: 100%;
     margin-left: 0 !important;
+  }
+
+  /* dialogs collapse their inset in lockstep with .page-content */
+  .rdm-dialog-backdrop:has(.facts-dialog) {
+    padding-left: 0;
   }
 }
 
