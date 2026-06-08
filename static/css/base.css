@@ -4,6 +4,10 @@
    Layout
    ======================================== */
 
+:root {
+  --rdm-font-size-sm: 16px !important;
+}
+
 body {
   overflow-y: scroll;
   max-width: var(--max-width, 1250px);
@@ -156,6 +160,10 @@ a.btn-primary:hover {
 
 .icon-primary {
   color: var(--rdm-primary);
+}
+
+.icon-error {
+  color: var(--rdm-danger);
 }
 
 /* ========================================
@@ -313,6 +321,21 @@ a.btn-primary:hover {
 .rdm-tabs {
   margin-top: var(--rdm-spacing-lg);
 }
+
+/* ------------------- */
+/* rdm overrides */
+.rdm-detail-column {
+  width: 45%;
+}
+
+.rdm-detail-section-label {
+  font-size: 18px !important;
+}
+
+/* .rdm-detail-text-sm {
+  font-size: 14px !important;
+} */
+/* ------------------- */
 
 .rdm-detail-actions {
   display: flex;
@@ -538,18 +561,31 @@ a.btn-primary:hover {
     margin: 5px 0;
   }
   .rdm-table {
-    .rdm-cell-invited_at, .rdm-cell-accepted_at {
+    .rdm-cell-invited_at, .rdm-cell-accepted_at, .rdm-cell-expiry_date {
       font-size: 1rem;
     }
   }
 }
 
 .accept-page {
-  .step-card { 
+  /* Content blocks share the step-card footprint: full width up to 800px.
+     The code-entry gate overrides max-width — a single input reads better narrow. */
+  .accept-form, .accept-terminal, .step-card {
     width: 100%;
     max-width: 800px;
     margin-bottom: 1rem;
+  }
 
+  /* Code-entry gate + terminal (expired / completed / error) screens */
+  .accept-form, .accept-terminal {
+    gap: 0.75rem;
+  }
+
+  .accept-form {
+    max-width: 24rem;
+  }
+
+  .step-card {
     .step-card-row {
       display: flex;
       align-items: center;

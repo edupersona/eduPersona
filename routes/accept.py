@@ -22,7 +22,7 @@ def _code_entry_form(typed: dict, on_submit) -> None:
     runs before any step list exists — never a step card. The input binds to `typed`;
     submitting re-renders the page in place (no navigation), and validation happens
     once, in the page's `render` refreshable."""
-    with Col(style='gap: 0.75rem; max-width: 24rem;'):
+    with Col(classes='accept-form'):
         ui.label(_('Accept invitation')).classes('page-title')
         ui.input(
             _('Enter your invitation code here'),
@@ -31,11 +31,13 @@ def _code_entry_form(typed: dict, on_submit) -> None:
         Button(_('Confirm code'), on_click=on_submit)
 
 
-def _invite_expired() -> None:
-    """Terminal screen for an expired invitation — nothing left to onboard."""
-    ui.icon('error_outline', size='3em').classes('text-red-600')
-    ui.label(_('This invitation has expired.')).classes('page-title')
-    ui.label(_('Please contact the sender of your invitation.')).classes('page-subtitle')
+def _terminal_error(title: str, subtitle: str) -> None:
+    """Terminal red-icon screen for an invitation that can't be onboarded
+    (expired, or unprocessable due to bad persona/step config)."""
+    with Col(classes='accept-terminal'):
+        ui.icon('error_outline', size='3em').classes('icon-error')
+        ui.label(title).classes('page-title')
+        ui.label(subtitle).classes('page-subtitle')
 
 
 def _already_completed(tenant: str, persona_key: str) -> None:
@@ -45,7 +47,7 @@ def _already_completed(tenant: str, persona_key: str) -> None:
         redirect_url = get_persona_config(tenant, persona_key).success_redirect_url
     except Exception:
         redirect_url = None
-    with Col(style='gap: 0.75rem;'):
+    with Col(classes='accept-terminal'):
         ui.icon('check_circle', color='positive', size='3em')
         ui.label(_('Your onboarding has already been completed successfully.')).classes('page-title')
         if redirect_url:
@@ -88,7 +90,8 @@ async def accept_invitation_page(invite_code: str = ""):
                 _already_completed(t, inv.persona_key)
                 return
             if inv.status == 'expired':  # nothing to onboard — dead-end, not a fresh flow
-                _invite_expired()
+                _terminal_error(_('This invitation has expired.'),
+                                _('Please contact the sender of your invitation.'))
                 return
 
             steps = None
@@ -96,9 +99,8 @@ async def accept_invitation_page(invite_code: str = ""):
                 cfg = get_persona_config(t, inv.persona_key)
                 steps = Steps(t, state, {"steps": cfg.steps})
             if steps is None:
-                ui.icon('error_outline', size='3em').classes('text-red-600')
-                ui.label(_('This invitation cannot be processed right now.')).classes('page-title')
-                ui.label(_('Please contact the sender of your invitation.')).classes('page-subtitle')
+                _terminal_error(_('This invitation cannot be processed right now.'),
+                                _('Please contact the sender of your invitation.'))
                 return
 
             if await apply_invite_to_state(t, state, code):

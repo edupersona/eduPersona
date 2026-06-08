@@ -81,16 +81,15 @@ async def invitations_page(tenant: str = Depends(require_invite_auth)):
                         ui.label(f"{label}: {value}").classes("rdm-detail-text-sm")
 
             with Col(classes="rdm-detail-column"):
-                ui.label(_("Persona")).classes("rdm-detail-section-label")
-                ui.label(persona_label(item.get("persona_key") or "")).classes("rdm-detail-text-sm")
+                ui.label("Persona: " + persona_label(item.get("persona_key") or "")).classes("rdm-detail-section-label")
                 params = item.get("persona_params") or {}
                 if params:
-                    with ui.expansion(_("Persona parameters"), icon="tune"):
+                    with ui.expansion(_("Invitation parameters"), icon="tune"):
                         for k, v in params.items():
                             ui.label(f"{k}: {v}").classes("rdm-detail-text-sm")
                 outputs = item.get("step_outputs") or {}
                 if outputs:
-                    with ui.expansion(_("Verified facts"), icon="verified"):
+                    with ui.expansion(_("Collected facts"), icon="verified"):
                         ui.code(str(outputs)).classes("rdm-detail-text-sm")
 
     async def do_resend(item: dict) -> None:
