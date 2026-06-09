@@ -11,8 +11,7 @@ is [`domain/persona.py`](../domain/persona.py) → `PersonaConfig`:
 
 - `display_name: {lang: label}` — UI/mail label.
 - `steps: [...]` — the onboarding step cards to run (same shape the step framework
-  consumes; see [`domain/step_cards.py`](../domain/step_cards.py) and
-  [`docs/step_cards.md`](step_cards.md)).
+  consumes; see [`steps/`](../steps/) and [`docs/step_cards.md`](step_cards.md)).
 - `mail: {layout, body}` — per-tenant layout frame + per-persona body, both Jinja2
   under [`services/postmark/templates/`](../services/postmark/templates/).
 - `expected_params: {name: ExpectedParam}` — schema for client-supplied
@@ -67,5 +66,5 @@ JSON pass-throughs, never queried at SQL level. Cross-invitation grouping is a
 1. Add a block under `tenants.<t>.personas.<key>` in `settings.json` (and the
    `settings.example.json` template).
 2. Add a body template `services/postmark/templates/personas/<key>.jinja2`.
-3. If the persona introduces a new step type, register it in
-   `STEP_CARD_CLASSES` in `domain/step_cards.py`.
+3. If the persona introduces a new step type, add a module under `steps/cards/`
+   (subclass `StepCard`); it auto-registers by class name. See `docs/step_cards.md`.

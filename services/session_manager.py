@@ -11,7 +11,7 @@ _DEFAULTS = {
     'invitation_id': None,
     'role_assignments': [],
     'role_name': '',
-    # Per-step bookkeeping owned by domain.step_cards.Steps; see cline_docs/step_cards.md
+    # Per-step bookkeeping owned by steps.Steps; see docs/step_cards.md
     'outcomes': {},
     'outputs': {},
     'oidc_state': {},

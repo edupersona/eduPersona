@@ -6,7 +6,7 @@ from ng_rdm.components import Col, Button
 
 from domain.invitations import apply_invite_to_state, expire_overdue_invitations, find_invitation_tenant
 from domain.models import Invitation
-from domain.step_cards import Steps, render_welcome
+from steps import Steps, render_welcome
 from services.i18n import _
 from services.persona_loader import get_persona_config
 from services.session_manager import initialize_state

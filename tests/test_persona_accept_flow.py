@@ -17,7 +17,7 @@ from domain.invitations import (
     create_invitation,
 )
 from domain.models import Invitation
-from domain.step_cards import OIDCLoginStep, Steps, StepResult
+from steps import OIDCLoginStep, Steps, StepResult
 from services.persona_loader import get_persona_config
 
 USERINFO = {"sub": "abc", "uids": ["anna"], "given_name": "Anna"}
@@ -55,15 +55,17 @@ async def test_lifecycle_persists_outputs_and_fires_callback(test_tenant, monkey
     )
     steps = await _build_steps(test_tenant, created["code"])
 
-    # simulate both OIDC returns (eduID then institutional) → finalize runs
+    # simulate both OIDC returns (eduID then institutional) → review gate
     await _drive_oidc(steps, "eduid_login", USERINFO)
     await _drive_oidc(steps, "institutional_login", INST_USERINFO)
+    assert steps.all_steps_done and not steps.is_complete  # gated on Register
+    await steps.register()  # the review step's 'Register' button → finalize
 
     inv = await Invitation.get(id=created["id"])
     assert inv.status == "accepted"
     # OIDC output keyed by IdP name, not step id (gotcha 10)
     assert inv.step_outputs == {"eduid": USERINFO, "institutional": INST_USERINFO}
-    assert steps.is_complete  # built-in finalize ran once every step was done
+    assert steps.is_complete  # finalize ran on Register, once every step was done
     enqueue.assert_awaited_once_with(test_tenant, created["id"])
 
 
@@ -75,6 +77,7 @@ async def test_lifecycle_no_callback_when_unconfigured(test_tenant, monkeypatch)
 
     await _drive_oidc(steps, "eduid_login", USERINFO)
     await _drive_oidc(steps, "institutional_login", INST_USERINFO)
+    await steps.register()
 
     inv = await Invitation.get(id=created["id"])
     assert inv.status == "accepted"
@@ -100,6 +103,7 @@ async def test_completion_does_not_bleed_across_invitations(test_tenant, monkeyp
     steps = await _build_steps(test_tenant, g["code"])
     await _drive_oidc(steps, "eduid_login", USERINFO)
     await _drive_oidc(steps, "institutional_login", INST_USERINFO)
+    await steps.register()
     assert steps.is_complete  # finished as gastdocent
 
     # Same tab state, fresh alumnus invite (different code) → progress must reset

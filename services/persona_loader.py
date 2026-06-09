@@ -118,7 +118,7 @@ def validate_personas_or_raise() -> None:
     `RuntimeError` listing every problem — the server must not start with broken config.
     """
     from jinja2 import Environment, FileSystemLoader
-    from domain.step_cards import Steps
+    from steps import Steps
     from services.postmark.postmark import _TEMPLATE_DIR
     from services.settings import config
 

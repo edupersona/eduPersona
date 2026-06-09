@@ -78,7 +78,7 @@ translations: dict[str, dict[str, str]] = {
         'Sender email': 'mailadres afzender',
         'Sender name': 'naam van afzender',
 
-        # Accept page & Step cards (routes/accept.py, domain/step_cards.py)
+        # Accept page & Step cards (routes/accept.py, steps/)
         'Accept invitation': 'Uitnodiging accepteren',
         'as': 'als',
         'Change number / resend': 'Ander nummer / opnieuw versturen',
@@ -98,6 +98,7 @@ translations: dict[str, dict[str, str]] = {
         "No - I don't have a (test!) eduID yet": 'Nee - ik heb nog geen (test!) eduID',
         'No matching alumni record found — check your details and try again.': 'Geen alumnigegevens gevonden — controleer je gegevens en probeer het opnieuw.',
         'Please contact the sender of your invitation.': 'Neem contact op met de afzender van je uitnodiging.',
+        'Register': 'Registreren',
         'Send code': 'Code versturen',
         'Student number': 'Studentnummer',
         'This invitation cannot be processed right now.': 'Deze uitnodiging kan op dit moment niet worden verwerkt.',

@@ -623,7 +623,24 @@ a.btn-primary:hover {
     max-width: 24rem;
   }
 
+  /* Review gate: the 'Register' confirmation shown once every step is done */
+  .accept-register {
+    width: 100%;
+    max-width: 800px;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
   .step-card {
+    .step-primary-button, .step-secondary-button, .step-expansion {
+      margin-top: 0.5rem;
+    }
+    .step-secondary-hint {
+      font-size: 0.95rem;
+    }
+    .text-success {
+      margin-top: 0.5rem;
+    }
     .step-card-row {
       display: flex;
       align-items: center;

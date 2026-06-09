@@ -7,7 +7,7 @@ A missing mandatory step-config key must surface as a clear `ValueError` at cons
 import pytest
 
 import services.persona_loader as pl
-from domain.step_cards import Steps
+from steps import Steps
 
 
 def test_missing_step_config_key_raises_clear_valueerror():

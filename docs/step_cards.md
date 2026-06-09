@@ -1,8 +1,8 @@
 # Step cards & the onboarding orchestrator
 
-The `/accept` flow is a sequence of step cards driven by `domain.step_cards.Steps`. Each step is described in `settings.tenants.<t>.scenarios.<key>.steps` and resolved to a Python class via the `STEP_CARD_CLASSES` registry.
+The `/accept` flow is a sequence of step cards driven by `steps.Steps`. Each step is described in `settings.tenants.<t>.scenarios.<key>.steps` and resolved to a Python class via the `STEP_CARD_CLASSES` registry, which every `StepCard` subclass joins automatically (keyed by class name = the `"class"` field in settings.json).
 
-This document codifies the contract. The implementation lives in [`domain/step_cards.py`](../domain/step_cards.py).
+This document codifies the contract. The code lives in the top-level [`steps/`](../steps/) package — `base.py` (the `StepCard` contract + `StepResult` + registry), `orchestrator.py` (`Steps`, `render_welcome`), and one module per card under [`steps/cards/`](../steps/cards/). The package is the extension surface: adopters compose steps in settings.json and add new cards under `cards/`.
 
 ## Single-session invariant
 
@@ -43,8 +43,8 @@ Returning `None` from `act()` means "no immediate transition" — useful for OID
 
 - Read scenario context: `self.state['invite_code']`, `self.state['role_assignments']`, etc., and `self.tenant`.
 - Read its own and prior steps' outputs: `self.state['outputs'][some_step_id]`.
-- Invoke domain services scoped to `(tenant, invite_code)` — `update_guest_from_userinfo`, `accept_invitation`, OIDC, mail.
-- Trigger its own re-render via the orchestrator (`record` does this).
+- Invoke domain services scoped to `(tenant, invite_code)` — OIDC, mail, etc.
+- Finish itself via `await self.complete(output)` / `await self.fail(...)` (which also trigger the orchestrator re-render).
 
 ## What a step MAY NOT do
 
@@ -66,13 +66,13 @@ Owns:
 - The completion map `state['outcomes']` and output store `state['outputs']`.
 - Prerequisite evaluation — positional ("all prior steps completed or skipped").
 - The single state-mutation funnel `record(step_id, result)`.
-- The terminal hook `_maybe_finalize()` — runs the built-in `_finalize()` side effect once *every* step is in a terminal-OK state.
+- The review gate + terminal hook `register()` — once *every* step is in a terminal-OK state (`all_steps_done`) the render shows a **Register** button; clicking it runs the built-in `_finalize()` side effect.
 
-Steps must call `await self.steps.record(self.step_id, result)` whenever they want to signal an outcome.
+Steps signal outcomes via `await self.complete(output)` / `await self.fail(error, notify=...)` — or, for a single-button step, by returning a `StepResult` from `act()`. Both funnel through the orchestrator's `record(step_id, result)` internally; cards never call `record` or touch `state['outcomes']` directly.
 
 ## Finalization & the welcome screen
 
-Finalization is **not** a step — it's a built-in orchestrator side effect (`Steps._finalize`): once every step is `completed`/`skipped`, it persists `state['outputs']` to `Invitation.step_outputs` and calls `accept_invitation` (which fires the webhook callback). Idempotent — guarded by `state['completed']`/`state['finalize_failed']` within a session and by the invitation's own status across sessions.
+Finalization is **not** a step — it's a built-in orchestrator side effect (`Steps._finalize`): it persists `state['outputs']` to `Invitation.step_outputs` and calls `accept_invitation` (which fires the webhook callback). It does **not** run automatically when the last step finishes. Instead, once every step is `completed`/`skipped` (`Steps.all_steps_done`), the orchestrator renders a **review gate** — the completed cards plus a primary **Register** button — so the guest can review the collected data before anything is sent. Clicking Register calls `Steps.register()`, which runs `_finalize()`. Idempotent — guarded by `state['completed']`/`state['finalize_failed']` within a session and by the invitation's own status across sessions.
 
 On success the orchestrator's `render()` stops showing step cards and renders `render_welcome(tenant, persona_key, given_name)` — a per-persona, localized success screen (`PersonaConfig.completion_message` + `cta_label`, CTA linking to `success_redirect_url`). The same `render_welcome` is reused by `routes/accept.py` for a returning user who reopens an already-accepted invitation, so both paths render identically.
 
@@ -82,13 +82,13 @@ Today every tenant has a single scenario keyed `"default"`. The structure (`tena
 
 ## Adding a new step card
 
-1. Subclass `StepCard`. Implement `render_enabled()` at minimum; override `render_completed()` if you need a richer success view.
-2. If the step takes a user action: override `act()` to return a `StepResult`.
-3. If the step has an out-of-band durable marker (verification-style): override `is_already_done()` with a cheap DB read.
-4. Register the class in `STEP_CARD_CLASSES`.
+1. Add a module under `steps/cards/` defining a `StepCard` subclass, and list it in `steps/cards/__init__.py`. It auto-registers by class name — no registry edit.
+2. Implement `render_enabled()` (your free-form canvas; use `with self.form_column():` for the standard single-column form chrome, which also renders `help_text`). Override `render_completed()` for a richer success view.
+3. Finish the step with `await self.complete(output)` / `await self.fail(error, notify=...)`. For a single-button step you may instead override `act()` to return a `StepResult`.
+4. If the step has an out-of-band durable marker (verification-style): override `is_already_done()` with a cheap DB read.
 5. Add an entry to the relevant scenario in `settings.json` (and `settings.example.json`). All copy, IdP names, URLs go in `config` — never hardcoded in Python.
 
-A step card is a free-form NiceGUI canvas: a multi-part *transaction* (enter a value → trigger an action → confirm → done) can live entirely inside `render_enabled`, driven by reactive bindings — `bind_value` for inputs, `bind_visibility` off a `self.state` flag to reveal/hide parts as it progresses — and completes with a single `record()`. No sub-step machinery; the whole exchange is one orchestrator step. `VerifyMobileStep` is the worked example (number → simulated code via `ui.notify` → verify), keeping transient values (`state['code_sent']`, the generated code) out of `outputs`.
+A step card is a free-form NiceGUI canvas: a multi-part *transaction* (enter a value → trigger an action → confirm → done) can live entirely inside `render_enabled`, driven by reactive bindings — `bind_value` for inputs, `bind_visibility` off a `self.state` flag to reveal/hide parts as it progresses — and completes with a single `self.complete()`. No sub-step machinery; the whole exchange is one orchestrator step. `VerifyMobileStep` is the worked example (number → simulated code via `ui.notify` → verify), keeping transient values (`state['code_sent']`, the generated code) out of `outputs`.
 
 ## State keys (per-session, `app.storage.tab`)
 

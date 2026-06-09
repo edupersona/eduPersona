@@ -8,16 +8,18 @@ step's own output. `ui.notify` is patched out — it needs a NiceGUI client cont
 import re
 
 import pytest
+from nicegui import ui
 
-import domain.step_cards as sc
 from domain.invitations import apply_invite_to_state, create_invitation
-from domain.step_cards import Steps, VerifyMobileStep
+from steps import Steps, VerifyMobileStep
 from services.persona_loader import get_persona_config
 
 
 @pytest.fixture(autouse=True)
 def _silence_notify(monkeypatch):
-    monkeypatch.setattr(sc.ui, "notify", lambda *a, **k: None)
+    # ui.notify needs a client context; patch the shared module attribute so every
+    # caller (the card and StepCard.fail) is covered regardless of import location.
+    monkeypatch.setattr(ui, "notify", lambda *a, **k: None)
 
 
 async def _mobile_step(test_tenant) -> tuple[Steps, VerifyMobileStep]:
