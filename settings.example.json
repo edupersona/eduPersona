@@ -91,7 +91,7 @@
             "body": "personas/gastdocent.jinja2"
           },
           "expected_params": {
-            "department": {
+            "faculteit": {
               "type": "string",
               "required": false
             },
@@ -106,8 +106,8 @@
           "success_redirect_url": "https://example.org/lms/welcome",
           "callback_url": null,
           "completion_message": {
-            "nl": "Je onboarding als gastdocent is voltooid. Je hebt nu toegang tot de leeromgeving.",
-            "en": "Your onboarding as a visiting lecturer is complete. You now have access to the learning environment."
+            "nl": "Je hebt nu als gastdocent toegang tot de leeromgeving.",
+            "en": "You now have access to the learning environment as a visiting lecturer."
           },
           "cta_label": {
             "nl": "Naar de leeromgeving",
@@ -119,15 +119,39 @@
               "id": "eduid_login",
               "config": {
                 "idp": "eduid",
-                "title": "Stap 2. Inloggen met eduID (let op: gebruik je TEST eduID)",
+                "title": "Stap 1. Inloggen met eduID (let op: gebruik je TEST eduID)",
                 "completed_text": "✓ Ingelogd met (test-)eduID",
-                "disabled_text": "Voltooi eerst stap 1",
                 "primary_button_label": "YES! I already have a (test!) eduID",
                 "secondary_button": {
                   "label": "No - I don't have a (test!) eduID yet",
                   "url": "https://test.eduid.nl/home",
                   "hint": "Come back here after you've created it!"
                 }
+              }
+            },
+            {
+              "class": "VerifyMfaStep",
+              "id": "verify_mfa",
+              "config": {
+                "primary_button_label": "eduID app testen...",
+                "title": "Stap 2. Inloggen met eduID app (simulatie van MFA-controle)",
+                "completed_text": "✓ eduID app is correct geïnstalleerd",
+                "disabled_text": "Voltooi eerst stap 1",
+                "dialog_title": "Dummy MFA test",
+                "confirm_button_label": "JA, ik heb de eduID app geïnstalleerd",
+                "acr_value": "https://refeds.org/profile/mfa",
+                "target_output": "eduid"
+              }
+            },
+            {
+              "class": "OIDCLoginStep",
+              "id": "institutional_login",
+              "config": {
+                "idp": "institutional",
+                "primary_button_label": "Inloggen bij instelling...",
+                "title": "Stap 3. Verificatie met instellingsaccount (tip: professor5/professor5)",
+                "completed_text": "✓ Institutioneel ingelogd",
+                "disabled_text": "Voltooi eerst stap 2"
               }
             }
           ]
@@ -141,12 +165,7 @@
             "layout": "layouts/hvh.jinja2",
             "body": "personas/alumnus.jinja2"
           },
-          "expected_params": {
-            "personal_message": {
-              "type": "text",
-              "required": false
-            }
-          },
+          "expected_params": {},
           "callback_outputs": [
             "eduid",
             "verify_mobile",
@@ -155,8 +174,8 @@
           "success_redirect_url": "https://example.org/alumni/welcome",
           "callback_url": null,
           "completion_message": {
-            "nl": "Je alumni-onboarding is voltooid. Welkom terug in de alumnicommunity!",
-            "en": "Your alumni onboarding is complete. Welcome back to the alumni community!"
+            "nl": "Je hebt nu toegang tot het portaal voor alumni.",
+            "en": "You now have access to the alumni portal."
           },
           "cta_label": {
             "nl": "Naar het alumniportaal",
@@ -168,15 +187,26 @@
               "id": "eduid_login",
               "config": {
                 "idp": "eduid",
-                "title": "Stap 2. Inloggen met eduID (let op: gebruik je TEST eduID)",
+                "title": "Stap 1. Inloggen met eduID (let op: gebruik je TEST eduID)",
                 "completed_text": "✓ Ingelogd met (test-)eduID",
-                "disabled_text": "Voltooi eerst stap 1",
                 "primary_button_label": "YES! I already have a (test!) eduID",
                 "secondary_button": {
                   "label": "No - I don't have a (test!) eduID yet",
                   "url": "https://test.eduid.nl/home",
                   "hint": "Come back here after you've created it!"
                 }
+              }
+            },
+            {
+              "class": "VerifyAlumniDb",
+              "id": "alumni_db",
+              "config": {
+                "title": "Stap 2. Verifieer je gegevens in onze alumni-database",
+                "completed_text": "✓ Alumnigegevens geverifieerd",
+                "disabled_text": "Voltooi eerst stap 1",
+                "help_text": "Voer je geboortedatum en zescijferige studentnummer in.",
+                "primary_button_label": "Verifiëren",
+                "student_number_pattern": "^\\d{6}$"
               }
             },
             {
@@ -192,22 +222,6 @@
                 "send_button_label": "Send code",
                 "verify_button_label": "Verify",
                 "resend_label": "Change number / resend"
-              }
-            },
-            {
-              "class": "VerifyAlumniDb",
-              "id": "alumni_db",
-              "config": {
-                "title": "Stap 4. Verifieer je gegevens in onze alumnidatabase",
-                "completed_text": "✓ Alumnigegevens geverifieerd",
-                "disabled_text": "Voltooi eerst stap 3",
-                "help_text": "Voer je geboortedatum en vijfcijferige studentnummer in zoals bekend bij onze alumniadministratie.",
-                "primary_button_label": "Verify alumni status",
-                "dob_label": "Date of birth",
-                "student_number_label": "Student number",
-                "dob_min_year": 1960,
-                "dob_max_year": 1990,
-                "student_number_pattern": "^\\d{5}$"
               }
             }
           ]

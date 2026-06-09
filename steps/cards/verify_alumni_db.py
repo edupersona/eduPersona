@@ -16,7 +16,7 @@ STUDENT_NR_PATTERN = r'^\d{6}$'  # zes cijfers
 DUMMY_ALUMNUS_ID = 'A203920'
 
 class VerifyAlumniDb(StepCard):
-    """Verify alumni status against a (simulated) records lookup."""
+    """Verify alumni status against a (simulated) records lookup using date of birth and student number."""
 
     def __init__(self, config: dict):
         super().__init__(config)

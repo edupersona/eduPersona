@@ -17,7 +17,7 @@ from domain.invitations import (
     create_invitation,
 )
 from domain.models import Invitation
-from steps import OIDCLoginStep, Steps, StepResult
+from steps import OIDCLoginStep, Steps
 from services.persona_loader import get_persona_config
 
 USERINFO = {"sub": "abc", "uids": ["anna"], "given_name": "Anna"}
@@ -36,8 +36,6 @@ async def _build_steps(tenant, code):
     await apply_invite_to_state(tenant, state, code)
     cfg = get_persona_config(tenant, "gastdocent")
     steps = Steps(tenant, state, {"steps": cfg.steps})
-    # mirror the route: first step (verify_invite) is auto-recorded completed
-    await steps.record(steps.step_instances[0].step_id, StepResult("completed"))
     return steps
 
 
