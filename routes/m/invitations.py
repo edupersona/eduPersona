@@ -70,11 +70,11 @@ async def invitations_page(tenant: str = Depends(require_invite_auth)):
                 render_kv(facts) if isinstance(facts, dict) else ui.label(str(facts)).classes("facts-kv-val")
 
     params_dlg = Dialog(state=ui_state["params_dlg"], title=_("Invitation parameters"),
-                        dialog_class="facts-dialog")
+                        dialog_class="panel-dialog facts-dialog")
     with params_dlg:
         params_body()
     facts_dlg = Dialog(state=ui_state["facts_dlg"], title=_("Verified facts"),
-                       dialog_class="facts-dialog")
+                       dialog_class="panel-dialog facts-dialog")
     with facts_dlg:
         facts_body()
 

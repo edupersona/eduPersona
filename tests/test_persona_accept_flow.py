@@ -92,6 +92,42 @@ async def test_oidc_output_keyed_by_idp_not_step_id(test_tenant, monkeypatch):
     assert "eduid_login" not in steps.state["outputs"]  # step_id is NOT used as the output key
 
 
+async def test_completion_does_not_bleed_across_invitations(test_tenant, monkeypatch):
+    """Opening a different invitation in the same tab resets onboarding progress —
+    persona A's completion must never carry into persona B's fresh flow."""
+    monkeypatch.setattr(ip, "enqueue_callback", AsyncMock())
+    g = await create_invitation(test_tenant, "gastdocent", "anna@example.org", "EMP-1")
+    steps = await _build_steps(test_tenant, g["code"])
+    await _drive_oidc(steps, "eduid_login", USERINFO)
+    await _drive_oidc(steps, "institutional_login", INST_USERINFO)
+    assert steps.is_complete  # finished as gastdocent
+
+    # Same tab state, fresh alumnus invite (different code) → progress must reset
+    a = await create_invitation(test_tenant, "alumnus", "anna@example.org", "EMP-2")
+    assert await apply_invite_to_state(test_tenant, steps.state, a["code"])
+    assert steps.state.get("completed") is not True
+    assert steps.state["outcomes"] == {}
+    assert steps.state["outputs"] == {}
+
+    # A fresh orchestrator for the alumnus invite is NOT complete — it onboards anew
+    cfg = get_persona_config(test_tenant, "alumnus")
+    alumnus = Steps(test_tenant, steps.state, {"steps": cfg.steps})
+    await alumnus.startup()
+    assert not alumnus.is_complete
+
+
+async def test_same_invitation_reload_preserves_progress(test_tenant, monkeypatch):
+    """Re-applying the SAME invite code (e.g. the OIDC round-trip) keeps in-flight steps."""
+    monkeypatch.setattr(ip, "enqueue_callback", AsyncMock())
+    g = await create_invitation(test_tenant, "gastdocent", "anna@example.org", "EMP-1")
+    steps = await _build_steps(test_tenant, g["code"])
+    await _drive_oidc(steps, "eduid_login", USERINFO)  # one step done, not finished
+
+    assert await apply_invite_to_state(test_tenant, steps.state, g["code"])
+    assert steps.outcomes.get("eduid_login") == "completed"  # preserved across reload
+    assert steps.state["outputs"].get("eduid") == USERINFO
+
+
 # --- one NiceGUI render check (route comes from main.py registration) ---
 
 @pytest.mark.ui

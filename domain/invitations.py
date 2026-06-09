@@ -167,11 +167,23 @@ async def apply_invite_to_state(tenant: str, state: dict, code: str) -> bool:
 
     Sets invite_code, invitation_id, persona_key, persona_params, guest_email,
     given_name, family_name. Pure mutation.
+
+    When the tab switches to a *different* invitation, clears the orchestrator-owned
+    onboarding progress (outcomes/outputs/completion flags) so persona A's status never
+    bleeds into persona B — each invitation onboards from scratch. Gated on the
+    invitation changing, so the OIDC round-trip (same code, page reloads mid-flow)
+    keeps in-progress steps.
     """
     inv = await Invitation.get_or_none(tenant=tenant, code=code.strip())
     if inv is None:
         logger.warning(f"apply_invite_to_state: invalid code attempted: {code}")
         return False
+
+    if state.get("invitation_id") != inv.id:
+        state["outcomes"] = {}
+        state["outputs"] = {}
+        state.pop("completed", None)
+        state.pop("finalize_failed", None)
 
     state["invite_code"] = inv.code
     state["invitation_id"] = inv.id

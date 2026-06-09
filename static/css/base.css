@@ -397,20 +397,25 @@ a.btn-primary:hover {
   .status-chip-revoked  { background: #e5e7eb; color: #374151; }
 }
 
-/* Invitation-detail dialogs (parameters / collected facts). Mirror the main page
-   band — left-aligned, --max-width wide, inset by --page-inset — so the dialog
-   lines up with .page-content (inset collapses < 768px, see media query below).
-   Scoped on the dialog's own class, not .invitations-page: Dialog mounts its
-   backdrop on the client root layout, a sibling of the .invitations-page Col. */
-.rdm-dialog-backdrop:has(.facts-dialog) {
+/* Canonical overlay-dialog pattern (`panel-dialog`) — the established way we do
+   dialogs (see cline_docs/styling.md). Mirrors the main page band: top, left-aligned,
+   --max-width wide, inset by --page-inset, so the dialog lines up with .page-content
+   instead of floating screen-centered (inset collapses < 768px, see media query below).
+   Scoped on the dialog's own class, not a page class: Dialog mounts its backdrop on
+   the client root layout, a sibling of the page Col. Usage:
+   Dialog(dialog_class="panel-dialog"); add a content class alongside for body styling
+   (e.g. "panel-dialog facts-dialog"). */
+.rdm-dialog-backdrop:has(.panel-dialog) {
   justify-content: flex-start;
   padding-left: var(--page-inset);
 }
 
-.rdm-dialog-backdrop .facts-dialog.rdm-dialog {
+.rdm-dialog-backdrop .panel-dialog.rdm-dialog {
   max-width: calc(var(--max-width) - var(--page-inset));
 }
 
+/* Invitation-detail dialog bodies (parameters / collected facts) — content only;
+   position + size come from panel-dialog. */
 .facts-dialog {
   .facts-section { margin-bottom: var(--rdm-spacing-lg); }
 
@@ -706,7 +711,7 @@ textarea.q-field__native {
   }
 
   /* dialogs collapse their inset in lockstep with .page-content */
-  .rdm-dialog-backdrop:has(.facts-dialog) {
+  .rdm-dialog-backdrop:has(.panel-dialog) {
     padding-left: 0;
   }
 }
