@@ -164,6 +164,7 @@
           },
           "callback_outputs": [
             "eduid",
+            "verify_mobile",
             "alumni_db"
           ],
           "success_redirect_url": "https://example.org/alumni/welcome",
@@ -194,12 +195,27 @@
               }
             },
             {
+              "class": "VerifyMobileStep",
+              "id": "verify_mobile",
+              "config": {
+                "title": "Stap 3. Verifieer je mobiele nummer",
+                "completed_text": "✓ Mobiel nummer geverifieerd",
+                "disabled_text": "Voltooi eerst stap 2",
+                "help_text": "Voer je mobiele nummer in. Je ontvangt een code die je hieronder invult.",
+                "mobile_label": "Mobile number",
+                "code_label": "Verification code",
+                "send_button_label": "Send code",
+                "verify_button_label": "Verify",
+                "resend_label": "Change number / resend"
+              }
+            },
+            {
               "class": "VerifyAlumniDb",
               "id": "alumni_db",
               "config": {
-                "title": "Stap 3. Verifieer je gegevens in onze alumnidatabase",
+                "title": "Stap 4. Verifieer je gegevens in onze alumnidatabase",
                 "completed_text": "✓ Alumnigegevens geverifieerd",
-                "disabled_text": "Voltooi eerst stap 2",
+                "disabled_text": "Voltooi eerst stap 3",
                 "help_text": "Voer je geboortedatum en vijfcijferige studentnummer in zoals bekend bij onze alumniadministratie.",
                 "primary_button_label": "Verify alumni status",
                 "dob_label": "Date of birth",

@@ -11,6 +11,7 @@ accepts (firing the webhook). Completion then renders a persona welcome screen
 (render_welcome) instead of any step card. No Guest entity.
 """
 import re
+import secrets
 from dataclasses import dataclass
 from typing import Literal
 
@@ -143,9 +144,7 @@ class OIDCLoginStep(StepCard):
         self.help_text: str | None = config.get('help_text')
 
     async def act(self) -> StepResult | None:
-        if not self.tenant:
-            logger.error("Tenant not set in step card")
-            return StepResult('failed', error='tenant not set')
+        assert self.tenant
         await start_oidc_login(
             tenant=self.tenant,
             idp=self.idp,
@@ -254,6 +253,88 @@ class VerifyAlumniDb(StepCard):
             })
 
 
+class VerifyMobileStep(StepCard):
+    """Verify a mobile number by a self-contained code exchange, all inside one step.
+
+    The card is a free-form reactive canvas: an "enter number" section and an "enter
+    code" section, toggled by the `state['code_sent']` flag via bind_visibility. Pressing
+    "Send code" generates a one-time code and surfaces it via ui.notify (no real SMS);
+    entering it back records completion. The code is ephemeral (in-memory, single-session);
+    is_already_done stays default False. Writes its payload to state['outputs'][step_id]."""
+
+    CODE_LENGTH = 4  # code constant, not config
+
+    def __init__(self, config: dict):
+        super().__init__(config)
+        self.help_text: str | None = config.get('help_text')
+        self.mobile_label: str = config.get('mobile_label', 'Mobile number')
+        self.code_label: str = config.get('code_label', 'Verification code')
+        self.send_button_label: str = config.get('send_button_label', 'Send code')
+        self.verify_button_label: str = config.get('verify_button_label', 'Verify')
+        self.resend_label: str = config.get('resend_label', 'Change number / resend')
+        self.phone_pattern: str = config.get('phone_pattern', r'^\+?[0-9\s\-]{7,15}$')
+        self._code: str | None = None
+
+    def _number_valid(self, value: str) -> bool:
+        return bool(re.match(self.phone_pattern, (value or '').strip()))
+
+    def _send_code(self) -> None:
+        if not self._number_valid(self.state.get('mobile_number') or ''):
+            ui.notify(_('Enter a valid mobile number'), type='negative')
+            return
+        self._code = ''.join(secrets.choice('0123456789') for _i in range(self.CODE_LENGTH))
+        self.state['mobile_code'] = ''
+        ui.notify(_('Enter code: {code}', code=self._code))  # no real SMS
+        self.state['code_sent'] = True
+
+    def _reset(self) -> None:
+        self._code = None
+        self.state['code_sent'] = False
+
+    async def _verify(self) -> None:
+        if not self._code or (self.state.get('mobile_code') or '').strip() != self._code:
+            ui.notify(_('Incorrect code — please try again.'), type='negative')
+            return
+        if self.steps:
+            await self.steps.record(
+                self.step_id,
+                StepResult('completed', output={'mobile': (self.state.get('mobile_number') or '').strip()}),
+            )
+
+    def render_enabled(self, state: dict) -> None:
+        with Col(style='gap: 0.75rem; max-width: 24rem;'):
+            if self.help_text:
+                ui.label(_(self.help_text)).classes('text')
+            number_box = Col(style='gap: 0.75rem;')
+            number_box.element.bind_visibility_from(self.state, 'code_sent', value=False)
+            with number_box:
+                ui.input(
+                    label=_(self.mobile_label),
+                    placeholder='+31 6 12345678',
+                    validation={_('Enter a valid mobile number'): lambda v: self._number_valid(v)},
+                ).bind_value(self.state, 'mobile_number') \
+                 .props('type=tel inputmode=tel').classes('form-input')
+                Button(_(self.send_button_label), on_click=self._send_code).style('margin-top: 0.5rem;')
+            code_box = Col(style='gap: 0.75rem;')
+            code_box.element.bind_visibility_from(self.state, 'code_sent')
+            with code_box:
+                ui.input(
+                    label=_(self.code_label),
+                    placeholder='1234',
+                    validation={_('Four digits required'): lambda v: bool(re.fullmatch(r'\d{4}', v or ''))},
+                ).bind_value(self.state, 'mobile_code') \
+                 .props('type=text inputmode=numeric maxlength=4').classes('form-input')
+                with Row().classes('button-row'):
+                    Button(_(self.verify_button_label), on_click=self._verify)
+                    Button(_(self.resend_label), on_click=self._reset)
+
+    def render_completed(self, state: dict) -> None:
+        ui.label(self.completed_text).classes('text-success').style('margin-top: 0.5rem;')
+        out = state.get('outputs', {}).get(self.step_id, {})
+        if out.get('mobile'):
+            expandable_info({_(self.mobile_label): out['mobile']})
+
+
 class VerifyMfaStep(StepCard):
     """MFA / ACR verification. The card button opens a confirm dialog; confirming
     records the configured ACR as a verified fact. (Behaviour is currently simulated —
@@ -333,6 +414,7 @@ def render_welcome(tenant: str | None, persona_key: str | None, given_name: str 
 STEP_CARD_CLASSES = {
     'OIDCLoginStep': OIDCLoginStep,
     'VerifyAlumniDb': VerifyAlumniDb,
+    'VerifyMobileStep': VerifyMobileStep,
     'VerifyMfaStep': VerifyMfaStep,
 }
 

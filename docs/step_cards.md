@@ -88,6 +88,8 @@ Today every tenant has a single scenario keyed `"default"`. The structure (`tena
 4. Register the class in `STEP_CARD_CLASSES`.
 5. Add an entry to the relevant scenario in `settings.json` (and `settings.example.json`). All copy, IdP names, URLs go in `config` — never hardcoded in Python.
 
+A step card is a free-form NiceGUI canvas: a multi-part *transaction* (enter a value → trigger an action → confirm → done) can live entirely inside `render_enabled`, driven by reactive bindings — `bind_value` for inputs, `bind_visibility` off a `self.state` flag to reveal/hide parts as it progresses — and completes with a single `record()`. No sub-step machinery; the whole exchange is one orchestrator step. `VerifyMobileStep` is the worked example (number → simulated code via `ui.notify` → verify), keeping transient values (`state['code_sent']`, the generated code) out of `outputs`.
+
 ## State keys (per-session, `app.storage.tab`)
 
 - `invite_code`, `invitation_id`, `role_assignments`, `role_name` — scenario context, written by `apply_invite_code_to_state`.
