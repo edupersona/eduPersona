@@ -10,7 +10,7 @@
 2. Maak een **uitnodiging** aan voor deze gast en rol en verzend deze: eduPersona kan een SMTP stekker of Postmark gebruiken voor uitgaande mail en biedt templates die per tenant kunnen worden ingesteld -- maar uiteraard kan de verzending ook vanuit IGA/IDM plaatsvinden. 
 3. De gast opent de link naar de self-service-pagina **/accept**, of kopieert en plakt de code. Daar leiden we hem/haar door de stappen die nodig zijn om toegang te geven. Voor elke IDP (inclusief maar niet beperkt tot eduID) kunnen we controles doen op attributen (naam, mailadres e.d.) en op meegegeven ACR's (bijv. tweede factor) - en de gebruiker de goede kant opsturen als nadere verificatie of configuratie nodig is. 
 
-4. Net als SURF Invite ondersteunt eduPersona **SCIM** voor de terugkoppeling van gasten en hun (geaccepteerde) rollen naar instellings-IGA/IDM (zie `settings.json`, `tenants.hvh.scim`). In de regel gebeurt dit *na afronding van de onboarding*.
+4. Optioneel ondersteunt eduPersona **SCIM** om de geverifieerde gast (de 'bare user' met eduID-identiteit) *na afronding van de onboarding* terug te koppelen naar instellings-IGA/IDM (zie `settings.json`, `tenants.hvh.scim`). Rollen en groepslidmaatschap blijven bij de IGA/IDM van de instelling; eduPersona pusht alleen de geverifieerde gebruiker.
 
 5. Na afronding van het stappenplan komt de gast op de **/apps** pagina &ndash; een persoonlijk overzicht met alle rollen die deze gast heeft (actief, toekomstig, verlopen; óók de rollen die rechtstreeks zijn toegekend, zonder invite). Actieve rollen zijn klikbaar en leiden direct naar de applicatie of dienst. De gast kan later terugkomen op /apps en wordt dan via eduID herkend aan het pseudoniem dat bij onboarding is vastgelegd.
 
@@ -63,7 +63,7 @@ We hebben een demo-/PoC-omgeving draaien op [https://edupersona.nl/](https://edu
 
 * **'Mijn applicaties & diensten'** (`/apps`): eenmaal 'onboarded', logt een gast hier met eduID in en ziet al zijn/haar rollen. Deze toegang is gebaseerd op het eduID-pseudoniem dat bij het accepteren van de uitnodiging wordt gebruikt &ndash; dit wordt bij de gast vastgelegd.
 
-* **SCIM**: eduPersona gebruikt een store/observer-patroon om alle mutaties van gebruikers, rollen e.d. via SCIM terug te synchroniseren &ndash; meestal zal dat naar een IDM/IGA-systeem zijn.
+* **SCIM**: na een succesvolle onboarding doet eduPersona optioneel één SCIM-call om de geverifieerde gast (bare user) terug te koppelen naar een IDM/IGA-systeem. Dit is dormant/opt-in per tenant (`tenants.<t>.scim`); er worden geen rollen of groepen gesynchroniseerd.
 
 * **IDP instellingen**: de `admin` IDP (settings.json: `tenants.hvh.oidc.admin`) wordt gebruikt om in te loggen op de beheersfuncties. De overige IDP's onder de `oidc` key worden gebruikt in het stappenplan dat de gast bij onboarding moet doorlopen. Uiteraard moet je jouw eduPersona SP/RP bij elke IDP (c.q. SURFconext, Entra ID) als zodanig registreren met een client_id en client_secret.
 
@@ -84,9 +84,9 @@ Stel in settings.json de `tenants.hvh.api_key` in als je de API wilt gaan gebrui
 
 * [Tortoise ORM](https://tortoise.github.io) is een async ORM die o.a. PostgreSQL, MySQL/MariaDB en SQLite ondersteunt. De code base hier maakt een SQLite database aan (edupersona.db), maar als je init_db aanpast kun je ook een andere back-end gebruiken.
 
-* [SCIM2-models](https://scim2-models.readthedocs.io/en/latest/) en de bijbehorende libs (client, server, etc.) worden gebruikt voor SCIM support. Dit zijn Python libraries die gebruikmaken van Pydantic data modellen -- een standaard-onderdeel van de FastAPI-stack dat we ook gebruiken voor de eduPersona API.
+* [SCIM2-models](https://scim2-models.readthedocs.io/en/latest/) en scim2-client worden gebruikt voor de optionele SCIM-koppeling. Dit zijn Python libraries die gebruikmaken van Pydantic data modellen -- een standaard-onderdeel van de FastAPI-stack dat we ook gebruiken voor de eduPersona API.
 
-* [nicegui-rdm](https://github.com/kleynjan/nicegui-rdm) is een bibliotheek om snel 'CRUD' apps te bouwen met NiceGUI. Het biedt een reactief store/observer-model dat wordt gebruikt om de user interface bij te werken zonder dat een page reload nodig is -- en de eduPersona SCIM drivers zijn als observer geregistreerd op de relevante stores. 
+* [nicegui-rdm](https://github.com/kleynjan/nicegui-rdm) is een bibliotheek om snel 'CRUD' apps te bouwen met NiceGUI. Het biedt een reactief store/observer-model dat wordt gebruikt om de user interface bij te werken zonder dat een page reload nodig is.
 
 * [Uvicorn](https://uvicorn.dev/) is de ASGI server die we gebruiken om de eduPersona app stabiel te ontsluiten. In dev richt je je browser rechtstreeks op het uvicorn proces (zie `start.sh`); in productie zul je er meestal een Nginx reverse proxy (of vergelijkbaar) voor zetten, al is het alleen maar voor de TLS/SSL-afhandeling.  
 

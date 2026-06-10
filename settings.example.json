@@ -30,8 +30,7 @@
       "scim": {
         "scim_enabled": false,
         "scim_base_url": "http://localhost:8000",
-        "bearer_token": "your-scim-bearer-token",
-        "provision_groups": true
+        "bearer_token": "your-scim-bearer-token"
       },
       "admins": [
         {

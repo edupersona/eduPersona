@@ -157,7 +157,7 @@ async def accept_invitation(tenant: str, code: str) -> bool:
 
     # Dormant opt-in: push the bare verified user to the client's IGA over SCIM.
     # No-op unless the tenant configures an enabled `scim` block (never raises).
-    from services.scim_observer import push_verified_user
+    from services.scim import push_verified_user
     await push_verified_user(tenant, inv)
     return True
 

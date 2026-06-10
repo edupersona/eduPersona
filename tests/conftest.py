@@ -14,7 +14,7 @@ os.environ.setdefault(
 )
 
 import pytest
-from unittest.mock import Mock, AsyncMock
+from unittest.mock import AsyncMock
 from tortoise import Tortoise
 from httpx import AsyncClient, ASGITransport
 from starlette.middleware.sessions import SessionMiddleware
@@ -136,26 +136,6 @@ def mock_oidc_token_data():
         "expires_in": 3600,
         "id_token": "mock-id-token"
     }
-
-
-@pytest.fixture
-def mock_scim_client(monkeypatch):
-    """Mock SCIM client to avoid external API calls"""
-    mock_client = Mock()
-    mock_client.create_user = AsyncMock(return_value={"id": "scim-user-123"})
-    mock_client.create_group = AsyncMock(return_value={"id": "scim-group-456"})
-    mock_client.add_user_to_group = AsyncMock(return_value=True)
-    mock_client.remove_user_from_group = AsyncMock(return_value=True)
-    mock_client.delete_user = AsyncMock(return_value=True)
-
-    # Patch SCIM client creation
-    async def mock_get_scim_client(*args, **kwargs):
-        return mock_client
-
-    # This would need to be patched where SCIM client is created
-    # monkeypatch.setattr("services.storage.storage.get_scim_client", mock_get_scim_client)
-
-    return mock_client
 
 
 @pytest.fixture

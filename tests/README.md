@@ -135,7 +135,6 @@ Tests multi-component workflows:
 - `mock_oidc_userinfo` - Mock OIDC user info response
 - `mock_oidc_id_token` - Mock ID token claims
 - `mock_oidc_token_data` - Mock token response
-- `mock_scim_client` - Mock SCIM client (avoids external calls)
 - `mock_smtp` - Mock email sending
 
 ## Test Markers
@@ -194,13 +193,6 @@ Full OIDC authentication flows are not yet mocked. Tests that require authentica
 1. Create fixture that patches OIDC protocol functions
 2. Return mock userinfo, tokens, and claims
 3. Set up mock session in `app.storage.user`
-
-### SCIM Mocking
-SCIM client mocking is defined but not fully integrated. To complete:
-
-1. Patch SCIM client creation in storage layer
-2. Verify observer pattern calls
-3. Test provisioning and deprovisioning flows
 
 ### Browser-Based Tests
 Currently using `user` fixture (simulated). For browser-specific features:
