@@ -1,22 +1,25 @@
-# /accept route: persona-mode self-service onboarding page.
+# /accept route: self-service onboarding page.
 
+from ng_rdm.components import Button, Col
 from nicegui import ui
 
-from ng_rdm.components import Col, Button
-
-from domain.invitations import apply_invite_to_state, expire_overdue_invitations, find_invitation_tenant
+from domain.invitations import (
+    apply_invite_to_state,
+    expire_overdue_invitations,
+    find_invitation_tenant,
+)
 from domain.models import Invitation
-from steps import Steps, render_welcome
 from services.i18n import _
 from services.persona_loader import get_persona_config
 from services.session_manager import initialize_state
-from services.ui_errors import ui_guard
 from services.tenant import get_default_tenant, store_tenant_in_session
 from services.theme import frame
+from services.ui_errors import ui_guard
+from steps import Steps, render_welcome
 
 
 def _code_entry_form(typed: dict, on_submit) -> None:
-    """Code-entry gate for bare /accept or an unknown code (§5.3).
+    """Code-entry gate for bare /accept or an unknown code.
 
     Resolving the code resolves the tenant + persona, so code-entry is a gate that
     runs before any step list exists — never a step card. The input binds to `typed`;
@@ -40,8 +43,6 @@ def _terminal_error(title: str, subtitle: str) -> None:
         ui.label(subtitle).classes('page-subtitle')
 
 
-
-
 @ui.page('/accept')
 @ui.page('/accept/{invite_code}')
 async def accept_invitation_page(invite_code: str = ""):
@@ -59,7 +60,7 @@ async def accept_invitation_page(invite_code: str = ""):
 
     with frame('accept', tenant):
         await ui.context.client.connected()
-        state = initialize_state()  # setdefault-only — preserves any in-flight session (§5.3)
+        state = initialize_state()  # setdefault-only — preserves any in-flight session
 
         @ui.refreshable
         async def render() -> None:

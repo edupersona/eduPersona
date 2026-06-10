@@ -1,7 +1,7 @@
-"""Invitation model schema — persona-only after the Phase I cutover.
+"""Invitation model schema.
 
 Verifies the persona columns persist and JSON round-trips, and that SQL-level
-filtering (persona_key, guest_id, email) works without a Guest entity.
+filtering (persona_key, guest_id, email) works.
 """
 
 from domain.models import Invitation

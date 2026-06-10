@@ -1,8 +1,7 @@
-"""Tenant registration for persona-mode.
+"""Tenant registration and the invitation store façade.
 
-The role-mode enriched stores were scaffolding; persona-mode writes the `Invitation`
-model directly (Shape B, §2.7). What remains here is tenant registration at startup
-plus one lightweight read/delete façade over `Invitation` for the admin list page —
+Writes go to the `Invitation` model directly. This module registers tenants at
+startup plus one lightweight read/delete façade over `Invitation` for the admin list page —
 a plain `MultitenantTortoiseStore` with a single `calc_guest_name` derived field, so
 the ng_rdm `ListTable`/`DetailCard` widgets get the data-source protocol they expect.
 """

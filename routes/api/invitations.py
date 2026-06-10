@@ -1,4 +1,4 @@
-"""Invitation API (persona-mode) — the only invitation API surface post-cutover.
+"""Invitation API — the only invitation API surface.
 
     POST   /api/v1/{tenant}/invitations            - create + fire mail
     GET    /api/v1/{tenant}/invitations            - list (filters + pagination)
@@ -125,7 +125,7 @@ _VALIDATION_ERR = {400: {"model": ErrorEnvelope, "description": "Invalid request
 
 
 def _valid_email(value: str) -> bool:
-    """Basic format check (no domain restriction in the base app, §2.2)."""
+    """Basic format check (no domain restriction in the base app)."""
     if not value or value.count("@") != 1:
         return False
     local, _, domain = value.partition("@")
@@ -160,7 +160,7 @@ def _accept_url(request: Request, code: str) -> str:
 
 
 async def _send_mail_best_effort(tenant: str, invitation: dict) -> None:
-    """Send the persona invite mail. Best-effort — never fatal (gotcha 6)."""
+    """Send the persona invite mail. Best-effort — never fatal."""
     ok = await send_invitation_mail(tenant, invitation)
     if not ok:
         logger.warning(f"persona invite mail not sent for {invitation['code']} (transport returned false)")

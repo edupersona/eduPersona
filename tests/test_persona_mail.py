@@ -1,4 +1,4 @@
-"""Phase F — persona-aware mail composition.
+"""Persona-aware mail composition.
 
 Template rendering (body wrapped in layout), missing-persona error, and sender
 override precedence. Transport is patched; no network.

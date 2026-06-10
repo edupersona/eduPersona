@@ -165,7 +165,7 @@ class Steps:
         if inv is None:
             return False
         if inv.status == 'pending':
-            # Persist outputs BEFORE accept so the webhook envelope can read them (§2.7).
+            # Persist outputs BEFORE accept so the webhook envelope can read them.
             # Through the store (like every other write) so open tables stay live.
             from domain.stores import get_invitation_store
             await get_invitation_store(self.tenant).update_item(

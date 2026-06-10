@@ -2,9 +2,9 @@
 auto-registry. See docs/step_cards.md for the full lifecycle, the MAY / MAY NOT
 rules, and the single-session invariant.
 
-Shape B (§2.7): OIDC steps write verified userinfo to state['outputs'][idp] (keyed
-by IdP name, gotcha 10); non-OIDC steps write to state['outputs'][step_id].
-Finalization is a built-in orchestrator side effect (Steps._finalize), not a card.
+OIDC steps write verified userinfo to state['outputs'][idp] (keyed by IdP name);
+non-OIDC steps write to state['outputs'][step_id]. Finalization is a built-in
+orchestrator side effect (Steps._finalize), not a card.
 """
 from __future__ import annotations
 
@@ -83,7 +83,7 @@ class StepCard:
     async def is_already_done(self) -> bool:
         """Override on verification-style steps that have a durable DB marker.
         Returning True at scenario startup → step is recorded as 'skipped'.
-        Default: never auto-skip. No cross-persona auto-skip (§2.1)."""
+        Default: never auto-skip. No cross-persona auto-skip."""
         return False
 
     async def act(self) -> StepResult | None:

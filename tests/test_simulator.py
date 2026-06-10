@@ -1,7 +1,7 @@
-"""Phase H — simulator page render checks.
+"""Simulator page render checks.
 
 UI-only: auth gate, page renders, static name inputs present, dynamic persona
-fields materialise. Route registered via main.py; no top-level route import (gotcha 2).
+fields materialise. Route registered via main.py; no top-level route import.
 """
 import pytest
 from nicegui.testing import User

@@ -1,4 +1,4 @@
-"""Phase A — persona contract + loader.
+"""Persona contract + loader.
 
 Covers the typed persona config (domain/persona.py) and the loader/validator
 (services/persona_loader.py): happy load, missing persona, persona_params

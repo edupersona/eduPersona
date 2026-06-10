@@ -1,8 +1,8 @@
-"""Phase D — persona-mode invitation lifecycle (create / accept / apply-to-state).
+"""Invitation lifecycle (create / accept / apply-to-state).
 
-Shape B: rows written directly, no Guest. Validates persona + params, requires a
-guest_id, fires the callback only when configured, and never auto-skips across
-personas for the same email. enqueue_callback is patched to observe calls.
+Rows are written directly. Validates persona + params, requires a guest_id, fires
+the callback only when configured, and never auto-skips across personas for the
+same email. enqueue_callback is patched to observe calls.
 """
 
 from unittest.mock import AsyncMock
@@ -36,7 +36,7 @@ async def test_create_happy_minimal(test_tenant):
     assert out["guest_id"] == "EMP-1"
     assert out["given_name"] is None
     inv = await Invitation.get(id=out["id"])
-    assert inv.persona_key == "gastdocent"  # Shape B: invitation is the only entity
+    assert inv.persona_key == "gastdocent"  # invitation is the only entity
     assert inv.invitation_email == "anna@example.org"
 
 
@@ -142,7 +142,7 @@ async def test_multi_persona_same_email_independent(test_tenant, monkeypatch):
 
     await accept_invitation(test_tenant, a["code"])
     await accept_invitation(test_tenant, b["code"])
-    # two independent callbacks — no cross-persona auto-skip (§2.1)
+    # two independent callbacks — no cross-persona auto-skip
     assert enqueue.await_count == 2
     assert {await_args.args[1] for await_args in enqueue.await_args_list} == {a["id"], b["id"]}
 

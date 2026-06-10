@@ -55,7 +55,7 @@ Returning `None` from `act()` means "no immediate transition" — useful for OID
 
 ## `is_already_done()`
 
-Default returns False. Override in *verification* steps that have a durable DB marker (an `EmailVerified` row, a `GuestAttribute`, an `Invitation.status`, etc.). Called once per step at scenario startup; True → step is recorded as `SKIPPED`.
+Default returns False. Override in *verification* steps that have a durable DB marker (an `Invitation.status`, a value already in `Invitation.step_outputs`, etc.). Called once per step at scenario startup; True → step is recorded as `SKIPPED`.
 
 This is the only place a step legitimately persists across sessions. Use it sparingly — most steps should NOT auto-skip; the single-session invariant requires re-completing them on restart.
 

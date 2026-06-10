@@ -1,6 +1,6 @@
 """UI error-handling helper.
 
-Pre-pivot convention: a runtime error with a UI aspect is logged and surfaced via
+Convention: a runtime error with a UI aspect is logged and surfaced via
 `ui.notify` (or `RdmComponent._notify` inside ng_rdm components) — never raised into
 the global 500 page (services/exception_handlers.py), which in prod emails the admins.
 Hard `raise` is reserved for config/schema validation and the API layer (translated to

@@ -1,8 +1,7 @@
-"""Tortoise ORM models for edupersona (persona-mode).
+"""Tortoise ORM models for edupersona.
 
-Post-pivot the system is "invitations and their lifecycle": Invitation is the only
-first-class entity (§2.7), with WebhookDelivery hanging off it. Guest / Role /
-RoleAssignment and the junction table were dropped at the Phase I cutover.
+The system is "invitations and their lifecycle": Invitation is the only first-class
+entity, with WebhookDelivery hanging off it.
 """
 from tortoise import fields
 from ng_rdm.models import RdmModel, MultitenantRdmModel
@@ -14,10 +13,10 @@ class InvitationStatus:
 
 
 class Invitation(MultitenantRdmModel):
-    """A self-contained onboarding record for one guest + one persona (§2.7).
+    """A self-contained onboarding record for one guest + one persona.
 
     Identity facts come from the client app (given_name/family_name, display-only)
-    or are written to step_outputs by the step cards. No Guest entity.
+    or are written to step_outputs by the step cards.
     """
     id = fields.IntField(primary_key=True)
     guest_id = fields.CharField(max_length=255, db_index=True)  # client app's identifier for the guest (required)
@@ -31,11 +30,11 @@ class Invitation(MultitenantRdmModel):
     status = fields.CharField(max_length=50, default="pending")  # see InvitationStatus
 
     persona_key = fields.CharField(max_length=64)
-    persona_params = fields.JSONField(null=True)   # payload pass-through, never SQL-queried (§3.1)
+    persona_params = fields.JSONField(null=True)   # payload pass-through, never SQL-queried
     sender_email = fields.CharField(max_length=255, null=True)
     sender_name = fields.CharField(max_length=255, null=True)
     callback_url = fields.CharField(max_length=1024, null=True)
-    step_outputs = fields.JSONField(null=True)     # verified-fact source for the callback envelope (§2.7)
+    step_outputs = fields.JSONField(null=True)     # verified-fact source for the callback envelope
 
     webhook_deliveries: fields.ReverseRelation["WebhookDelivery"]
 
@@ -46,7 +45,7 @@ class Invitation(MultitenantRdmModel):
 class WebhookDelivery(RdmModel):
     """Durable outbound-callback record (one per persona invitation completion).
 
-    Carries the built payload plus the retry state machine (§2.3, §3.2): 4xx is
+    Carries the built payload plus the retry state machine: 4xx is
     terminal, 5xx and network errors retry with exponential backoff up to a max
     attempt count. Tenant is resolved via the invitation FK — no tenant column.
     """

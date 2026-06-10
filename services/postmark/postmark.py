@@ -1,6 +1,6 @@
-"""Postmark email service (persona-mode).
+"""Postmark email service.
 
-Renders a per-persona body wrapped in a per-tenant layout (§6) and sends it via the
+Renders a per-persona body wrapped in a per-tenant layout and sends it via the
 Postmark API. Sender identity resolves invitation-override > tenant default.
 """
 import re

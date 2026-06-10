@@ -1,10 +1,10 @@
-"""Phase G — persona-mode accept flow.
+"""Persona accept flow.
 
 Domain-level: the persona step lifecycle keys OIDC output by IdP, persists
 state['outputs'] to Invitation.step_outputs at finalize, and fires the callback
 only when configured. Plus one NiceGUI render check (route registered via main.py;
-no top-level route import — gotcha 2). The conftest services.webhook re-link
-(gotcha 1) keeps the UI test robust.
+no top-level route import). The conftest services.webhook re-link keeps the UI
+test robust.
 """
 
 from unittest.mock import AsyncMock
@@ -61,7 +61,7 @@ async def test_lifecycle_persists_outputs_and_fires_callback(test_tenant, monkey
 
     inv = await Invitation.get(id=created["id"])
     assert inv.status == "accepted"
-    # OIDC output keyed by IdP name, not step id (gotcha 10)
+    # OIDC output keyed by IdP name, not step id
     assert inv.step_outputs == {"eduid": USERINFO, "institutional": INST_USERINFO}
     assert steps.is_complete  # finalize ran on Register, once every step was done
     enqueue.assert_awaited_once_with(test_tenant, created["id"])

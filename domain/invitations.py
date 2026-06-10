@@ -1,7 +1,7 @@
-"""Invitation lifecycle (persona-mode) — the only invitation surface post-cutover.
+"""Invitation lifecycle — the only invitation surface.
 
-Shape B (§2.7, gotcha 9): an invitation is the only entity. These functions write
-the `Invitation` model directly — no Guest find-or-create. `given_name`/`family_name`
+An invitation is the only entity. These functions write
+the `Invitation` model directly. `given_name`/`family_name`
 are display strings from the client app, never refined from eduID.
 """
 
@@ -90,13 +90,13 @@ async def create_invitation(
     callback_url: Optional[str] = None,
     expiry_date: Optional[datetime] = None,
 ) -> dict:
-    """Create an invitation row directly (no Guest entity).
+    """Create an invitation row directly.
 
     `guest_id` (the client app's identifier for the guest) is required — it maps to
     the SCIM externalId on provisioning. Validates the persona and its params via the
     loader (UnknownPersonaError / PersonaParamsError, both ValueError). `callback_url`
     falls back to the persona's configured default. `expiry_date` overrides the tenant
-    default duration (naive → treated as UTC). Re-invites are never deduplicated (§2.1).
+    default duration (naive → treated as UTC). Re-invites are never deduplicated.
     """
     if not (guest_id := (guest_id or "").strip()):
         raise ValueError("guest_id is required")
@@ -163,7 +163,7 @@ async def accept_invitation(tenant: str, code: str) -> bool:
 
 
 async def apply_invite_to_state(tenant: str, state: dict, code: str) -> bool:
-    """Populate session `state` with persona context for the accept flow (§5.3).
+    """Populate session `state` with persona context for the accept flow.
 
     Sets invite_code, invitation_id, persona_key, persona_params, guest_email,
     given_name, family_name. Pure mutation.

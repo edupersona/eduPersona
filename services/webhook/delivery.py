@@ -1,12 +1,12 @@
-"""Outbound webhook delivery state machine (§2.3, §7, gotcha 4).
+"""Outbound webhook delivery state machine.
 
 Contract: plain webhook, bearer-token authenticated via the per-tenant
 `callback_secret`. **4xx is terminal, 5xx and network errors retry** with
 exponential backoff, up to MAX_ATTEMPTS total attempts.
 
 `_http_post` is the patchable seam for tests. `enqueue_callback` is the entry
-point (no-op when the invitation has no callback_url); it is intentionally dead
-code until Phase D wires it into the accept flow.
+point (no-op when the invitation has no callback_url), called from the accept flow
+on completion.
 """
 
 import asyncio
@@ -20,7 +20,7 @@ from domain.models import Invitation, WebhookDelivery
 from services.settings import get_tenant_config
 from services.webhook.payload import build_payload
 
-# Exponential backoff between retries, in seconds (gotcha 4). Index i is the wait
+# Exponential backoff between retries, in seconds. Index i is the wait
 # after the (i+1)-th failed attempt. MAX_ATTEMPTS caps total tries; the final
 # value is headroom for the last scheduled wait.
 BACKOFF = [30, 120, 900, 7200, 43200]
@@ -84,8 +84,8 @@ async def _deliver(delivery_id: int) -> WebhookDelivery | None:
 async def enqueue_callback(tenant: str, invitation_id: int) -> WebhookDelivery | None:
     """Create a delivery for the invitation and attempt it immediately.
 
-    No-op (returns None) when the invitation has no callback_url. Entry point for
-    the accept flow (Phase D); dead code until then.
+    No-op (returns None) when the invitation has no callback_url. Called from the
+    accept flow on completion.
     """
     invitation = await Invitation.get_or_none(id=invitation_id)
     if invitation is None:
@@ -119,7 +119,7 @@ async def process_pending(limit: int = 20) -> int:
 
 
 async def webhook_retry_loop(interval: int = 60) -> None:
-    """App-level background loop re-firing due webhook failures (§7).
+    """App-level background loop re-firing due webhook failures.
 
     Registered from main.py's production entrypoint via app.on_startup. Uses
     asyncio.sleep (not ui.timer) — it is app-level, not page-bound.

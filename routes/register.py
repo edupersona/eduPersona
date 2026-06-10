@@ -1,9 +1,9 @@
 """Public PoC-access registration page."""
 
-from nicegui import ui
-
 from ng_rdm.components import Button, Col
 from ng_rdm.utils import logger
+from nicegui import ui
+
 from services.i18n import _
 from services.postmark.postmark import send_postmark_email
 from services.tenant import get_default_tenant

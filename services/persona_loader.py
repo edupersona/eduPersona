@@ -1,12 +1,12 @@
 """Load and validate persona configs from per-tenant settings.
 
-Personas live under `tenants.<t>.personas` in settings.json during the pivot
-(Phase A–H). This module is the only place that turns that raw config into a
-typed `PersonaConfig`, and the only place that validates client-supplied
-`persona_params` against a persona's `expected_params` schema.
+Personas live under `tenants.<t>.personas` in settings.json. This module is the
+only place that turns that raw config into a typed `PersonaConfig`, and the only
+place that validates client-supplied `persona_params` against a persona's
+`expected_params` schema.
 
-Both failure modes surface as `ValueError` subclasses so callers (Phase E API)
-can map them: unknown persona → 404, params violation → 400.
+Both failure modes surface as `ValueError` subclasses so the API can map them:
+unknown persona → 404, params violation → 400.
 """
 
 from typing import Any
@@ -86,7 +86,7 @@ def validate_persona_params(cfg: PersonaConfig, raw: dict | None) -> dict:
     """Validate + coerce raw persona_params against the persona's expected_params.
 
     Returns a new dict of coerced values (only keys actually supplied). No defaults
-    are injected — a param the client omits simply isn't present (§2.2). Raises
+    are injected — a param the client omits simply isn't present. Raises
     PersonaParamsError on unknown key, missing-required, or type/enum mismatch.
     """
     raw = raw or {}

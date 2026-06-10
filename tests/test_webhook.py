@@ -1,8 +1,8 @@
-"""Phase B — webhook subsystem (payload builder + delivery state machine).
+"""Webhook subsystem (payload builder + delivery state machine).
 
-Envelope construction reads only from Invitation + step_outputs (§2.7); the state
-machine implements 4xx-terminal / 5xx-retry with exponential backoff (gotcha 4).
-`_http_post` and `now_utc` are patched as seams; no real network, deterministic time.
+Envelope construction reads only from Invitation + step_outputs; the state machine
+implements 4xx-terminal / 5xx-retry with exponential backoff. `_http_post` and
+`now_utc` are patched as seams; no real network, deterministic time.
 """
 
 from datetime import datetime, timedelta, timezone
@@ -79,7 +79,7 @@ async def test_payload_persona_without_outputs(test_tenant, monkeypatch):
 
 
 async def test_payload_completed_at_legacy_string(test_tenant, monkeypatch):
-    """Legacy '%Y-%m-%d / %H:%M:%S' accepted_at strings normalize to ISO (gotcha 7)."""
+    """Legacy '%Y-%m-%d / %H:%M:%S' accepted_at strings normalize to ISO."""
     monkeypatch.setattr(payload_mod, "get_persona_config", lambda t, k: _persona([]))
     inv = await _mk_inv(test_tenant)
     inv.accepted_at = "2026-01-01 / 13:00:00"  # type: ignore[assignment]

@@ -12,7 +12,7 @@ from steps.base import StepCard, StepResult, expandable_info
 
 class OIDCLoginStep(StepCard):
     """Generic OIDC login step. Writes verified userinfo to state['outputs'][idp]
-    (keyed by IdP name, gotcha 10) — no GuestAttribute."""
+    (keyed by IdP name)."""
 
     def __init__(self, config: dict):
         super().__init__(config)

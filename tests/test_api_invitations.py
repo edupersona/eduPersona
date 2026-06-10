@@ -10,7 +10,7 @@ BASE = "/api/v1/hvh/invitations"
 
 @pytest.fixture(autouse=True)
 def _no_real_mail(monkeypatch):
-    """Phase F wired real Postmark into the endpoint; keep these API tests offline.
+    """The endpoint sends real Postmark mail; keep these API tests offline.
 
     Individual tests (e.g. mail-failure) re-patch this attr to assert behaviour.
     """

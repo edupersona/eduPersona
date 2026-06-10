@@ -3,7 +3,7 @@
 Lives under `services` (a namespace package with no @ui.page side effects) rather
 than under `routes.m`: importing anything from `routes.m` runs its __init__ and
 registers @ui.page routes, which pins `routes.m` in sys.modules and breaks NiceGUI
-per-test route re-registration (gotcha 2). Keeping these here lets the unit tests
+per-test route re-registration. Keeping these here lets the unit tests
 import them at top level safely.
 """
 from typing import Any

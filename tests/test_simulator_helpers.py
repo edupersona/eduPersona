@@ -1,7 +1,7 @@
-"""Phase H — pure simulator helpers (no UI).
+"""Pure simulator helpers (no UI).
 
 Helpers live in services/ (not routes.m) so this top-level import doesn't pin a
-@ui.page package and break NiceGUI per-test route re-registration (gotcha 2).
+@ui.page package and break NiceGUI per-test route re-registration.
 """
 
 from domain.persona import ExpectedParam

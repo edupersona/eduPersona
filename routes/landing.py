@@ -1,7 +1,7 @@
-from nicegui import ui, html
-
-from ng_rdm.components import Col, Row, Icon, rdm_init, set_language
+from ng_rdm.components import Col, Icon, Row, rdm_init, set_language
 from ng_rdm.utils import logger
+from nicegui import ui
+
 from services.i18n import _
 from services.tenant import get_default_tenant
 

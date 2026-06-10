@@ -1,4 +1,4 @@
-# /m/{tenant}/invitations — persona-mode invitations list (view, resend, delete),
+# /m/{tenant}/invitations — invitations list (view, resend, delete),
 # built on the ng_rdm ViewStack → ListTable → DetailCard widgets. Creation lives in
 # /m/{tenant}/simulator, so this page has no add-dialog.
 

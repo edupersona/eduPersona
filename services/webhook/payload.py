@@ -2,8 +2,7 @@
 
 Single source of truth: universal fields come straight off the Invitation row;
 the `verifications` block is built by iterating the persona's `callback_outputs`
-and reading `Invitation.step_outputs[key]` verbatim (§2.7, §7). No Guest joins,
-no cross-invitation lookups.
+and reading `Invitation.step_outputs[key]` verbatim — no cross-invitation lookups.
 """
 
 from datetime import datetime
@@ -16,11 +15,11 @@ from services.persona_loader import get_persona_config
 
 
 def _iso(value: Any) -> str | None:
-    """Normalize a stored datetime to ISO 8601 (gotcha 7).
+    """Normalize a stored datetime to ISO 8601.
 
-    Persona-mode writes native datetimes (so this is just `.isoformat()`), but the
-    legacy store wrote `'%Y-%m-%d / %H:%M:%S'` local strings — parse those back to
-    UTC so the envelope is always ISO regardless of who wrote the row.
+    Values are normally native datetimes (so this is just `.isoformat()`), but some
+    stored rows hold `'%Y-%m-%d / %H:%M:%S'` local strings — parse those back to UTC
+    so the envelope is always ISO regardless of how the row was written.
     """
     if value is None:
         return None

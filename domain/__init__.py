@@ -1,4 +1,4 @@
-"""Domain layer: models and invitation lifecycle (persona-mode).
+"""Domain layer: models and invitation lifecycle.
 
 Intentionally light on re-exports: importing submodules directly (e.g.
 `from domain.invitations import create_invitation`) avoids an import cycle —

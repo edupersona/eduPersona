@@ -1,12 +1,11 @@
-"""Dormant, opt-in SCIM bare-user provisioning (persona-mode).
+"""Dormant, opt-in SCIM bare-user provisioning.
 
 The webhook callback (services/webhook/) owns the *core* completion flow. This module
 is a **separate, opt-in** capability: when a tenant configures a `scim` block, an
 accepted invitation also pushes the *bare verified user* — eduID identity from
 `Invitation.step_outputs` plus the invitation email — to the client's IGA via SCIM.
 The invitation's `guest_id` (the client's own identifier for the guest) maps to the
-SCIM `externalId`. No groups, no roles, no local Guest entity (those live in the
-client's IAM/IGA).
+SCIM `externalId`. No groups, no roles — those live in the client's IAM/IGA.
 
 Dormant by default: `push_verified_user` is a no-op unless the tenant's `scim` block
 is present and enabled, so importing or shipping this module costs nothing. The
