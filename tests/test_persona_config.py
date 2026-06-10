@@ -22,7 +22,7 @@ from services.persona_loader import (
 def _cfg(**expected_params) -> PersonaConfig:
     """Minimal PersonaConfig for params-validation tests."""
     return PersonaConfig(
-        display_name={"en": "Test"},
+        display_name="Test",
         steps=[],
         mail=MailRef(layout="layouts/hvh.jinja2", body="personas/test.jinja2"),
         expected_params=expected_params,
@@ -34,18 +34,16 @@ def _cfg(**expected_params) -> PersonaConfig:
 def test_get_alumnus_persona():
     """Lock in the demo alumnus persona (eduid + verify_mobile + alumni_db outputs)."""
     cfg = get_persona_config("hvh", "alumnus")
-    assert cfg.label("nl") == "Alumnus"
+    assert cfg.display_name == "Alumnus"
     assert [s["id"] for s in cfg.steps] == ["eduid_login", "verify_mobile", "alumni_db"]
     assert cfg.callback_outputs == ["eduid", "verify_mobile", "alumni_db"]
-    assert cfg.cta("nl") == "Naar het alumniportaal"
+    assert cfg.cta_label == "Naar het alumniportaal"
 
 
 def test_get_persona_config_happy():
     cfg = get_persona_config("hvh", "gastdocent")
     assert isinstance(cfg, PersonaConfig)
-    assert cfg.display_name["nl"] == "Gastdocent"
-    assert cfg.label("nl") == "Gastdocent"
-    assert cfg.label("xx") == "Gastdocent"  # falls back to first defined name
+    assert cfg.display_name == "Gastdocent"
     assert cfg.mail.layout == "layouts/hvh.jinja2"
     assert cfg.callback_outputs == ["eduid"]
     assert set(cfg.expected_params) == {"department", "personal_message"}
@@ -53,7 +51,7 @@ def test_get_persona_config_happy():
     assert [s["id"] for s in cfg.steps] == [
         "eduid_login", "institutional_login",
     ]
-    assert cfg.completion_text("nl").startswith("Je onboarding is voltooid")
+    assert cfg.completion_message.startswith("Je onboarding is voltooid")
 
 
 # --- miss: unknown persona raises with the documented message prefix ---
@@ -170,7 +168,7 @@ def test_loader_forbids_unknown_keys():
 
     with pytest.raises(ValueError, match="unknown persona config key"):
         _build_persona_config({
-            "display_name": {"en": "X"},
+            "display_name": "X",
             "steps": [],
             "mail": {"layout": "l", "body": "b"},
             "surprise": "nope",  # intentional: assert extra keys are rejected

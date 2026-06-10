@@ -38,7 +38,7 @@ async def invitations_page(tenant: str = Depends(require_invite_auth)):
 
     def persona_label(key: str) -> str:
         try:
-            return get_persona_config(tenant, key).label("nl")
+            return _(get_persona_config(tenant, key).display_name)
         except ValueError:
             return key
 

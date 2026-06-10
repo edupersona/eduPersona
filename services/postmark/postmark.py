@@ -11,6 +11,7 @@ import httpx
 from jinja2 import Environment, FileSystemLoader
 
 from ng_rdm.utils import logger
+from services.i18n import _
 from services.persona_loader import get_persona_config
 from services.settings import config, get_tenant_config
 
@@ -54,7 +55,7 @@ async def prepare_invite_message(invitation: dict, tenant: str) -> dict:
 
     context = {
         "accept_url": accept_url,
-        "persona": cfg.display_name,
+        "persona": _(cfg.display_name),
         "persona_params": invitation.get("persona_params") or {},
         "given_name": invitation.get("given_name"),
         "family_name": invitation.get("family_name"),
@@ -71,7 +72,7 @@ async def prepare_invite_message(invitation: dict, tenant: str) -> dict:
         "from_email": from_email,
         "from_name": from_name,
         "to_email": invitation.get("invitation_email", ""),
-        "subject": f"Uitnodiging: {cfg.label('nl')}",
+        "subject": f"Uitnodiging: {_(cfg.display_name)}",
         "html_body": html_body,
         "text_body": html_to_text(html_body),
     }

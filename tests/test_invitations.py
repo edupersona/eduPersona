@@ -22,7 +22,7 @@ from services.persona_loader import PersonaParamsError, UnknownPersonaError
 
 def _persona(callback_url=None) -> PersonaConfig:
     return PersonaConfig(
-        display_name={"en": "X"}, steps=[],
+        display_name="X", steps=[],
         mail=MailRef(layout="l", body="b"), callback_url=callback_url,
     )
 

@@ -9,7 +9,7 @@ contract lives in the code, not here.
 A persona holds only what makes it differ from another persona. The typed contract
 is [`domain/persona.py`](../domain/persona.py) → `PersonaConfig`:
 
-- `display_name: {lang: label}` — UI/mail label.
+- `display_name: str` — UI/mail label.
 - `steps: [...]` — the onboarding step cards to run (same shape the step framework
   consumes; see [`steps/`](../steps/) and [`docs/step_cards.md`](step_cards.md)).
 - `mail: {layout, body}` — per-tenant layout frame + per-persona body, both Jinja2
@@ -19,9 +19,22 @@ is [`domain/persona.py`](../domain/persona.py) → `PersonaConfig`:
   `text` is a multiline string (renders as a textarea in the simulator; coerced like `string`).
 - `callback_outputs: [...]` — which `step_outputs` keys surface in the webhook.
 - `success_redirect_url`, `callback_url` — optional.
-- `completion_message: {lang: str}`, `cta_label: {lang: str}` — optional, localized
-  copy for the post-completion welcome screen (`render_welcome`). The CTA button
-  links to `success_redirect_url`; both fall back to translated defaults when unset.
+- `completion_message: str`, `cta_label: str` — optional copy for the
+  post-completion welcome screen (`render_welcome`). The CTA button links to
+  `success_redirect_url`; both fall back to translated defaults when unset.
+
+### Language
+
+Every user-facing config string is a single source string, rendered through the
+`_()` translation function ([`services/i18n.py`](../services/i18n.py)) like any other
+UI text — there are **no per-language subkeys** in the config. Author persona/step
+strings in your deployment's primary language (the demo uses Dutch). The string as
+written is the source; a translation is shown only when one exists for the active
+language. To run a deployment bilingually (no language switcher is wired yet),
+add the *other* language's strings to `translations` in `services/i18n.py`, keyed by
+your source strings. A per-tenant translation overlay in config (so a customizer
+needn't touch code) is the planned next step — `_()` is the single lookup point, so
+that lands without changing any call site.
 
 Personas live per-tenant under `settings.json` → `tenants.<t>.personas.<key>`
 (see `settings.example.json` for `gastdocent` + `alumnus`). They are loaded and
@@ -53,6 +66,8 @@ deprovisioning — those live in the client app's IAM/IGA.
    retries: **4xx terminal, 5xx + network errors retry** on backoff
    `[30, 120, 900, 7200, 43200]`s, max 5 attempts. The app-level
    `webhook_retry_loop` re-fires due failures (registered in `main.py:run()`).
+   See [`callback_api.md`](callback_api.md) for the full integrator-facing contract
+   (envelope fields, auth, delivery semantics, status checking).
 
 ## Data model
 

@@ -28,7 +28,7 @@ _n = {"i": 0}
 
 def _persona(callback_outputs: list[str]) -> PersonaConfig:
     return PersonaConfig(
-        display_name={"en": "X"}, steps=[],
+        display_name="X", steps=[],
         mail=MailRef(layout="l", body="b"), callback_outputs=callback_outputs,
     )
 

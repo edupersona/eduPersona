@@ -81,10 +81,7 @@
       },
       "personas": {
         "gastdocent": {
-          "display_name": {
-            "nl": "Gastdocent",
-            "en": "Visiting lecturer"
-          },
+          "display_name": "Gastdocent",
           "mail": {
             "layout": "layouts/hvh.jinja2",
             "body": "personas/gastdocent.jinja2"
@@ -104,14 +101,8 @@
           ],
           "success_redirect_url": "https://example.org/lms/welcome",
           "callback_url": null,
-          "completion_message": {
-            "nl": "Je onboarding is voltooid. Je hebt nu toegang tot de leeromgeving.",
-            "en": "Your onboarding is complete. You now have access to the learning environment."
-          },
-          "cta_label": {
-            "nl": "Naar de leeromgeving",
-            "en": "Go to the learning environment"
-          },
+          "completion_message": "Je onboarding is voltooid. Je hebt nu toegang tot de leeromgeving.",
+          "cta_label": "Naar de leeromgeving",
           "steps": [
             {
               "class": "OIDCLoginStep",
@@ -143,10 +134,7 @@
           ]
         },
         "alumnus": {
-          "display_name": {
-            "nl": "Alumnus",
-            "en": "Alumnus"
-          },
+          "display_name": "Alumnus",
           "mail": {
             "layout": "layouts/hvh.jinja2",
             "body": "personas/alumnus.jinja2"
@@ -168,14 +156,8 @@
           ],
           "success_redirect_url": "https://example.org/alumni/welcome",
           "callback_url": null,
-          "completion_message": {
-            "nl": "Je alumni-onboarding is voltooid. Welkom terug!",
-            "en": "Your alumni onboarding is complete. Welcome back!"
-          },
-          "cta_label": {
-            "nl": "Naar het alumniportaal",
-            "en": "Go to the alumni portal"
-          },
+          "completion_message": "Je alumni-onboarding is voltooid. Welkom terug!",
+          "cta_label": "Naar het alumniportaal",
           "steps": [
             {
               "class": "OIDCLoginStep",
@@ -214,14 +196,7 @@
               "config": {
                 "title": "Stap 4. Verifieer je gegevens in onze alumnidatabase",
                 "completed_text": "✓ Alumnigegevens geverifieerd",
-                "disabled_text": "Voltooi eerst stap 3",
-                "help_text": "Voer je geboortedatum en vijfcijferige studentnummer in zoals bekend bij onze alumniadministratie.",
-                "primary_button_label": "Verify alumni status",
-                "dob_label": "Date of birth",
-                "student_number_label": "Student number",
-                "dob_min_year": 1960,
-                "dob_max_year": 1990,
-                "student_number_pattern": "^\\d{5}$"
+                "disabled_text": "Voltooi eerst stap 3"
               }
             }
           ]

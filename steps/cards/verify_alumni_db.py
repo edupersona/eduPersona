@@ -4,11 +4,10 @@ import re
 from ng_rdm.components import Button
 from nicegui import ui
 
-from services.i18n import _
 from steps.base import StepCard, expandable_info
 
-# voor demo-doeleinden: iedereen die tussen 1960 en 1990 is geboren en een zescijferig nummer invoert
-# geldt als "herkende alumnus" -> in de outputs['alumni_db'] komt dan de "opgezochte" alumnus_id van "A203920" te staan
+# demo van custom verificatie tegen dummy back-end: iedereen die tussen 1960 en 1990 is geboren en een zescijferig nummer
+# invoert geldt als "herkende alumnus" -> in de outputs['alumni_db'] komt dan de "opgezochte" alumnus_id van "A203920" te staan
 #
 MIN_DOB_YEAR = 1960
 MAX_DOB_YEAR = 1990
@@ -20,7 +19,7 @@ class VerifyAlumniDb(StepCard):
 
     def __init__(self, config: dict):
         super().__init__(config)
-        # Exclusive year bounds (year-of-birth must be strictly between min and max).
+        self.help_text = 'Voer je geboortedatum en zescijferige studentnummer in.'
 
     def _dob_year(self, value: str) -> int | None:
         try:

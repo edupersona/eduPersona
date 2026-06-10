@@ -38,7 +38,7 @@ class VerifyMfaStep(StepCard):
 
     def _ensure_dialog(self) -> Dialog:
         if self._dialog is None:
-            self._dialog = Dialog(title=self.dialog_title, dialog_class="panel-dialog")
+            self._dialog = Dialog(title=_(self.dialog_title), dialog_class="panel-dialog")
             with self._dialog, self._dialog.actions():
                 Button(_(self.confirm_button_label), on_click=self._confirm)
         return self._dialog

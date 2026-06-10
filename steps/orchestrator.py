@@ -31,8 +31,8 @@ def render_welcome(tenant: str | None, persona_key: str | None, given_name: str 
     if tenant and persona_key:
         try:
             cfg = get_persona_config(tenant, persona_key)
-            message = cfg.completion_text('nl')
-            cta_label = cfg.cta('nl')
+            message = cfg.completion_message
+            cta_label = cfg.cta_label
             redirect_url = cfg.success_redirect_url
         except Exception:
             pass
@@ -40,9 +40,10 @@ def render_welcome(tenant: str | None, persona_key: str | None, given_name: str 
         ui.icon('check_circle', color='positive', size='3em')
         heading = f"{_('Welcome')}, {given_name}!" if given_name else _('Welcome')
         ui.label(heading).classes('page-title')
-        ui.label(message or _('Your onboarding has been completed successfully.')).classes('page-subtitle')
+        subtitle = _(message) if message else _('Your onboarding has been completed successfully.')
+        ui.label(subtitle).classes('page-subtitle')
         if redirect_url:
-            Button(cta_label or _('Continue'), on_click=lambda: ui.navigate.to(redirect_url))
+            Button(_(cta_label) if cta_label else _('Continue'), on_click=lambda: ui.navigate.to(redirect_url))
 
 
 class Steps:
@@ -179,14 +180,14 @@ class Steps:
         persona_key = self.state.get('persona_key')
         if persona_key and self.tenant:
             try:
-                persona_label = get_persona_config(self.tenant, persona_key).label('nl')
+                persona_label = _(get_persona_config(self.tenant, persona_key).display_name)
             except Exception:
                 persona_label = ''
 
         suffix = (' ' + _('as') + ' ' + persona_label) if persona_label else ''
-        given = self.state.get('given_name')
+        given = self.state.get('given_name', '')
         if given:
-            ui.label(f"{_('Welcome')}, {given}{suffix}").classes('page-title')
+            ui.label(f"{_('Welcome')}, {given}").classes('page-title')
         else:
             ui.label(_('Welcome{suffix}', suffix=suffix)).classes('page-title')
         ui.label(

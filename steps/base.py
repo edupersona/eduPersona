@@ -124,7 +124,7 @@ class StepCard:
                     icon.on('click', self._handle_click)
 
                 with Col(classes='step-content'):
-                    ui.label(self.title).classes('step-title')
+                    ui.label(_(self.title)).classes('step-title')
                     if is_completed:
                         self.render_completed(state)
                     elif is_enabled:
@@ -157,7 +157,7 @@ class StepCard:
         raise NotImplementedError
 
     def render_completed(self, state: dict) -> None:
-        ui.label(self.completed_text).classes('text-success').style('margin-top: 0.5rem;')
+        ui.label(_(self.completed_text)).classes('text-success')
 
     def render_disabled(self, state: dict) -> None:
-        ui.label(self.disabled_text).classes('text').style('margin-top: 0.5rem;')
+        ui.label(_(self.disabled_text)).classes('text')

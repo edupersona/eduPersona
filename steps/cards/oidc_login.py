@@ -49,7 +49,7 @@ class OIDCLoginStep(StepCard):
                         ui.label(_(self.secondary_button['hint'])).classes('step-secondary-hint')
 
     def render_completed(self, state: dict) -> None:
-        ui.label(self.completed_text).classes('text-success')
+        ui.label(_(self.completed_text)).classes('text-success')
         expandable_info(state.get('outputs', {}).get(self.idp, {}))
 
     async def result_handler(self, userinfo: dict, id_token_claims: dict, token_data: dict, next_url: str = "") -> None:

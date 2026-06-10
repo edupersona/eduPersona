@@ -1,20 +1,30 @@
 # eduPersona onboarding 
 
-<b>TL;DR:</b> Een self-service pagina die de eduID van gastgebruikers betrouwbaar koppelt aan instellingsidentiteiten. Bij het aanvaarden van de uitnodiging doorloopt de gast een flexibel, configureerbaar stappenplan, waarbij de gastgebruiker stap voor stap begeleid wordt tot aan alle onboarding-eisen is voldaan.
+> **NIEUWS -- van rollen naar persona's (juni 2026):** ik heb eduPersona omgebouwd van een rol-/gastgebaseerd model naar
+> &ldquo;persona's&rdquo;, met de **uitnodiging** als centrale entiteit. Dat sluit beter aan op de plek van eduPersona in de levensyclus van de gast. 
+> Zie [CHANGELOG.md](CHANGELOG.md) voor het volledige overzicht — inclusief het waarom.
+
+### Wat is eduPersona?
+
+<b>TL;DR:</b> Een self-service pagina die de eduID van gastgebruikers betrouwbaar koppelt aan instellingsidentiteiten. Het type gast &ndash; de **persona** &ndash; bepaalt welk flexibel, configureerbaar stappenplan de gast doorloopt, waarbij hij/zij stap voor stap begeleid wordt tot aan alle onboarding-eisen is voldaan. Bij afronding koppelt eduPersona de geverifieerde gast terug naar de instelling.
 
 ### Hoe werkt het?
 
 ![eduPersona Diagram](docs/edupersona_diagram.png)
 
-1. Maak een **gast** aan en ken een **rol** toe. Structureel zul je dat willen doen vanuit instellings-IGA/IDM, maar het kan ook interactief in eduPersona. Die rol moet ook gedefinieerd worden, uiteraard &ndash; zelfde verhaal.
-2. Maak een **uitnodiging** aan voor deze gast en rol en verzend deze: eduPersona kan een SMTP stekker of Postmark gebruiken voor uitgaande mail en biedt templates die per tenant kunnen worden ingesteld -- maar uiteraard kan de verzending ook vanuit IGA/IDM plaatsvinden. 
-3. De gast opent de link naar de self-service-pagina **/accept**, of kopieert en plakt de code. Daar leiden we hem/haar door de stappen die nodig zijn om toegang te geven. Voor elke IDP (inclusief maar niet beperkt tot eduID) kunnen we controles doen op attributen (naam, mailadres e.d.) en op meegegeven ACR's (bijv. tweede factor) - en de gebruiker de goede kant opsturen als nadere verificatie of configuratie nodig is. 
+Het centrale begrip is de **persona**: het *soort* gast (gastdocent, alumnus, promotor, ...). Voor elke persona kunnen er andere eisen gesteld worden aan de onboarding en verificatie. In eduPersona bepaalt de gekozen persona de verificatiestappen die moeten worden doorlopen, de mail templates en de gegevenssets die worden meegenomen in de uitnodiging en teruggeleverd aan IAM. Rollen en autorisaties zijn buiten sccope van eduPersona &ndash; dat hoort in de IAM-keten van de instelling. 
 
-4. Optioneel ondersteunt eduPersona **SCIM** om de geverifieerde gast (de 'bare user' met eduID-identiteit) *na afronding van de onboarding* terug te koppelen naar instellings-IGA/IDM (zie `settings.json`, `tenants.hvh.scim`). Rollen en groepslidmaatschap blijven bij de IGA/IDM van de instelling; eduPersona pusht alleen de geverifieerde gebruiker.
+De nummering volgt de figuur hierboven:
 
-5. Na afronding van het stappenplan komt de gast op de **/apps** pagina &ndash; een persoonlijk overzicht met alle rollen die deze gast heeft (actief, toekomstig, verlopen; óók de rollen die rechtstreeks zijn toegekend, zonder invite). Actieve rollen zijn klikbaar en leiden direct naar de applicatie of dienst. De gast kan later terugkomen op /apps en wordt dan via eduID herkend aan het pseudoniem dat bij onboarding is vastgelegd.
+1. **Primaire registratie** van een gast vindt plaats in een bronsysteem en/of IAM. Dit leidt tot het toekennen van een `guest_id` in IAM. Meestal zal ook worden vastgelegd om wat voor *soort* gast het gaat: dat bepaalt de *persona*.
+2. **De uitnodiging wordt aangemaakt**  via de API: in de regel zal dat vanuit IAM of gastregistratie gebeuren, maar het kan ook interactief via de simulator-pagina, zie *Getting started*.
+3. **eduPersona stuurt een uitnodiging met code** naar de gast. Voor uitgaande mail kun je een SMTP-stekker of Postmark gebruiken, met templates en gegevens die per persona verschillend kunnen zijn.
+4. **De gast accepteert en volgt het stappenplan** op de self-service-pagina `/accept/{invitation_id}`. Per persona kan dat plan verschillen: inloggen met eduID, een MFA-controle, verificatie met een tweede instelling of Entra ID, een check tegen een alumni-DB, identiteitsverificatie (iDIN), enzovoort. Voor elke IDP kunnen we controleren op attributen (naam, mailadres e.d.) en op meegegeven ACR's (bijv. tweede factor), en de gebruiker bijsturen als nadere verificatie of configuratie nodig is. 
+5. **Als onboarding is afgerond** verrijkt eduPersona de gastgegevens met het eduID-pseudoniem en/of overige verzamelde gegevens. Dat kan met een **POST naar een callback API** &ndash; of via **SCIM** (zie hieronder.
+6. Vanuit IAM zal nu **provisioning** van accounts en autorisaties naar doelsystemen plaatsvinden. 
+7. **De gast kan nu inloggen met eduID** op zijn/haar applicaties &ndash; hetzij doordat het eduID-pseudoniem in de applicatie zelf is opgenomen, hetzij door de eduID af te beelden op de instellingsidentiteit. 
 
-De link tussen instellingsaccount en eduID die hier wordt vastgelegd zou vervolgens kunnen worden gebruikt om via de <a href="https://servicedesk.surf.nl/wiki/spaces/IAM/pages/222462401/Ondersteuning+voor+applicaties+zonder+multi-identifier+functionaliteit">instellings-informatie API</a> het instellingsaccount mee te geven bij het inloggen. Dat maakt integratie van eduID in het applicatielandschap aanzienlijk eenvoudiger (vgl. anyID/keyring scenario van Aventus).
+Bij die laatste stap kan het wenselijk zijn om weliswaar *in te loggen* met eduID, maar naar de applicaties toe gebruik te blijven maken van een instellingsidentiteit. Daarvoor kun je denken aan het anyID/keyring-scenario van Aventus (gebaseerd op Keycloak) en/of de <a href="https://servicedesk.surf.nl/wiki/spaces/IAM/pages/222462401/Ondersteuning+voor+applicaties+zonder+multi-identifier+functionaliteit">instellings-informatie API</a> van SURFconext. Zo'n voorziening kan dan in stap 6 worden voorzien van de afbeelding van `eduID` op `guest_id`.
 
 ### Getting started
 
@@ -24,9 +34,8 @@ mkdir edupersona && cd $_
 git clone https://github.com/kleynjan/eduPersona.git .
 pip install -r requirements.txt
 cp settings.example.json settings.json
-cp edupersona.example.db edupersona.db
 ```
-Edit je settings.json, pas in elk geval het userid en wachtwoord voor tenants.hvh.fallback_admins aan.
+Edit je settings.json, pas in elk geval het userid en wachtwoord voor `tenants.hvh.fallback_admins` aan. De SQLite-database (`edupersona.db`) wordt bij de eerste start automatisch aangemaakt.
 
 Start een lokale dev server met:
 ```
@@ -35,52 +44,50 @@ Start een lokale dev server met:
 
 Ga dan met je browser naar http://localhost:8080/, klik op "Log in als beheerder" en log in met je fallback_admin credentials.
 
-Je kunt nu gasten opvoeren, rollen definiëren en toekennen, en gasten uitnodigen in hun rollen.
-<br>... als je de Postmark of SMTP config hebt ingesteld kun je de invite per mail versturen ... 
-Anders: klik op de uitnodiging en kopieer de code.
+Je ziet nu de **invitations**-pagina (het overzicht van uitnodigingen) en de **simulator**. De simulator is de snelste manier om met de hand een persona-uitnodiging te maken:
+* open de **simulator**, kies een persona, vul een `guest_id` en e-mailadres in en maak de uitnodiging aan;
+* ... als je de Postmark- of SMTP-config hebt ingesteld kun je de invite per mail versturen ...
+* anders: open de uitnodiging in het overzicht en kopieer de code.
 
 Je hebt nu de code waarmee een gast de onboarding kan starten:
 * ga naar http://localhost:8080/accept<br>
-*TIP: Houd de 'admin' en 'gast' schermen gescheiden, bijvoorbeeld door verschillende browsers te gebruiken*
-* voer de code in en volg de aangegeven stappen
-* na succesvolle afronding is het eduID-pseudoniem geregistreerd en wordt de gast doorgeleid naar zijn/haar '/apps' pagina 
+* voer de code in en volg de aangegeven stappen;
+* na succesvolle afronding is het eduID-pseudoniem geregistreerd, vindt de terugkoppeling plaats en wordt de gast doorgeleid naar zijn/haar welkomstscherm.
 
-<img src="docs/screenshot3.png" alt="screenshot" width="650"/>
+<img src="docs/screenshot4.png" alt="screenshot" width="650"/>
 
 Als je eduID en/of instellings-logins echt wilt testen zul je de benodigde OIDC client_id's en secrets moeten configureren in settings.json en het eduPersona portal registreren bij SURFconext(-test) en/of de betrokken IDP. (Dit kan óók met een dev omgeving op localhost.)
 
 ### edupersona.nl
 
-We hebben een demo-/PoC-omgeving draaien op [https://edupersona.nl/](https://edupersona.nl/) <br>[Registreer je daar](https://edupersona.nl/register) als je tijdelijke admin credentials wilt hebben om e.e.a. in de praktijk te proberen.
+We hebben een demo/PoC-omgeving draaien op [https://edupersona.nl/](https://edupersona.nl/) <br>[Registreer je daar](https://edupersona.nl/register) als je tijdelijke admin credentials wilt hebben om e.e.a. in de praktijk te proberen.
 
 ### Inrichting, features, configuratie
 
-* Het **onboarding stappenplan** is flexibel, want gedefinieerd via configuratie (settings.json: `tenants.hvh.scenarios.<key>.steps`) - waarbij 'kaarten' worden gebruikt die zijn gedefinieerd in `domain/step_cards.py`. Een tenant kan meerdere scenario's hebben; vandaag heeft elke tenant er één (`default`). 
+* **Persona's** worden in `settings.json` gedefinieerd (onder `tenants.<tenant>.personas.<key>`). Elke persona heeft o.a. een naam ('alumnus'), een stappenplan (`steps`), definitie van de uitgaande en op te halen gegevens en een template voor de uitnodigingsmail.
 
-* Voor het **verzenden van de uitnodiging** wordt ondersteuning van SMTP en Postmark geboden. Mailberichten worden opgesteld via Jinja2 HTML-templates. Afzenders kunnen per rol worden geconfigureerd.
+* Het **onboarding stappenplan** voor elke persona wordt gedefinieerd door de combinatie van ***configuratie*** (steps in `settings.json`) en ***kaarten*** die (in Python) zijn gedefinieerd in `steps/cards/` (o.a. `OIDCLoginStep`, `VerifyMfaStep`, `VerifyMobileStep`, `VerifyAlumniDb`). Een kaart registreert zichzelf automatisch zodra je hem toevoegt; dit is dé uitbreidingslaag van eduPersona.
 
-* eduPersona is fundamenteel **multi-tenant**, ook als je dat niet gebruikt. De default tenant die je overal tegenkomt is 'hvh': de beruchte Hogeschool van Harderwijk. Je kunt in settings.json je eigen tenant-string als key opnemen onder de `tenants` key. 
+* Voor het **verzenden van de uitnodiging** wordt ondersteuning van SMTP en Postmark geboden. Mailberichten worden opgesteld via Jinja2 HTML-templates (een per-persona body in een per-tenant layout). Afzenders kunnen per persona of per uitnodiging worden geconfigureerd.
 
-* **'Mijn applicaties & diensten'** (`/apps`): eenmaal 'onboarded', logt een gast hier met eduID in en ziet al zijn/haar rollen. Deze toegang is gebaseerd op het eduID-pseudoniem dat bij het accepteren van de uitnodiging wordt gebruikt &ndash; dit wordt bij de gast vastgelegd.
+* eduPersona is fundamenteel **multi-tenant**, ook als je dat niet gebruikt. De default tenant die je overal tegenkomt is 'hvh': de beruchte Hogeschool van Harderwijk. Je kunt in settings.json je eigen tenant-string als key opnemen onder de `tenants` key.
 
-* **SCIM**: na een succesvolle onboarding doet eduPersona optioneel één SCIM-call om de geverifieerde gast (bare user) terug te koppelen naar een IDM/IGA-systeem. Dit is dormant/opt-in per tenant (`tenants.<t>.scim`); er worden geen rollen of groepen gesynchroniseerd.
+* **Callback API**: bij afronding POST eduPersona de verzamelde gegevens naar de ingestelde callback_url. De `callback_outputs` in de persona-configuratie bepalen welke geverifieerde gegevens daarbij worden meegestuurd. Zie [`docs/callback_api.md`](docs/callback_api.md) voor de volledige documentatie (gegevens, auth, afleversemantiek, statuscontrole). Er is voorzien in een retry-mechanisme. In plaats van deze API kan ook **SCIM** worden gebruikt; dit is per tenant in te schakelen. Beide interfaces beperken zich tot de &lsquo;bare user&rsquo; en de verzamelde verificatiegegevens; er worden geen rollen of groepen gesynchroniseerd &ndash; die horen in IAM thuis.
 
-* **IDP instellingen**: de `admin` IDP (settings.json: `tenants.hvh.oidc.admin`) wordt gebruikt om in te loggen op de beheersfuncties. De overige IDP's onder de `oidc` key worden gebruikt in het stappenplan dat de gast bij onboarding moet doorlopen. Uiteraard moet je jouw eduPersona SP/RP bij elke IDP (c.q. SURFconext, Entra ID) als zodanig registreren met een client_id en client_secret.
+* **IDP instellingen** vind je in settings.json: de `admin` IDP wordt gebruikt om in te loggen op de beheersfuncties. De overige IDP's onder de `oidc` key worden gebruikt in het stappenplan dat de gast bij onboarding moet doorlopen. Uiteraard moet je jouw eduPersona SP/RP bij elke IDP (c.q. SURFconext, Entra ID) als zodanig registreren met een client_id en client_secret.
 
 * **Meertalig**: alle strings zijn Engels met als default een vertaling naar het Nederlands actief. Andere talen kunnen worden toegevoegd in `services.i18n`.
 
-* **Cleanup**: er is een apart endpoint `/api/v1/cleanup` met een bijbehorende API-key om verlopen rollen en roltoekenningen e.d. op te ruimen. Zorg dat dit endpoint ten minste één keer per dag wordt aangeroepen, bijv. via crontab.
+* **Verloop & cleanup**: uitnodigingen hebben default een geldigheidsduur van 14 dagen (instelbaar in settings.json). Er is een endpoint `POST /maintenance` (met de header `X-Cleanup-Key`) dat verlopen uitnodigingen over alle tenants opruimt. Zorg dat dit endpoint ten minste één keer per dag wordt aangeroepen, bijv. via crontab.
 
 ### API
 
-eduPersona biedt een volledige API met 28+ endpoints. Naast primitieven voor guests, roles, role assignments, invitations etc worden er enkele 'convenience' API's geboden om bijvoorbeeld een 'quick invite' te kunnen doen (met alle benodigde objecten) en `create_invite_role` die een klein maar essentieel stukje van de SURF Invite API emuleert. De API is zelf-documenterend via http://localhost:8080/docs, /redoc en /openapi.json
-
-Stel in settings.json de `tenants.hvh.api_key` in als je de API wilt gaan gebruiken.
-
+eduPersona biedt een REST API, met `invitations` als enige first-class entiteit: aanmaken (+ mail versturen), opvragen (lijst, enkel, lookup op code), opnieuw versturen en intrekken &ndash; allemaal onder `/api/v1/{tenant}/invitations`. De API is zelf-documenterend via /docs, /redoc en /openapi.json . Stel in settings.json de `tenants.<tenant>.api_key` in als je de API wilt gaan gebruiken.
 
 ### Architectuur
 
-* [NiceGUI](https://nicegui.io/) maakt het mogelijk om web apps te maken met alleen Python. NiceGUI maakt gebruik van FastAPI en Starlette als onderliggende infrastructuur.
+* Dankzij [NiceGUI](https://nicegui.io/) kun je ook als 'business user' onboarding-stappen aanpassen of toevoegen in helder en overzichtelijk Python, zonder je zorgen te maken over front-end vs. back-end ontwikkeling. 
+NiceGUI bouwt voort op next-gen Python frameworks als FastAPI en Starlette.
 
 * [Tortoise ORM](https://tortoise.github.io) is een async ORM die o.a. PostgreSQL, MySQL/MariaDB en SQLite ondersteunt. De code base hier maakt een SQLite database aan (edupersona.db), maar als je init_db aanpast kun je ook een andere back-end gebruiken.
 
@@ -103,7 +110,7 @@ Stel in settings.json de `tenants.hvh.api_key` in als je de API wilt gaan gebrui
 - aiosmtplib
 - nicegui-rdm
 
-Zie requirements.txt (en requirements-test.txt als je de tests wilt kunnen draaien).
+Zie requirements.txt (en requirements-test.txt als je de tests wilt kunnen uitvoeren).
 
 ### Constraints
 

@@ -58,15 +58,15 @@ def _build_persona_config(raw: dict) -> PersonaConfig:
     except ValidationError as e:
         raise ValueError(f"invalid expected_params: {e}") from e
     return PersonaConfig(
-        display_name=dict(raw["display_name"]),
+        display_name=raw["display_name"],
         steps=[dict(s) for s in raw["steps"]],
         mail=MailRef(layout=mail["layout"], body=mail["body"]),
         success_redirect_url=raw.get("success_redirect_url"),
         callback_url=raw.get("callback_url"),
         expected_params=expected,
         callback_outputs=list(raw.get("callback_outputs") or []),
-        completion_message=dict(raw.get("completion_message") or {}),
-        cta_label=dict(raw.get("cta_label") or {}),
+        completion_message=raw.get("completion_message") or "",
+        cta_label=raw.get("cta_label") or "",
     )
 
 

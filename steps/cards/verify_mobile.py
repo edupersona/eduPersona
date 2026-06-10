@@ -80,7 +80,7 @@ class VerifyMobileStep(StepCard):
                     Button(_(self.resend_label), on_click=self._reset)
 
     def render_completed(self, state: dict) -> None:
-        ui.label(self.completed_text).classes('text-success')
+        ui.label(_(self.completed_text)).classes('text-success')
         out = state.get('outputs', {}).get(self.step_id, {})
         if out.get('mobile'):
             expandable_info({_(self.mobile_label): out['mobile']})

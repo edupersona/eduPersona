@@ -74,7 +74,7 @@ Steps signal outcomes via `await self.complete(output)` / `await self.fail(error
 
 Finalization is **not** a step — it's a built-in orchestrator side effect (`Steps._finalize`): it persists `state['outputs']` to `Invitation.step_outputs` and calls `accept_invitation` (which fires the webhook callback). It does **not** run automatically when the last step finishes. Instead, once every step is `completed`/`skipped` (`Steps.all_steps_done`), the orchestrator renders a **review gate** — the completed cards plus a primary **Register** button — so the guest can review the collected data before anything is sent. Clicking Register calls `Steps.register()`, which runs `_finalize()`. Idempotent — guarded by `state['completed']`/`state['finalize_failed']` within a session and by the invitation's own status across sessions.
 
-On success the orchestrator's `render()` stops showing step cards and renders `render_welcome(tenant, persona_key, given_name)` — a per-persona, localized success screen (`PersonaConfig.completion_message` + `cta_label`, CTA linking to `success_redirect_url`). The same `render_welcome` is reused by `routes/accept.py` for a returning user who reopens an already-accepted invitation, so both paths render identically.
+On success the orchestrator's `render()` stops showing step cards and renders `render_welcome(tenant, persona_key, given_name)` — a per-persona success screen (`PersonaConfig.completion_message` + `cta_label`, both single source strings rendered through `_()`, CTA linking to `success_redirect_url`). The same `render_welcome` is reused by `routes/accept.py` for a returning user who reopens an already-accepted invitation, so both paths render identically.
 
 ## Scenarios
 

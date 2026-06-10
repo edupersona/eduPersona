@@ -9,17 +9,18 @@ import them at top level safely.
 from typing import Any
 
 from domain.persona import ExpectedParam
+from services.i18n import _
 from services.persona_loader import get_persona_config
 from services.settings import get_tenant_config
 
 
 def _persona_options(tenant: str) -> dict[str, str]:
-    """{persona_key: display label} for a tenant's personas (label = nl name, fallback key)."""
+    """{persona_key: display label} for a tenant's personas (translated name, fallback key)."""
     personas = get_tenant_config(tenant).get("personas") or {}
     options: dict[str, str] = {}
     for key in personas:
         try:
-            options[key] = get_persona_config(tenant, key).label("nl")
+            options[key] = _(get_persona_config(tenant, key).display_name)
         except Exception:
             options[key] = key
     return options
