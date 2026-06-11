@@ -55,6 +55,7 @@ async def prepare_invite_message(invitation: dict, tenant: str) -> dict:
 
     context = {
         "accept_url": accept_url,
+        "invite_code": invitation["code"],
         "persona": _(cfg.display_name),
         "persona_params": invitation.get("persona_params") or {},
         "given_name": invitation.get("given_name"),

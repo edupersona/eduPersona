@@ -53,11 +53,11 @@ def _apply_theme(page_name: str, tenant: str) -> dict:
     return theme
 
 def _user_link(tenant: str):
-    username = app.storage.user.get("username", "gast")
+    display_name = app.storage.user.get("display_name") or app.storage.user.get("username", "gast")
     is_guest = app.storage.user.get("user_type") == "guest"
 
     # User info with dropdown menu
-    with ui.label(username).classes("username"):
+    with ui.label(display_name).classes("username"):
         ui.icon("person", color="background")
 
         with ui.menu().props(remove="no-parent-event"):

@@ -46,8 +46,8 @@ def test_get_persona_config_happy():
     assert cfg.display_name == "Gastdocent"
     assert cfg.mail.layout == "layouts/hvh.jinja2"
     assert cfg.callback_outputs == ["eduid_login"]
-    assert set(cfg.expected_params) == {"department", "personal_message"}
-    assert cfg.expected_params["department"].type == "string"
+    assert set(cfg.expected_params) == {"faculteit", "personal_message"}
+    assert cfg.expected_params["faculteit"].type == "string"
     assert [s["id"] for s in cfg.steps] == [
         "eduid_login", "institutional_login",
     ]

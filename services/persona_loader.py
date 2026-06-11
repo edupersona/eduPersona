@@ -13,13 +13,13 @@ from typing import Any
 
 from pydantic import ValidationError
 
-from domain.persona import ExpectedParam, MailRef, PersonaConfig
+from domain.persona import CompletionConfig, ExpectedParam, MailRef, PersonaConfig
 from services.settings import get_tenant_config
 
 _PERSONA_KEYS = {
     "display_name", "steps", "mail", "success_redirect_url",
     "callback_url", "expected_params", "callback_outputs",
-    "completion_message", "cta_label",
+    "completion_message", "cta_label", "completion",
 }
 
 
@@ -57,6 +57,16 @@ def _build_persona_config(raw: dict) -> PersonaConfig:
                     for k, v in (raw.get("expected_params") or {}).items()}
     except ValidationError as e:
         raise ValueError(f"invalid expected_params: {e}") from e
+    comp = raw.get("completion")
+    completion = None
+    if comp is not None:
+        if "action" not in comp:
+            raise ValueError("persona 'completion' config requires 'action'")
+        completion = CompletionConfig(
+            action=comp["action"],
+            authz=list(comp.get("authz") or []),
+            notify_email=comp.get("notify_email"),
+        )
     return PersonaConfig(
         display_name=raw["display_name"],
         steps=[dict(s) for s in raw["steps"]],
@@ -67,6 +77,7 @@ def _build_persona_config(raw: dict) -> PersonaConfig:
         callback_outputs=list(raw.get("callback_outputs") or []),
         completion_message=raw.get("completion_message") or "",
         cta_label=raw.get("cta_label") or "",
+        completion=completion,
     )
 
 

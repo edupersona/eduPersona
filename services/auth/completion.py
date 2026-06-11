@@ -36,11 +36,13 @@ async def complete_admin_authentication(
 
     # Look up user in admins list (OIDC users)
     authz = []
+    display_name = username
     user_found = False
 
     for admin in get_tenant_admins(tenant):
         if admin.get('user') == username:
             authz = admin.get('authz', [])
+            display_name = admin.get('display_name', username)
             user_found = True
             logger.info(f"OIDC admin user {username} has authorization: {authz}")
             break
@@ -50,6 +52,7 @@ async def complete_admin_authentication(
         for admin in get_tenant_fallback_admins(tenant):
             if admin.get('user') == username:
                 authz = admin.get('authz', [])
+                display_name = admin.get('display_name', username)
                 user_found = True
                 logger.info(f"Fallback admin user {username} has authorization: {authz}")
                 break
@@ -68,6 +71,7 @@ async def complete_admin_authentication(
     session_data = {
         "tenant": tenant,
         "username": username,
+        "display_name": display_name,
         "authenticated": True,
         "last_activity_datetime": datetime.now(),
         "expired": False,

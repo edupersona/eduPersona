@@ -49,7 +49,9 @@ def test_build_request_body_keeps_nonempty_persona_params():
 
 
 def test_persona_options(test_tenant):
-    assert _persona_options(test_tenant) == {"gastdocent": "Gastdocent", "alumnus": "Alumnus"}
+    assert _persona_options(test_tenant) == {
+        "gastdocent": "Gastdocent", "alumnus": "Alumnus", "admin": "Beheerder",
+    }
 
 
 def test_default_for_spec_typed():

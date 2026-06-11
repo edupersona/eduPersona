@@ -32,6 +32,7 @@ translations: dict[str, dict[str, str]] = {
         'Invalid username or password': 'Ongeldige gebruikersnaam of wachtwoord',
         'Local account': 'Lokaal account',
         'Login': 'Inloggen',
+        'Login with (test!) eduID': 'Inloggen met (test!) eduID',
         'Login with SURFconext': 'Inloggen met SURFconext',
         'password': 'wachtwoord',
         'Register for PoC access here': 'Zelf proberen? Registreer hier voor toegang naar de PoC-omgeving',
@@ -113,17 +114,17 @@ translations: dict[str, dict[str, str]] = {
         'Your onboarding has been completed successfully.': 'Je onboarding is succesvol afgerond.',
 
         # Registration (routes/register.py)
-        'Could not send your request — please try again later': 'Je aanvraag kon niet worden verstuurd — probeer het later opnieuw',
+        'Could not start your registration — please try again later': 'Je registratie kon niet worden gestart — probeer het later opnieuw',
+        'Could not send your invitation — please try again later': 'Je uitnodiging kon niet worden verstuurd — probeer het later opnieuw',
         'Email address': 'mailadres',
         'First name': 'voornaam',
         'Last name': 'achternaam',
-        'Leave your details if you want to try out eduPersona.nl for yourself. We will send you a test login for this PoC environment.': 'Wil je eduPersona.nl zelf proberen? Vul je gegevens in en we sturen je een login. (Vrijblijvend en gratis, uiteraard.)',
-        'Organisation': 'organisatie',
+        "Leave your details if you want to try out eduPersona.nl for yourself. We'll e-mail you an invitation to onboard with your (test-)eduID.": 'Wil je eduPersona.nl zelf proberen? Vul je gegevens in, dan mailen we je een uitnodiging om je aan te melden met je (test-)eduID.',
         'Please fill in all fields with a valid email': 'Vul alle velden in met een geldig mailadres',
         'Register for PoC access': 'Registreer hier voor toegang naar de eduPersona PoC',
         'Send': 'Versturen',
         'Thank you!': 'Bedankt!',
-        "We've received your details and will be in touch shortly with your PoC test login.": 'Bedankt voor je interesse! We hebben je gegevens ontvangen, je hoort snel van ons terug.',
+        "We've sent you an invitation by e-mail. Open the link to onboard with your (test-)eduID and get access to this PoC environment.": 'We hebben je een uitnodiging gemaild. Open de link om je aan te melden met je (test-)eduID en toegang te krijgen tot deze PoC-omgeving.',
 
         # Errors (services/ui_errors.py)
         'Something went wrong. Please try again.': 'Er is iets misgegaan. Probeer het opnieuw.',

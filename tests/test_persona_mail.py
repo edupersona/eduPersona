@@ -31,14 +31,14 @@ def _inv(**kw) -> dict:
 
 async def test_prepare_renders_body_in_layout(test_tenant):
     msg = await prepare_invite_message(
-        _inv(persona_params={"personal_message": "Welkom bij het team!", "department": "Informatica"}),
+        _inv(persona_params={"personal_message": "Welkom bij het team!", "faculteit": "Informatica"}),
         test_tenant,
     )
     html = msg["html_body"]
     assert "Anna" in html                         # given_name greeting
     assert "Gastdocent" in html                    # persona display_name (nl)
     assert "Welkom bij het team!" in html          # persona_params personal_message block
-    assert "Informatica" in html                   # department block
+    assert "Informatica" in html                   # faculteit block
     assert "/accept/ABC123" in html                # accept_url
     assert "eduPersona" in html                    # layout frame
     assert msg["to_email"] == "anna@example.org"

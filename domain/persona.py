@@ -12,7 +12,7 @@ loads/validates instances from per-tenant settings; the API and accept flow cons
 """
 
 from dataclasses import dataclass, field
-from typing import Any, Literal
+from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, model_validator
 
@@ -86,6 +86,20 @@ class MailRef:
 
 
 @dataclass(frozen=True)
+class CompletionConfig:
+    """Non-default completion behaviour for a persona.
+
+    When set, the orchestrator's accept side effect runs this action *instead of*
+    relying on a webhook callback. Currently the only `action` is "admin_onboarding"
+    (self-service: provision the verified eduID `sub` as a tenant admin + notify).
+    """
+
+    action: str
+    authz: list[str] = field(default_factory=list)
+    notify_email: str | None = None
+
+
+@dataclass(frozen=True)
 class PersonaConfig:
     """The full persona definition (one entry under a tenant's `personas`).
 
@@ -110,3 +124,6 @@ class PersonaConfig:
     # Translate via `_()` like any other UI string; empty → caller's translated default.
     completion_message: str = ""
     cta_label: str = ""
+    # Non-default completion side effect (e.g. self-service admin onboarding); None →
+    # the standard webhook/SCIM path keyed off `callback_url`.
+    completion: Optional[CompletionConfig] = None

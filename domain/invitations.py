@@ -159,6 +159,17 @@ async def accept_invitation(tenant: str, code: str) -> bool:
     # No-op unless the tenant configures an enabled `scim` block (never raises).
     from services.scim import push_verified_user
     await push_verified_user(tenant, inv)
+
+    # Persona-specific completion action (e.g. self-service admin onboarding) in place
+    # of a webhook. Best-effort, like the callback: a failure must not roll back the
+    # acceptance that is already committed.
+    try:
+        cfg = get_persona_config(tenant, inv.persona_key or "")
+        if cfg.completion and cfg.completion.action == "admin_onboarding":
+            from services.admin_onboarding import complete_admin_onboarding
+            await complete_admin_onboarding(tenant, inv, cfg.completion)
+    except Exception as e:
+        logger.error(f"accept_invitation: completion action failed for {inv.id}: {e}")
     return True
 
 

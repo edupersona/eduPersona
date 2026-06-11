@@ -66,3 +66,27 @@ def reload_settings():
     global _settings_cache, config
     _settings_cache = None
     config = _load_settings()
+
+
+def upsert_tenant_admin(tenant: str, user: str, display_name: str, authz: list[str]) -> None:
+    """Add or update an admin entry for `tenant` in settings.json, then reload.
+
+    Idempotent on `user` (the OIDC `sub`): an existing entry is updated in place,
+    otherwise a new one is appended. Writes the file and refreshes the in-memory cache
+    so the auth lookup (get_tenant_config → _load_settings) sees the change at once.
+    """
+    settings = _load_settings()
+    if tenant not in settings['tenants']:
+        raise ValueError(f"Unknown tenant: {tenant}")
+    admins = settings['tenants'][tenant].setdefault('admins', [])
+    entry = {"display_name": display_name, "user": user, "authz": list(authz)}
+    for existing in admins:
+        if existing.get('user') == user:
+            existing.update(entry)
+            break
+    else:
+        admins.append(entry)
+    with open(_settings_path(), 'w') as f:
+        json.dump(settings, f, indent=2, ensure_ascii=False)
+        f.write('\n')
+    reload_settings()

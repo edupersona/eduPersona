@@ -44,12 +44,12 @@ async def test_create_with_names_and_params(test_tenant):
     out = await create_invitation(
         test_tenant, "gastdocent", "anna@example.org", "EMP-42",
         given_name="Anna", family_name="Verver",
-        persona_params={"department": "CS"},
+        persona_params={"faculteit": "CS"},
     )
     assert out["given_name"] == "Anna"
     assert out["family_name"] == "Verver"
     assert out["guest_id"] == "EMP-42"
-    assert out["persona_params"] == {"department": "CS"}
+    assert out["persona_params"] == {"faculteit": "CS"}
 
 
 async def test_create_unknown_persona_raises(test_tenant):
@@ -152,7 +152,7 @@ async def test_multi_persona_same_email_independent(test_tenant, monkeypatch):
 async def test_apply_invite_to_state(test_tenant):
     out = await create_invitation(
         test_tenant, "gastdocent", "anna@example.org", "EMP-1",
-        given_name="Anna", family_name="Verver", persona_params={"department": "CS"},
+        given_name="Anna", family_name="Verver", persona_params={"faculteit": "CS"},
     )
     state: dict = {}
     ok = await apply_invite_to_state(test_tenant, state, out["code"])
@@ -160,7 +160,7 @@ async def test_apply_invite_to_state(test_tenant):
     assert state["invite_code"] == out["code"]
     assert state["invitation_id"] == out["id"]
     assert state["persona_key"] == "gastdocent"
-    assert state["persona_params"] == {"department": "CS"}
+    assert state["persona_params"] == {"faculteit": "CS"}
     assert state["guest_email"] == "anna@example.org"
     assert state["given_name"] == "Anna"
     assert state["family_name"] == "Verver"

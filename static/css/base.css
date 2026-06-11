@@ -250,7 +250,7 @@ a.btn-primary:hover {
   /* stacked form column */
   .simulator-form {
     gap: 0.6rem;
-    max-width: 30rem;
+    max-width: 48rem;
     .parameters {
       font-size: 1.125rem;
       font-weight: 600;

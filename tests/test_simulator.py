@@ -27,5 +27,5 @@ async def test_simulator_page_renders(authenticated_invite_user: User, test_tena
 async def test_simulator_dynamic_fields(authenticated_invite_user: User, test_tenant: str):
     await authenticated_invite_user.open(f"/m/{test_tenant}/simulator")
     # gastdocent's expected_params materialise as inputs
-    await authenticated_invite_user.should_see("department")
+    await authenticated_invite_user.should_see("faculteit")
     await authenticated_invite_user.should_see("personal_message")

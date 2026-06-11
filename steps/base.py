@@ -150,7 +150,7 @@ class StepCard:
     @contextmanager
     def form_column(self) -> Iterator[Col]:
         """Standard single-column form chrome: renders help_text, then yields the column."""
-        col = Col(style='gap: 0.75rem; max-width: 24rem;')
+        col = Col(style='gap: 0.75rem;')
         with col:
             self.render_help()
             yield col

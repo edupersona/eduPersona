@@ -58,6 +58,7 @@ Je hebt nu de code waarmee een gast de onboarding kan starten:
 
 Als je eduID en/of instellings-logins echt wilt testen zul je de benodigde OIDC client_id's en secrets moeten configureren in settings.json en het eduPersona portal registreren bij SURFconext(-test) en/of de betrokken IDP. (Dit kan óók met een dev omgeving op localhost.)
 
+
 ### edupersona.nl
 
 We hebben een demo/PoC-omgeving draaien op [https://edupersona.nl/](https://edupersona.nl/) <br>[Registreer je daar](https://edupersona.nl/register) als je tijdelijke admin credentials wilt hebben om e.e.a. in de praktijk te proberen.
@@ -79,6 +80,43 @@ We hebben een demo/PoC-omgeving draaien op [https://edupersona.nl/](https://edup
 * **Meertalig**: alle strings zijn Engels met als default een vertaling naar het Nederlands actief. Andere talen kunnen worden toegevoegd in `services.i18n`.
 
 * **Verloop & cleanup**: uitnodigingen hebben default een geldigheidsduur van 14 dagen (instelbaar in settings.json). Er is een endpoint `POST /maintenance` (met de header `X-Cleanup-Key`) dat verlopen uitnodigingen over alle tenants opruimt. Zorg dat dit endpoint ten minste één keer per dag wordt aangeroepen, bijv. via crontab.
+
+
+### Voorbeeld-persona's: gastdocent, alumnus en admin
+
+In de repo zijn drie voorbeeld-persona's opgenomen. 
+
+Voor de **gastdocent-persona** zijn als demo de volgende stappen geconfigureerd (zie `settings.json`):
+
+1. Inloggen met (test-)eduID, zonodig eerst aanmaken (kaart: `OIDCLoginStep`)
+2. Verificatie van sterke authenticatie (`VerifyMfaStep`), eventueel eduID app laten installeren (*)
+3. Verificatie van een instellings-account via de DIY-IDP van SURFconext (`OIDCLoginStep`)
+
+Bij een gastdocent worden als extra gegevens voor de uitnodiging meegegeven (zie `expected_params` in config en `services/postmark/templates/personas/gastdocent.jinja2` voor de template):
+* `faculteit`
+* `personal_message`
+
+Na afronding van de onboarding worden voor een gastdocent de volgende &lsquo;resultaatblokken&rsquo; aan IAM teruggegeven (`callback_outputs`):
+* `eduid_login` -> alle informatie uit de eduID-login
+* `verify_mfa` -> de ACR-waarde die door de VerifyMfaStep is opgehaald
+
+Voor de **alumnus-persona** zijn de stappen:
+
+1. Inloggen met (test-)eduID (`OIDCLoginStep`)
+2. Opzoeken van de alumnus in een (dummy) alumni-database (`VerifyAlumniDb`)
+3. Puur als voorbeeld van een stap met meerdere substappen: (dummy) verificatie van het mobiele nummer (`VerifyMobileStep`) 
+
+In tegenstelling tot de gastdocent worden er geen extra gegevens meegegeven aan de uitnodiging (geen personal message, etc). 
+
+De belangrijkste gegevens die worden teruggegeven aan IAM zijn:
+* het eduID-pseudoniem (bijvoorbeeld `sub`, in het eduid_login blokje)
+* de `alumnus_id` (resultaat van de opzoek-actie in het alumni_db blokje) 
+* het geverifieerde mobiele nummer (uit het verify_mobile blokje)
+
+Tenslotte is er ook een **admin** persona gedefinieerd, waarmee we in de PoC self-enrollment doen van geïnteresseerden. Na de eduID-login wordt hier het stappenplan gebruikt om wat achtergrondinformatie van de aanvrager op te halen (`CollectIntakeStep`).
+
+(*) Echte MFA-verificatie vereist een koppeling aan eduID-productie.
+
 
 ### API
 

@@ -87,7 +87,7 @@
             "body": "personas/gastdocent.jinja2"
           },
           "expected_params": {
-            "department": {
+            "faculteit": {
               "type": "string",
               "required": false
             },
@@ -197,6 +197,50 @@
                 "title": "Stap 4. Verifieer je gegevens in onze alumnidatabase",
                 "completed_text": "✓ Alumnigegevens geverifieerd",
                 "disabled_text": "Voltooi eerst stap 3"
+              }
+            }
+          ]
+        },
+        "admin": {
+          "display_name": "Beheerder",
+          "mail": {
+            "layout": "layouts/hvh.jinja2",
+            "body": "personas/admin.jinja2"
+          },
+          "expected_params": {},
+          "callback_url": null,
+          "success_redirect_url": "/m/hvh/login",
+          "completion_message": "Je bent nu aangemeld als beheerder. Log in met je test-eduID.",
+          "cta_label": "Naar de login",
+          "completion": {
+            "action": "admin_onboarding",
+            "authz": [
+              "invitations",
+              "simulator"
+            ],
+            "notify_email": "admin@your-domain.com"
+          },
+          "steps": [
+            {
+              "class": "OIDCLoginStep",
+              "id": "eduid_login",
+              "config": {
+                "idp": "eduid",
+                "title": "Stap 1. Inloggen met je TEST eduID",
+                "completed_text": "✓ Ingelogd met (test-)eduID",
+                "primary_button_label": "Ik heb al een (test!) eduID"
+              }
+            },
+            {
+              "class": "CollectIntakeStep",
+              "id": "collect_intake",
+              "config": {
+                "title": "Stap 2. Vertel ons iets over je context",
+                "completed_text": "✓ Gegevens ontvangen",
+                "disabled_text": "Voltooi eerst stap 1",
+                "org_label": "Organisatie",
+                "scenario_label": "Heb je al een toepassingsscenario voor eduPersona in gedachten?",
+                "submit_label": "Verder"
               }
             }
           ]

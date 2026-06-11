@@ -52,7 +52,7 @@ async def admin_login_page(client: Client, tenant: str, next_url: str | None = N
             # Use existing oidc_mt infrastructure
             await start_oidc_login(
                 tenant=tenant,
-                idp="admin",  # Use admin idp configuration
+                idp="eduid",
                 next_url=next_url,
                 callback_handler=handler
             )
@@ -108,7 +108,7 @@ async def admin_login_page(client: Client, tenant: str, next_url: str | None = N
             with ui.card().tight().classes('login-card'):
                 # Primary: SURFconext
                 Button(
-                    _('Login with SURFconext'),
+                    _('Login with (test!) eduID'),
                     on_click=try_oidc_login,
                 ).style('width:100%;')
 
@@ -148,7 +148,7 @@ async def admin_oidc_login_redirect(tenant: str, next_url: str | None = None) ->
     # Use oidc_mt with admin-specific callback handler
     await start_oidc_login(
         tenant=tenant,
-        idp="admin",
+        idp="eduid",
         next_url=next_url,
         callback_handler=handler
     )

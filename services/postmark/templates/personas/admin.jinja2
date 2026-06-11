@@ -1,24 +1,15 @@
 <p style="font-size:16px; margin:0 0 16px;">Beste {{ given_name or "collega" }},</p>
 
 <p style="font-size:15px; line-height:1.5; margin:0 0 16px;">
-  Je bent uitgenodigd als <strong>{{ persona }}</strong>.
-  Volg de knop hieronder om je uitnodiging te bevestigen met je (test-)eduID.
+  Bedankt voor je interesse in eduPersona! Volg de knop hieronder om je aan te melden als
+  <strong>{{ persona }}</strong> met je (test-)eduID. Daarna kun je zelf inloggen op de
+  beheeromgeving van deze PoC.
 </p>
-
-{% if persona_params.personal_message %}
-<blockquote style="margin:0 0 16px; padding:12px 16px; background:#f4f7fb; border-left:3px solid #0a4d8c; font-style:italic;">
-  {{ persona_params.personal_message }}
-</blockquote>
-{% endif %}
-
-{% if persona_params.faculteit %}
-<p style="font-size:14px; color:#555; margin:0 0 16px;">Uitnodigende faculteit: {{ persona_params.faculteit }}</p>
-{% endif %}
 
 <p style="margin:0 0 24px;">
   <a href="{{ accept_url }}"
      style="display:inline-block; background:#0a4d8c; color:#ffffff; text-decoration:none;
-            padding:12px 22px; border-radius:6px; font-size:15px;">Accepteer je uitnodiging</a>
+            padding:12px 22px; border-radius:6px; font-size:15px;">Start je aanmelding</a>
 </p>
 
 {% if expiry_date %}
