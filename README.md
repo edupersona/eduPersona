@@ -6,7 +6,7 @@
 
 ### Wat is eduPersona?
 
-<b>TL;DR:</b> Een self-service pagina die de eduID van gastgebruikers betrouwbaar koppelt aan instellingsidentiteiten. Het type gast &ndash; de **persona** &ndash; bepaalt welk flexibel, configureerbaar stappenplan de gast doorloopt, waarbij hij/zij stap voor stap begeleid wordt tot aan alle onboarding-eisen is voldaan. Bij afronding koppelt eduPersona de geverifieerde gast terug naar de instelling.
+<b>TL;DR:</b> Een web app die de eduID van gastgebruikers betrouwbaar koppelt aan instellingsidentiteiten. Het type gast &ndash; de **persona** &ndash; bepaalt welk flexibel, configureerbaar stappenplan de gast doorloopt, waarbij hij/zij stap voor stap begeleid wordt tot aan alle onboarding-eisen is voldaan. Bij afronding koppelt eduPersona de geverifieerde gast terug naar de instelling. Je kunt het ook zien als een flexibele **verificatiefabriek**.
 
 ### Hoe werkt het?
 
