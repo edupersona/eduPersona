@@ -1,9 +1,10 @@
 # Multi-tenant/multi-IDP OIDC authentication
 
 from .oidc_protocol import (
+    bind_pending_state,
     complete_oidc_flow,
     load_well_known_config,
-    prepare_oidc_login,
+    register_pending_login,
 )
 import logging
 
@@ -76,7 +77,8 @@ async def start_oidc_login(
 ):
     """
     Initiate OIDC login flow and redirect to authorization server.
-    Uses app.storage.tab for internal OIDC state management.
+    Flow state is held in the in-process `_pending_logins` registry keyed by an OAuth
+    `state` token; that token is also bound to this browser via app.storage.user (CSRF).
 
     Args:
         tenant: Tenant name
@@ -103,24 +105,27 @@ async def start_oidc_login(
             if value is not None:
                 config[key] = value
 
-        # Generate PKCE and auth URL
-        auth_url, code_verifier = prepare_oidc_login(config)
-
-        # Ensure client connection before accessing tab storage
-        await ui.context.client.connected()
-
-        # Store OIDC state in tab storage (internal to oidc_mt)
-        from nicegui import app
-        app.storage.tab['oidc_state'] = {
-            'code_verifier': code_verifier,
+        # Engine mints state + PKCE, builds the auth URL, and stashes the flow state
+        # (incl. code_verifier) server-side keyed by state.
+        auth_url, state = register_pending_login(config, {
             'tenant': tenant,
             'idp': idp,
             'idp_label': config.get('label', ''),
             'next_url': next_url,
-            'callback_handler': callback_handler
-        }
+            'callback_handler': callback_handler,
+        })
 
-        logger.info(f"Authorization URL generated, redirecting to: {auth_url}")
+        # Ensure client connection before accessing user storage
+        await ui.context.client.connected()
+
+        # Bind `state` to THIS browser (CSRF): app.storage.user is cookie-keyed and survives
+        # the cross-site redirect. bind_pending_state mutates the list in place (NiceGUI
+        # observes + persists it); await-free ⇒ atomic across concurrent trips.
+        from nicegui import app
+        bind_pending_state(app.storage.user.setdefault('oidc_pending_states', []), state)
+
+        # auth_url now carries `state` (a CSRF half-credential) → DEBUG, not INFO
+        logger.debug(f"Authorization URL generated, redirecting to: {auth_url}")
         # Redirect to OIDC provider
         ui.navigate.to(auth_url, new_tab=False)
 

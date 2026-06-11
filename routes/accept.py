@@ -11,7 +11,7 @@ from domain.invitations import (
 from domain.models import Invitation
 from services.i18n import _
 from services.persona_loader import get_persona_config
-from services.session_manager import initialize_state
+from services.session_manager import clear_session_state, session_state
 from services.tenant import get_default_tenant, store_tenant_in_session
 from services.theme import frame
 from services.ui_errors import ui_guard
@@ -60,7 +60,6 @@ async def accept_invitation_page(invite_code: str = ""):
 
     with frame('accept', tenant):
         await ui.context.client.connected()
-        state = initialize_state()  # setdefault-only — preserves any in-flight session
 
         @ui.refreshable
         async def render() -> None:
@@ -75,13 +74,18 @@ async def accept_invitation_page(invite_code: str = ""):
                 _code_entry_form(typed, render.refresh)
                 return
 
-            if inv.status == 'accepted':  # returning user — same welcome screen as in-session completion
-                render_welcome(t, inv.persona_key, inv.given_name)
+            if inv.status in ('accepted', 'expired'):  # terminal — renders from the DB invitation,
+                clear_session_state(code)               # so its scratch state is now dead weight
+                if inv.status == 'accepted':  # returning user — same welcome as in-session completion
+                    render_welcome(t, inv.persona_key, inv.given_name)
+                else:  # expired — nothing to onboard; dead-end, not a fresh flow
+                    _terminal_error(_('This invitation has expired.'),
+                                    _('Please contact the sender of your invitation.'))
                 return
-            if inv.status == 'expired':  # nothing to onboard — dead-end, not a fresh flow
-                _terminal_error(_('This invitation has expired.'),
-                                _('Please contact the sender of your invitation.'))
-                return
+
+            # Session state lives in app.storage.user (survives the OIDC redirect),
+            # namespaced by invite code; resolved now that the code is valid.
+            state = session_state(code)
 
             steps = None
             with ui_guard(notify=False):  # default catch=ValueError (unknown persona / bad step config)

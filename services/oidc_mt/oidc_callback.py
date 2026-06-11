@@ -3,6 +3,7 @@
 
 from nicegui import ui
 from .multitenant import complete_oidc_login, get_logger, _callback_route, _error_route, _home_route
+from .oidc_protocol import consume_pending_state
 
 PRIMARY_COLOR = 'rgb(59, 130, 246)'
 
@@ -14,7 +15,7 @@ def register_oidc_routes(
     """Register OIDC callback routes with configurable paths and handlers."""
 
     @ui.page(callback_route)
-    async def oidc_callback(code: str = "", error: str = ""):
+    async def oidc_callback(code: str = "", error: str = "", state: str = ""):
         """Handle OIDC callback from authorization server"""
         logger = get_logger()
         logger.info(f"OIDC callback received - code: {'present' if code else 'missing'}, error: {error}")
@@ -47,12 +48,18 @@ def register_oidc_routes(
             try:
                 logger.debug("Completing OIDC login flow")
 
-                # Ensure client connection before accessing tab storage
+                # Ensure client connection before accessing user storage
                 await ui.context.client.connected()
 
-                # Read OIDC state from tab storage (following NiceGUI storage patterns)
+                # CSRF binding: `state` must be bound to THIS browser (app.storage.user,
+                # cookie-keyed, survives the redirect) AND still live server-side.
+                # consume_pending_state checks + removes it from the list in place and pops
+                # the registry; None ⇒ forged/expired/replayed → reject before any exchange.
                 from nicegui import app
-                oidc_state = app.storage.tab.get('oidc_state', {})
+                oidc_state = consume_pending_state(app.storage.user.get('oidc_pending_states', []), state)
+                if oidc_state is None:
+                    raise Exception("No matching login state - session may have expired or is invalid")
+
                 next_url = oidc_state.get('next_url', '') or home_route
 
                 # Complete login - delegates to callback handler if provided
@@ -64,9 +71,6 @@ def register_oidc_routes(
                 ui.label(f'Inloggen via {idp_label} met succes afgerond').classes('section-heading text-success')
                 ui.label('Je wordt doorgestuurd...').classes('page-subtitle')
                 ui.timer(2.0, lambda: ui.navigate.to(next_url), once=True)
-
-                # Clean up OIDC state from tab storage
-                app.storage.tab.pop('oidc_state', None)
 
                 logger.info("OIDC authentication completed successfully")
 
