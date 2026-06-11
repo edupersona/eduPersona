@@ -15,10 +15,10 @@ class VerifyMobileStep(StepCard):
     """Verify a mobile number by a self-contained code exchange, all inside one step.
 
     The card is a free-form reactive canvas: an "enter number" section and an "enter
-    code" section, toggled by the `state['code_sent']` flag via bind_visibility. Pressing
+    code" section, toggled by the private `state['code_sent']` flag via bind_visibility. Pressing
     "Send code" generates a one-time code and surfaces it via ui.notify (no real SMS);
     entering it back records completion. The code is ephemeral (in-memory, single-session);
-    is_already_done stays default False. Writes its payload to state['outputs'][step_id]."""
+    is_already_done stays default False. Records its payload as this step's output."""
 
     CODE_LENGTH = 4  # code constant, not config
 
@@ -54,7 +54,7 @@ class VerifyMobileStep(StepCard):
             return
         await self.complete({'mobile': (self.state.get('mobile_number') or '').strip()})
 
-    def render_enabled(self, state: dict) -> None:
+    def render_enabled(self) -> None:
         with self.form_column():
             number_box = Col(style='gap: 0.75rem;')
             number_box.element.bind_visibility_from(self.state, 'code_sent', value=False)
@@ -79,8 +79,8 @@ class VerifyMobileStep(StepCard):
                     Button(_(self.verify_button_label), on_click=self._verify)
                     Button(_(self.resend_label), on_click=self._reset)
 
-    def render_completed(self, state: dict) -> None:
+    def render_completed(self) -> None:
         ui.label(_(self.completed_text)).classes('text-success')
-        out = state.get('outputs', {}).get(self.step_id, {})
+        out = self.state.get('outputs', {})
         if out.get('mobile'):
             expandable_info({_(self.mobile_label): out['mobile']})

@@ -47,7 +47,7 @@ class VerifyAlumniDb(StepCard):
         # registreer de gevonden alumnus_id, bij afronding onboarding wordt dit gekoppeld aan de guest_id
         await self.complete({'alumnus_id': DUMMY_ALUMNUS_ID})
 
-    def render_enabled(self, state: dict) -> None:
+    def render_enabled(self) -> None:
         with self.form_column():
             ui.input(label='geboortedatum', placeholder='YYYY-MM-DD') \
                 .bind_value(self.state, 'alumni_dob').props('type=date').classes('form-input')
@@ -61,9 +61,9 @@ class VerifyAlumniDb(StepCard):
              .props('type=text inputmode=numeric maxlength=6').classes('form-input')
             Button('Verifiëren', on_click=self._verify).classes('step-primary-button')
 
-    def render_completed(self, state: dict) -> None:
+    def render_completed(self) -> None:
         ui.label(self.completed_text).classes('text-success')
-        out = state.get('outputs', {}).get(self.step_id, {})
+        out = self.state.get('outputs', {})
         if out:
             expandable_info({
                 'alumnus_id': out.get('alumnus_id', ''),

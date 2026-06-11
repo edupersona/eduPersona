@@ -9,11 +9,9 @@ from ng_rdm.utils import logger
 _DEFAULTS = {
     'invite_code': '',
     'invitation_id': None,
-    'role_assignments': [],
-    'role_name': '',
     # Per-step bookkeeping owned by steps.Steps; see docs/step_cards.md
-    'outcomes': {},
-    'outputs': {},
+    'outcomes': {},                # dict[step_id, outcome]
+    'step_state': {},              # dict[step_id, dict] — per-card state, incl. each step's 'outputs'
     'oidc_state': {},
 }
 

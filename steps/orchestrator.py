@@ -1,8 +1,8 @@
 """The onboarding orchestrator (`Steps`) and the terminal welcome screen.
 
 `Steps` owns scenario instantiation, completion bookkeeping (`state['outcomes']`),
-output storage (`state['outputs']`), positional prerequisite evaluation, and the
-finalize side effect — gated behind the review step's Register button (`register()`).
+the derived `outputs` map (each step's output lives in its own state slot), positional
+prerequisite evaluation, and the finalize side effect — gated behind the Register button.
 Cards never touch any of this — they signal outcomes via StepCard.complete()/fail()
 (or by returning a StepResult from act()), which funnel through `record()`.
 """
@@ -50,8 +50,8 @@ class Steps:
     """Onboarding orchestrator.
 
     Owns: scenario instantiation, completion bookkeeping (`state['outcomes']`),
-    output storage (`state['outputs']`), prerequisite evaluation (positional),
-    and the finalize side effect, gated behind the review step's Register button.
+    the derived `outputs` map (per-step, from each card's own state), prerequisite
+    evaluation (positional), and the finalize side effect, gated behind Register.
     """
 
     def __init__(self, tenant: str, state: dict, persona_config: dict):
@@ -59,12 +59,17 @@ class Steps:
         self.state = state
         self.scenario_config = persona_config
         self.state.setdefault('outcomes', {})
-        self.state.setdefault('outputs', {})
         self.step_instances = self._create_steps()
 
     @property
     def outcomes(self) -> dict[str, str]:
         return self.state['outcomes']
+
+    @property
+    def outputs(self) -> dict[str, dict]:
+        """Derived {step_id: output} map — each step's output lives in its own state slot."""
+        return {sid: st['outputs'] for sid, st in self.state.get('step_state', {}).items()
+                if isinstance(st, dict) and st.get('outputs') is not None}
 
     @property
     def is_complete(self) -> bool:
@@ -104,7 +109,10 @@ class Steps:
                 ) from e
             step_instance.step_id = step_id
             step_instance.steps = self
-            step_instance.state = self.state
+            own = self.state.setdefault('step_state', {}).setdefault(step_id, {})
+            for k, v in step_instance.state.items():  # preserve constructor-set defaults; resumed state wins
+                own.setdefault(k, v)
+            step_instance.state = own  # the card's own (persisted) state — never the session dict
             step_instance.tenant = self.tenant
             instances.append(step_instance)
         return instances
@@ -121,8 +129,8 @@ class Steps:
     async def record(self, step_id: str, result: StepResult) -> None:
         """The single state-mutation funnel."""
         self.outcomes[step_id] = result.outcome
-        if result.output is not None:
-            self.state['outputs'][step_id] = result.output
+        if result.output is not None:  # output lives in the step's own state slot (= card.state)
+            self.state.setdefault('step_state', {}).setdefault(step_id, {})['outputs'] = result.output
         # No auto-finalize: once every step is done the render shows a review gate
         # with a 'Register' button; finalization happens on that explicit click.
         # Refresh if a live render exists; OIDC callback context has no live render.
@@ -133,7 +141,7 @@ class Steps:
 
     async def register(self) -> None:
         """User-confirmed finalize — the review step's 'Register' button. Persists
-        state['outputs'] to Invitation.step_outputs, accepts (firing the webhook
+        the `outputs` map to Invitation.step_outputs, accepts (firing the webhook
         callback), then flips to the welcome screen. Gated on every step being done;
         idempotent — guarded by the `completed`/`finalize_failed` flags within the
         session and by the invitation's own status across sessions.
@@ -155,7 +163,7 @@ class Steps:
             pass
 
     async def _finalize(self) -> bool:
-        """Persist state['outputs'] to Invitation.step_outputs, then accept (fires the
+        """Persist the `outputs` map to Invitation.step_outputs, then accept (fires the
         webhook). Idempotent for already-accepted invitations. Returns success."""
         if not self.tenant:
             return False
@@ -170,7 +178,7 @@ class Steps:
             # Through the store (like every other write) so open tables stay live.
             from domain.stores import get_invitation_store
             await get_invitation_store(self.tenant).update_item(
-                inv.id, {"step_outputs": dict(self.state.get('outputs', {})) or None})
+                inv.id, {"step_outputs": self.outputs or None})
             if not await accept_invitation(self.tenant, invite_code):
                 return False
         return True
@@ -213,7 +221,7 @@ class Steps:
                 self.outcomes.get(self.step_instances[j].step_id) in ('completed', 'skipped')
                 for j in range(i)
             )
-            step.render(self.state, outcome, is_enabled)
+            step.render(outcome, is_enabled)
 
         # Review gate: every step is verified, but nothing is sent yet. The guest
         # reviews the data above, then registers to fire the callback + accept.

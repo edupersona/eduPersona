@@ -32,7 +32,7 @@ Steps signal outcome by returning a typed `StepResult` — never by mutating `st
 @dataclass
 class StepResult:
     outcome: 'completed' | 'failed' | 'in_progress'
-    output: dict | None = None       # payload persisted under state['outputs'][step_id]
+    output: dict | None = None       # recorded in the step's own state; delivered keyed by step_id
     error: str | None = None
     fatal: bool = False              # only with outcome='failed'
 ```
@@ -41,14 +41,15 @@ Returning `None` from `act()` means "no immediate transition" — useful for OID
 
 ## What a step MAY do
 
-- Read scenario context: `self.state['invite_code']`, `self.state['role_assignments']`, etc., and `self.tenant`.
-- Read its own and prior steps' outputs: `self.state['outputs'][some_step_id]`.
+- Own its **private state, `self.state`** — a per-card dict (persisted as `step_state[step_id]`). Seed defaults in `__init__` (e.g. `self.state['code_sent'] = False`) and bind UI to it; the orchestrator merges constructor-set defaults into the persisted slot so they survive wiring. This is the card's *only* state — it is never the orchestrator's session dict.
+- Read read-only scenario context via the orchestrator: `self.steps.context['invite_code']` (also `tenant`, `invitation_id`, `persona_key`), and `self.tenant`.
+- Read its own recorded output: `self.state['outputs']` (set by `complete()`; see below).
 - Invoke domain services scoped to `(tenant, invite_code)` — OIDC, mail, etc.
-- Finish itself via `await self.complete(output)` / `await self.fail(...)` (which also trigger the orchestrator re-render).
+- Finish itself via `await self.complete(output)` / `await self.fail(...)` (which also trigger the orchestrator re-render). `output` lands in the card's own `self.state['outputs']` and is delivered to the webhook keyed by this step's id.
 
 ## What a step MAY NOT do
 
-- Read or write other steps' completion state (`state['outcomes']` is orchestrator-owned).
+- Read or write orchestrator/session state. A card sees only its own `self.state`; it signals completion via `complete()`/`fail()` and never touches `outcomes`, another step's output, or the session dict directly.
 - Hardcode IdP names, URLs, or copy. All of these come from config.
 - Perform scenario-terminal actions (invitation acceptance, session establishment). Those belong to the orchestrator's built-in finalize (`Steps._finalize`).
 - Assume its own position in the sequence. The step works whether it's at position 0 or 99.
@@ -63,7 +64,7 @@ This is the only place a step legitimately persists across sessions. Use it spar
 
 Owns:
 - Scenario instantiation from config (assigns `step_id` from `config.id` or position).
-- The completion map `state['outcomes']` and output store `state['outputs']`.
+- The completion map `state['outcomes']` and the derived `outputs` map (each step's output lives in its own `state['step_state'][step_id]['outputs']`; `Steps.outputs` assembles the `{step_id: output}` view).
 - Prerequisite evaluation — positional ("all prior steps completed or skipped").
 - The single state-mutation funnel `record(step_id, result)`.
 - The review gate + terminal hook `register()` — once *every* step is in a terminal-OK state (`all_steps_done`) the render shows a **Register** button; clicking it runs the built-in `_finalize()` side effect.
@@ -72,7 +73,7 @@ Steps signal outcomes via `await self.complete(output)` / `await self.fail(error
 
 ## Finalization & the welcome screen
 
-Finalization is **not** a step — it's a built-in orchestrator side effect (`Steps._finalize`): it persists `state['outputs']` to `Invitation.step_outputs` and calls `accept_invitation` (which fires the webhook callback). It does **not** run automatically when the last step finishes. Instead, once every step is `completed`/`skipped` (`Steps.all_steps_done`), the orchestrator renders a **review gate** — the completed cards plus a primary **Register** button — so the guest can review the collected data before anything is sent. Clicking Register calls `Steps.register()`, which runs `_finalize()`. Idempotent — guarded by `state['completed']`/`state['finalize_failed']` within a session and by the invitation's own status across sessions.
+Finalization is **not** a step — it's a built-in orchestrator side effect (`Steps._finalize`): it persists the `Steps.outputs` map to `Invitation.step_outputs` and calls `accept_invitation` (which fires the webhook callback). It does **not** run automatically when the last step finishes. Instead, once every step is `completed`/`skipped` (`Steps.all_steps_done`), the orchestrator renders a **review gate** — the completed cards plus a primary **Register** button — so the guest can review the collected data before anything is sent. Clicking Register calls `Steps.register()`, which runs `_finalize()`. Idempotent — guarded by `state['completed']`/`state['finalize_failed']` within a session and by the invitation's own status across sessions.
 
 On success the orchestrator's `render()` stops showing step cards and renders `render_welcome(tenant, persona_key, given_name)` — a per-persona success screen (`PersonaConfig.completion_message` + `cta_label`, both single source strings rendered through `_()`, CTA linking to `success_redirect_url`). The same `render_welcome` is reused by `routes/accept.py` for a returning user who reopens an already-accepted invitation, so both paths render identically.
 
@@ -88,11 +89,11 @@ Today every tenant has a single scenario keyed `"default"`. The structure (`tena
 4. If the step has an out-of-band durable marker (verification-style): override `is_already_done()` with a cheap DB read.
 5. Add an entry to the relevant scenario in `settings.json` (and `settings.example.json`). All copy, IdP names, URLs go in `config` — never hardcoded in Python.
 
-A step card is a free-form NiceGUI canvas: a multi-part *transaction* (enter a value → trigger an action → confirm → done) can live entirely inside `render_enabled`, driven by reactive bindings — `bind_value` for inputs, `bind_visibility` off a `self.state` flag to reveal/hide parts as it progresses — and completes with a single `self.complete()`. No sub-step machinery; the whole exchange is one orchestrator step. `VerifyMobileStep` is the worked example (number → simulated code via `ui.notify` → verify), keeping transient values (`state['code_sent']`, the generated code) out of `outputs`.
+A step card is a free-form NiceGUI canvas: a multi-part *transaction* (enter a value → trigger an action → confirm → done) can live entirely inside `render_enabled`, driven by reactive bindings — `bind_value` for inputs, `bind_visibility` off a `self.state` flag to reveal/hide parts as it progresses — and completes with a single `self.complete()`. No sub-step machinery; the whole exchange is one orchestrator step. `VerifyMobileStep` is the worked example (number → simulated code via `ui.notify` → verify), keeping transient values (`state['code_sent']`, the generated code) in the card's own `self.state`, separate from the `output` it finally records.
 
 ## State keys (per-session, `app.storage.tab`)
 
-- `invite_code`, `invitation_id`, `role_assignments`, `role_name` — scenario context, written by `apply_invite_code_to_state`.
+- `invite_code`, `invitation_id`, `persona_key`, `persona_params`, `given_name`, `family_name`, `guest_email` — scenario context, written by `apply_invite_to_state`.
 - `outcomes: dict[step_id, str]` — orchestrator-owned completion map.
-- `outputs: dict[step_id, dict]` — orchestrator-stored step payloads.
+- `step_state: dict[step_id, dict]` — per-card state, exposed to each card as `self.state`; holds working/transient values and the step's recorded `outputs` payload. The orchestrator derives the `{step_id: output}` map from it (`Steps.outputs`) — there is no separate top-level `outputs` key.
 - `oidc_state` — internal to `services.oidc_mt`.

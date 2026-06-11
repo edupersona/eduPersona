@@ -2,9 +2,9 @@
 auto-registry. See docs/step_cards.md for the full lifecycle, the MAY / MAY NOT
 rules, and the single-session invariant.
 
-OIDC steps write verified userinfo to state['outputs'][idp] (keyed by IdP name);
-non-OIDC steps write to state['outputs'][step_id]. Finalization is a built-in
-orchestrator side effect (Steps._finalize), not a card.
+Cards record their output via self.complete(output); it lands in the card's own
+state['outputs'] and is delivered to the webhook keyed by step_id. Finalization is a
+built-in orchestrator side effect (Steps._finalize), not a card.
 """
 from __future__ import annotations
 
@@ -52,8 +52,9 @@ def expandable_info(valdict: dict) -> None:
 class StepCard:
     """Base class for all step cards. To build one, subclass this and:
 
-      • read your config in __init__ (call super().__init__(config) first);
-      • paint your UI in render_enabled(state) — a free-form NiceGUI canvas
+      • read your config in __init__ (call super().__init__(config) first), and
+        seed any private state defaults on self.state;
+      • paint your UI in render_enabled() — a free-form NiceGUI canvas
         (use `with self.form_column():` for the standard single-column form chrome);
       • finish with `await self.complete(output)` / `await self.fail(...)`, or — for a
         single-button step — override act() to return a StepResult.
@@ -68,10 +69,10 @@ class StepCard:
         self.completed_text = config['completed_text']
         self.disabled_text = config.get('disabled_text') or ''
         self.help_text: str | None = config.get('help_text')
-        # Assigned by Steps._create_steps:
+        self.state: dict = {}
+        # assigned by Steps._create_steps:
         self.step_id: str = ''
         self.steps: Steps | None = None
-        self.state: dict = {}
         self.tenant: str | None = None
 
     def __init_subclass__(cls, **kwargs) -> None:
@@ -99,7 +100,8 @@ class StepCard:
     # ── completion helpers (how a card finishes — no orchestrator vocabulary) ──
 
     async def complete(self, output: dict | None = None) -> None:
-        """Record this step completed; `output` lands in state['outputs'][step_id]."""
+        """Record this step completed; `output` lands in the card's own state['outputs']
+        (and is delivered to the webhook keyed by this step's id)."""
         if self.steps:
             await self.steps.record(self.step_id, StepResult('completed', output=output))
 
@@ -112,7 +114,7 @@ class StepCard:
 
     # ── rendering ─────────────────────────────────────────────────────
 
-    def render(self, state: dict, outcome: str, is_enabled: bool) -> None:
+    def render(self, outcome: str, is_enabled: bool) -> None:
         is_completed = outcome in ('completed', 'skipped')
         status_color = 'positive' if is_completed else 'grey'
         status_icon = 'check_circle' if is_completed else 'radio_button_unchecked'
@@ -126,11 +128,11 @@ class StepCard:
                 with Col(classes='step-content'):
                     ui.label(_(self.title)).classes('step-title')
                     if is_completed:
-                        self.render_completed(state)
+                        self.render_completed()
                     elif is_enabled:
-                        self.render_enabled(state)
+                        self.render_enabled()
                     else:
-                        self.render_disabled(state)
+                        self.render_disabled()
 
     async def _handle_click(self):
         """Default click handler: run `act()`, record the result via the orchestrator."""
@@ -153,11 +155,11 @@ class StepCard:
             self.render_help()
             yield col
 
-    def render_enabled(self, state: dict) -> None:
+    def render_enabled(self) -> None:
         raise NotImplementedError
 
-    def render_completed(self, state: dict) -> None:
+    def render_completed(self) -> None:
         ui.label(_(self.completed_text)).classes('text-success')
 
-    def render_disabled(self, state: dict) -> None:
+    def render_disabled(self) -> None:
         ui.label(_(self.disabled_text)).classes('text')

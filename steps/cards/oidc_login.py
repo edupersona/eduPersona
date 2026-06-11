@@ -11,8 +11,8 @@ from steps.base import StepCard, StepResult, expandable_info
 
 
 class OIDCLoginStep(StepCard):
-    """Generic OIDC login step. Writes verified userinfo to state['outputs'][idp]
-    (keyed by IdP name)."""
+    """Generic OIDC login step. Records the verified userinfo as its output (keyed,
+    like every step, by this step's id)."""
 
     def __init__(self, config: dict):
         super().__init__(config)
@@ -21,12 +21,12 @@ class OIDCLoginStep(StepCard):
         self.secondary_button: dict | None = config.get('secondary_button')
 
     async def act(self) -> StepResult | None:
-        assert self.tenant
+        assert self.tenant and self.steps
         await start_oidc_login(
             tenant=self.tenant,
             idp=self.idp,
             callback_handler=self.result_handler,
-            next_url=f"/accept/{self.state.get('invite_code', '')}",
+            next_url=f"/accept/{self.steps.context['invite_code']}",
             force_login=True,
         )
         # Completion arrives asynchronously via result_handler; no immediate result.
@@ -36,7 +36,7 @@ class OIDCLoginStep(StepCard):
         if self.secondary_button:
             ui.navigate.to(self.secondary_button['url'], new_tab=True)
 
-    def render_enabled(self, state: dict) -> None:
+    def render_enabled(self) -> None:
         self.render_help()
         with Row().classes('button-row'):
             with Col():
@@ -48,11 +48,10 @@ class OIDCLoginStep(StepCard):
                     if self.secondary_button.get('hint'):
                         ui.label(_(self.secondary_button['hint'])).classes('step-secondary-hint')
 
-    def render_completed(self, state: dict) -> None:
+    def render_completed(self) -> None:
         ui.label(_(self.completed_text)).classes('text-success')
-        expandable_info(state.get('outputs', {}).get(self.idp, {}))
+        expandable_info(self.state.get('outputs', {}))
 
     async def result_handler(self, userinfo: dict, id_token_claims: dict, token_data: dict, next_url: str = "") -> None:
         logger.debug(f"{self.idp} login completed with userinfo: {userinfo}")
-        self.state.setdefault('outputs', {})[self.idp] = userinfo
-        await self.complete()
+        await self.complete(userinfo)

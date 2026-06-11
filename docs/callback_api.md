@@ -48,7 +48,8 @@ Content-Type: application/json
   "email": "guest@example.org",
   "persona_params": { "faculteit": "FNWI" },
   "verifications": {
-    "eduid": { "sub": "…", "given_name": "…", "family_name": "…", "email": "…" }
+    "eduid_login": { "sub": "…", "given_name": "…", "family_name": "…", "email": "…" },
+    "verify_mfa": { "acr": "https://refeds.org/profile/mfa" }
   }
 }
 ```
@@ -73,9 +74,9 @@ surface inside `verifications` if a step wrote them there.
 `verifications` carries one entry per key listed in the persona's **`callback_outputs`**,
 read verbatim from the invitation's `step_outputs`:
 
-- The persona config decides *which* outputs are exposed (`callback_outputs: ["eduid", …]`).
-- OIDC steps key their output by **IdP name** (e.g. `eduid`, `institutional`); other
-  steps key by their `step_id`.
+- The persona config decides *which* outputs are exposed (`callback_outputs: ["eduid_login", …]`).
+- Every step keys its output by its **`step_id`** (e.g. `eduid_login`, `verify_mfa`,
+  `verify_mobile`) — `callback_outputs` lists step ids.
 - A `callback_outputs` key with no matching `step_outputs` entry is **logged and omitted**
   — a missing source never breaks delivery, so always treat each key as optional.
 

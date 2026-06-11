@@ -97,7 +97,7 @@
             }
           },
           "callback_outputs": [
-            "eduid"
+            "eduid_login"
           ],
           "success_redirect_url": "https://example.org/lms/welcome",
           "callback_url": null,
@@ -150,7 +150,7 @@
             }
           },
           "callback_outputs": [
-            "eduid",
+            "eduid_login",
             "verify_mobile",
             "alumni_db"
           ],

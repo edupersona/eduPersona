@@ -1,7 +1,7 @@
 """Persona accept flow.
 
-Domain-level: the persona step lifecycle keys OIDC output by IdP, persists
-state['outputs'] to Invitation.step_outputs at finalize, and fires the callback
+Domain-level: the persona step lifecycle keys every output by step_id, persists
+the derived outputs map to Invitation.step_outputs at finalize, and fires the callback
 only when configured. Plus one NiceGUI render check (route registered via main.py;
 no top-level route import). The conftest services.webhook re-link keeps the UI
 test robust.
@@ -25,7 +25,7 @@ INST_USERINFO = {"sub": "inst-1", "schac_home_organization": "hvh.nl"}
 
 
 async def _drive_oidc(steps, step_id, userinfo) -> None:
-    """Simulate an OIDC step returning its userinfo (keyed by IdP name)."""
+    """Simulate an OIDC step returning its userinfo (recorded under its step_id)."""
     step = next(s for s in steps.step_instances if s.step_id == step_id)
     assert isinstance(step, OIDCLoginStep)
     await step.result_handler(userinfo, {}, {})
@@ -61,8 +61,8 @@ async def test_lifecycle_persists_outputs_and_fires_callback(test_tenant, monkey
 
     inv = await Invitation.get(id=created["id"])
     assert inv.status == "accepted"
-    # OIDC output keyed by IdP name, not step id
-    assert inv.step_outputs == {"eduid": USERINFO, "institutional": INST_USERINFO}
+    # every output keyed by its step_id
+    assert inv.step_outputs == {"eduid_login": USERINFO, "institutional_login": INST_USERINFO}
     assert steps.is_complete  # finalize ran on Register, once every step was done
     enqueue.assert_awaited_once_with(test_tenant, created["id"])
 
@@ -79,18 +79,18 @@ async def test_lifecycle_no_callback_when_unconfigured(test_tenant, monkeypatch)
 
     inv = await Invitation.get(id=created["id"])
     assert inv.status == "accepted"
-    assert inv.step_outputs == {"eduid": USERINFO, "institutional": INST_USERINFO}
+    assert inv.step_outputs == {"eduid_login": USERINFO, "institutional_login": INST_USERINFO}
     enqueue.assert_not_called()
 
 
-async def test_oidc_output_keyed_by_idp_not_step_id(test_tenant, monkeypatch):
+async def test_oidc_output_keyed_by_step_id(test_tenant, monkeypatch):
     monkeypatch.setattr(ip, "enqueue_callback", AsyncMock())
     created = await create_invitation(test_tenant, "gastdocent", "a@example.org", "EMP-1")
     steps = await _build_steps(test_tenant, created["code"])
     oidc = await _oidc_step(steps)
     await oidc.result_handler(USERINFO, {}, {})
-    assert "eduid" in steps.state["outputs"]
-    assert "eduid_login" not in steps.state["outputs"]  # step_id is NOT used as the output key
+    assert "eduid_login" in steps.outputs  # output keyed by step_id
+    assert "eduid" not in steps.outputs    # the idp name is NOT used as the output key
 
 
 async def test_completion_does_not_bleed_across_invitations(test_tenant, monkeypatch):
@@ -109,7 +109,7 @@ async def test_completion_does_not_bleed_across_invitations(test_tenant, monkeyp
     assert await apply_invite_to_state(test_tenant, steps.state, a["code"])
     assert steps.state.get("completed") is not True
     assert steps.state["outcomes"] == {}
-    assert steps.state["outputs"] == {}
+    assert steps.outputs == {}
 
     # A fresh orchestrator for the alumnus invite is NOT complete — it onboards anew
     cfg = get_persona_config(test_tenant, "alumnus")
@@ -127,7 +127,7 @@ async def test_same_invitation_reload_preserves_progress(test_tenant, monkeypatc
 
     assert await apply_invite_to_state(test_tenant, steps.state, g["code"])
     assert steps.outcomes.get("eduid_login") == "completed"  # preserved across reload
-    assert steps.state["outputs"].get("eduid") == USERINFO
+    assert steps.outputs.get("eduid_login") == USERINFO
 
 
 # --- one NiceGUI render check (route comes from main.py registration) ---

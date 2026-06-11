@@ -181,7 +181,7 @@ async def apply_invite_to_state(tenant: str, state: dict, code: str) -> bool:
 
     if state.get("invitation_id") != inv.id:
         state["outcomes"] = {}
-        state["outputs"] = {}
+        state["step_state"] = {}  # clears each step's inputs AND recorded outputs
         state.pop("completed", None)
         state.pop("finalize_failed", None)
 

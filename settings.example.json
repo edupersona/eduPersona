@@ -96,7 +96,8 @@
             }
           },
           "callback_outputs": [
-            "eduid"
+            "eduid_login",
+            "verify_mfa"
           ],
           "success_redirect_url": "https://example.org/lms/welcome",
           "callback_url": null,
@@ -128,8 +129,7 @@
                 "disabled_text": "Voltooi eerst stap 1",
                 "dialog_title": "Dummy MFA test",
                 "confirm_button_label": "JA, ik heb de eduID app geïnstalleerd",
-                "acr_value": "https://refeds.org/profile/mfa",
-                "target_output": "eduid"
+                "acr_value": "https://refeds.org/profile/mfa"
               }
             },
             {
@@ -153,7 +153,7 @@
           },
           "expected_params": {},
           "callback_outputs": [
-            "eduid",
+            "eduid_login",
             "verify_mobile",
             "alumni_db"
           ],
