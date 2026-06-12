@@ -3,7 +3,7 @@
 eduPersona kent nog geen formele releases. In dit bestand noteren we de
 noemenswaardige wijzigingen, met de meest recente bovenaan.
 
-## Persona-pivot — juni 2026
+## v0.2 — juni 2026 - pivot naar 'persona'
 
 eduPersona is omgebouwd van een **rol-/gastgebaseerd** model naar **persona's**, met de **uitnodiging** als centrale entiteit. Het
 *soort* gast (de persona) is nu het organiserende begrip. De redenatie is dat een gast niet afzonderlijk hoeft te worden geverifieerd voor elke *rol* die aan 
