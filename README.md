@@ -2,11 +2,11 @@
 
 > **NIEUWS -- van rollen naar persona's (juni 2026):** ik heb eduPersona omgebouwd van een rol-/gastgebaseerd model naar
 > &ldquo;persona's&rdquo;, met de **uitnodiging** als centrale entiteit. Dat sluit beter aan op de plek van eduPersona in de levensyclus van de gast. 
-> Zie [CHANGELOG.md](CHANGELOG.md) voor het volledige overzicht — inclusief het waarom.
+> Zie [CHANGELOG.md](CHANGELOG.md) voor het volledige overzicht. -PK
 
 ### Wat is eduPersona?
 
-<b>TL;DR:</b> Een web app die de eduID van gastgebruikers betrouwbaar koppelt aan instellingsidentiteiten. Het type gast &ndash; de **persona** &ndash; bepaalt welk flexibel, configureerbaar stappenplan de gast doorloopt, waarbij hij/zij stap voor stap begeleid wordt tot aan alle onboarding-eisen is voldaan. Bij afronding koppelt eduPersona de geverifieerde gast terug naar de instelling. Je kunt het ook zien als een flexibele **verificatiefabriek**.
+<b>TL;DR:</b> Een self-service pagina die de eduID van gastgebruikers betrouwbaar koppelt aan instellingsidentiteiten. Het type gast &ndash;de **persona**&ndash; bepaalt het stappenplan dat de gast doorloopt, waarbij hij/zij stap voor stap begeleid wordt tot aan alle onboarding-eisen is voldaan. Bij afronding koppelt eduPersona de geverifieerde gastgegevens terug naar de instelling. Je kunt het ook zien als een flexibele **verificatiefabriek**.
 
 ### Hoe werkt het?
 
@@ -84,48 +84,38 @@ We hebben een demo/PoC-omgeving draaien op [https://edupersona.nl/](https://edup
 
 ### Voorbeeld-persona's: gastdocent, alumnus en admin
 
-In de repo zijn drie voorbeeld-persona's opgenomen. 
+In de repo zijn drie voorbeeld-persona's opgenomen (gedefinieerd in `settings.json`). De drie tabellen hieronder vatten per persona het stappenplan, de gegevens in de uitnodiging en de terugkoppeling naar IAM samen.
 
-Voor de **gastdocent-persona** zijn als demo de volgende stappen geconfigureerd (zie `settings.json`):
+| **GASTDOCENT** | bezoekende docent met een account bij een andere instelling |
+|:---|:---|
+| **Stappenplan** | 1. Inloggen met (test-)eduID, zonodig eerst aanmaken (OIDCLoginStep)<br>2. Verificatie van sterke authenticatie (VerifyMfaStep), eventueel eduID-app laten installeren (*)<br>3. Verificatie van een instellings-account via de DIY-IDP van SURFconext (OIDCLoginStep) |
+| **Gegevens in uitnodiging** (expected_params) | faculteit, personal_message |
+| **Terug naar IAM** (callback_outputs) | eduID-pseudoniem (bijv. sub, uit de eduid_login-stap)<br>acr (authenticatieniveau, door VerifyMfaStep opgehaald) |
 
-1. Inloggen met (test-)eduID, zonodig eerst aanmaken (kaart: `OIDCLoginStep`)
-2. Verificatie van sterke authenticatie (`VerifyMfaStep`), eventueel eduID app laten installeren (*)
-3. Verificatie van een instellings-account via de DIY-IDP van SURFconext (`OIDCLoginStep`)
+| **ALUMNUS** | oud-student, geverifieerd via een alumni-database |
+|:---|:---|
+| **Stappenplan** | 1. Inloggen met (test-)eduID (OIDCLoginStep)<br>2. Opzoeken van de alumnus in een (dummy) alumni-database (VerifyAlumniDb)<br>3. Puur als voorbeeld van een stap met meerdere substappen: (dummy) verificatie van het mobiele nummer (VerifyMobileStep) |
+| **Gegevens in uitnodiging** (expected_params) | geen |
+| **Terug naar IAM** (callback_outputs) | eduID-pseudoniem (bijv. sub, uit de eduid_login-stap)<br>alumnus_id (uit alumni_db)<br>geverifieerd mobiel nummer (uit verify_mobile) |
 
-Bij een gastdocent worden als extra gegevens voor de uitnodiging meegegeven (zie `expected_params` in config en `services/postmark/templates/personas/gastdocent.jinja2` voor de template):
-* `faculteit`
-* `personal_message`
+| **ADMIN** | self-enrollment van geïnteresseerden, die als beheerder toegang krijgen in de PoC |
+|:---|:---|
+| **Stappenplan** | 1. Inloggen met (test-)eduID (OIDCLoginStep)<br>2. Achtergrondinformatie van de aanvrager ophalen &ndash; organisatie en toepassingsscenario (CollectIntakeStep) |
+| **Gegevens in uitnodiging** (expected_params) | geen (self-service aanvraag) |
+| **Terug naar IAM** (callback_outputs) | organisatie, toepassingsscenario |
 
-Na afronding van de onboarding worden voor een gastdocent de volgende &lsquo;resultaatblokken&rsquo; aan IAM teruggegeven (`callback_outputs`):
-* `eduid_login` -> alle informatie uit de eduID-login
-* `verify_mfa` -> de ACR-waarde die door de VerifyMfaStep is opgehaald
-
-Voor de **alumnus-persona** zijn de stappen:
-
-1. Inloggen met (test-)eduID (`OIDCLoginStep`)
-2. Opzoeken van de alumnus in een (dummy) alumni-database (`VerifyAlumniDb`)
-3. Puur als voorbeeld van een stap met meerdere substappen: (dummy) verificatie van het mobiele nummer (`VerifyMobileStep`) 
-
-In tegenstelling tot de gastdocent worden er geen extra gegevens meegegeven aan de uitnodiging (geen personal message, etc). 
-
-De belangrijkste gegevens die worden teruggegeven aan IAM zijn:
-* het eduID-pseudoniem (bijvoorbeeld `sub`, in het eduid_login blokje)
-* de `alumnus_id` (resultaat van de opzoek-actie in het alumni_db blokje) 
-* het geverifieerde mobiele nummer (uit het verify_mobile blokje)
-
-Tenslotte is er ook een **admin** persona gedefinieerd, waarmee we in de PoC self-enrollment doen van geïnteresseerden. Na de eduID-login wordt hier het stappenplan gebruikt om wat achtergrondinformatie van de aanvrager op te halen (`CollectIntakeStep`).
+De bijbehorende mailtemplates staan in `services/postmark/templates/personas/` (bijv. `gastdocent.jinja2`).
 
 (*) Echte MFA-verificatie vereist een koppeling aan eduID-productie.
 
 
 ### API
 
-eduPersona biedt een REST API, met `invitations` als enige first-class entiteit: aanmaken (+ mail versturen), opvragen (lijst, enkel, lookup op code), opnieuw versturen en intrekken &ndash; allemaal onder `/api/v1/{tenant}/invitations`. De API is zelf-documenterend via /docs, /redoc en /openapi.json . Stel in settings.json de `tenants.<tenant>.api_key` in als je de API wilt gaan gebruiken.
+eduPersona biedt een REST API, met `invitations` als enige first-class entiteit: aanmaken (+ mail versturen), opvragen (lijst, enkel, lookup op code), opnieuw versturen en intrekken &ndash; allemaal onder `/api/v1/{tenant}/invitations`. De API is zelf-documenterend via [/docs](https://edupersona.nl/docs), [/redoc](https://edupersona.nl/redoc) en [/openapi.json](https://edupersona.nl/openapi.json) . Stel in settings.json de `tenants.<tenant>.api_key` in als je de API wilt gaan gebruiken.
 
-### Architectuur
+### Gebruikte tools
 
-* Dankzij [NiceGUI](https://nicegui.io/) kun je ook als 'business user' onboarding-stappen aanpassen of toevoegen in helder en overzichtelijk Python, zonder je zorgen te maken over front-end vs. back-end ontwikkeling. 
-NiceGUI bouwt voort op next-gen Python frameworks als FastAPI en Starlette.
+* [NiceGUI](https://nicegui.io/) maakt het mogelijk web-applicaties geheel in Python te realiseren, zonder scheiding tussen front- en back-end. Op die manier kunnen we een onboarding-stap in één Python-bestand definiëren, zowel de bedrijfslogica als de gebruikersinterface van de kaart. Onder de motorkap is NiceGUI gebaseerd op next-gen Python frameworks als FastAPI en Starlette.
 
 * [Tortoise ORM](https://tortoise.github.io) is een async ORM die o.a. PostgreSQL, MySQL/MariaDB en SQLite ondersteunt. De code base hier maakt een SQLite database aan (edupersona.db), maar als je init_db aanpast kun je ook een andere back-end gebruiken.
 
