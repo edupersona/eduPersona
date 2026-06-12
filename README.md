@@ -61,7 +61,7 @@ Als je eduID en/of instellings-logins echt wilt testen zul je de benodigde OIDC 
 
 ### edupersona.nl
 
-We hebben een demo/PoC-omgeving draaien op [https://edupersona.nl/](https://edupersona.nl/) <br>[Registreer je daar](https://edupersona.nl/register) als je tijdelijke admin credentials wilt hebben om e.e.a. in de praktijk te proberen.
+We hebben een demo/PoC-omgeving draaien op [https://edupersona.nl/](https://edupersona.nl/) <br>[Registreer je daar](https://edupersona.nl/register) als je tijdelijke admin credentials wilt hebben om e.e.a. in de praktijk te proberen. Je wordt dan via edupersona uitgenodigd - en daarna log je dus ook in met je (test-)eduID.
 
 ### Inrichting, features, configuratie
 
@@ -71,7 +71,7 @@ We hebben een demo/PoC-omgeving draaien op [https://edupersona.nl/](https://edup
 
 * Voor het **verzenden van de uitnodiging** wordt ondersteuning van SMTP en Postmark geboden. Mailberichten worden opgesteld via Jinja2 HTML-templates (een per-persona body in een per-tenant layout). Afzenders kunnen per persona of per uitnodiging worden geconfigureerd.
 
-* eduPersona is fundamenteel **multi-tenant**, ook als je dat niet gebruikt. De default tenant die je overal tegenkomt is 'hvh': de beruchte Hogeschool van Harderwijk. Je kunt in settings.json je eigen tenant-string als key opnemen onder de `tenants` key.
+* eduPersona is fundamenteel **multi-tenant**, ook als je dat niet gebruikt. De default tenant die je overal tegenkomt is 'hvh': de beruchte Hogeschool van Harderwijk. Je kunt in settings.json je eigen tenant-string als key opnemen onder de `tenants` key. Je kunt je eigen 'branding' meegeven aan de uitnodingsmails (`services/postmark/templates/layouts/{tenant}`).
 
 * **Callback API**: bij afronding POST eduPersona de verzamelde gegevens naar de ingestelde callback_url. De `callback_outputs` in de persona-configuratie bepalen welke geverifieerde gegevens daarbij worden meegestuurd. Zie [`docs/callback_api.md`](docs/callback_api.md) voor de volledige documentatie (gegevens, auth, afleversemantiek, statuscontrole). Er is voorzien in een retry-mechanisme. In plaats van deze API kan ook **SCIM** worden gebruikt; dit is per tenant in te schakelen. Beide interfaces beperken zich tot de &lsquo;bare user&rsquo; en de verzamelde verificatiegegevens; er worden geen rollen of groepen gesynchroniseerd &ndash; die horen in IAM thuis.
 
