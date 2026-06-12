@@ -56,12 +56,12 @@ Je hebt nu de code waarmee een gast de onboarding kan starten:
 
 <img src="docs/screenshot4.png" alt="screenshot" width="650"/>
 
-Als je eduID en/of instellings-logins echt wilt testen zul je de benodigde OIDC client_id's en secrets moeten configureren in settings.json en het eduPersona portal registreren bij SURFconext(-test) en/of de betrokken IDP. (Dit kan óók met een dev omgeving op localhost.)
+Als je eduID en/of instellings-logins echt wilt testen zul je de benodigde OIDC client_id's en secrets moeten configureren in settings.json en het eduPersona portal registreren bij SURFconext en/of de betrokken IDP. (Dit kan óók met een dev omgeving op localhost.)
 
 
 ### edupersona.nl
 
-We hebben een demo/PoC-omgeving draaien op [https://edupersona.nl/](https://edupersona.nl/) <br>[Registreer je daar](https://edupersona.nl/register) als je tijdelijke admin credentials wilt hebben om e.e.a. in de praktijk te proberen. Je wordt dan via edupersona uitgenodigd - en daarna log je dus ook in met je (test-)eduID.
+We hebben een demo/PoC-omgeving draaien op [https://edupersona.nl/](https://edupersona.nl/) <br>[Registreer je daar](https://edupersona.nl/register) als je tijdelijke admin credentials wilt hebben om e.e.a. in de praktijk te proberen. Je wordt dan via edupersona uitgenodigd - en daarna log je dus ook in met je eduID.
 
 ### Inrichting, features, configuratie
 
@@ -88,19 +88,19 @@ In de repo zijn drie voorbeeld-persona's opgenomen (gedefinieerd in `settings.js
 
 | **GASTDOCENT** | bezoekende docent met een account bij een andere instelling |
 |:---|:---|
-| **Stappenplan** | 1. Inloggen met (test-)eduID, zonodig eerst aanmaken (OIDCLoginStep)<br>2. Verificatie van sterke authenticatie (VerifyMfaStep), eventueel eduID-app laten installeren (*)<br>3. Verificatie van een instellings-account via de DIY-IDP van SURFconext (OIDCLoginStep) |
+| **Stappenplan** | 1. Inloggen met eduID, zonodig eerst aanmaken (OIDCLoginStep)<br>2. Verificatie van sterke authenticatie (VerifyMfaStep), eventueel eduID-app laten installeren (*)<br>3. Verificatie van een instellings-account via de DIY-IDP van SURFconext (OIDCLoginStep) |
 | **Gegevens in uitnodiging** (expected_params) | faculteit, personal_message |
 | **Terug naar IAM** (callback_outputs) | eduID-pseudoniem (bijv. sub, uit de eduid_login-stap)<br>acr (authenticatieniveau, door VerifyMfaStep opgehaald) |
 
 | **ALUMNUS** | oud-student, geverifieerd via een alumni-database |
 |:---|:---|
-| **Stappenplan** | 1. Inloggen met (test-)eduID (OIDCLoginStep)<br>2. Opzoeken van de alumnus in een (dummy) alumni-database (VerifyAlumniDb)<br>3. Puur als voorbeeld van een stap met meerdere substappen: (dummy) verificatie van het mobiele nummer (VerifyMobileStep) |
+| **Stappenplan** | 1. Inloggen met eduID (OIDCLoginStep)<br>2. Opzoeken van de alumnus in een (dummy) alumni-database (VerifyAlumniDb)<br>3. Puur als voorbeeld van een stap met meerdere substappen: (dummy) verificatie van het mobiele nummer (VerifyMobileStep) |
 | **Gegevens in uitnodiging** (expected_params) | geen |
 | **Terug naar IAM** (callback_outputs) | eduID-pseudoniem (bijv. sub, uit de eduid_login-stap)<br>alumnus_id (uit alumni_db)<br>geverifieerd mobiel nummer (uit verify_mobile) |
 
 | **ADMIN** | self-enrollment van geïnteresseerden, die als beheerder toegang krijgen in de PoC |
 |:---|:---|
-| **Stappenplan** | 1. Inloggen met (test-)eduID (OIDCLoginStep)<br>2. Achtergrondinformatie van de aanvrager ophalen &ndash; organisatie en toepassingsscenario (CollectIntakeStep) |
+| **Stappenplan** | 1. Inloggen met eduID (OIDCLoginStep)<br>2. Achtergrondinformatie van de aanvrager ophalen &ndash; organisatie en toepassingsscenario (CollectIntakeStep) |
 | **Gegevens in uitnodiging** (expected_params) | geen (self-service aanvraag) |
 | **Terug naar IAM** (callback_outputs) | organisatie, toepassingsscenario |
 
