@@ -32,6 +32,7 @@ translations: dict[str, dict[str, str]] = {
         'Invalid username or password': 'Ongeldige gebruikersnaam of wachtwoord',
         'Local account': 'Lokaal account',
         'Login': 'Inloggen',
+        'Login with eduID': 'Inloggen met eduID',
         'Login with (test!) eduID': 'Inloggen met (test!) eduID',
         'Login with SURFconext': 'Inloggen met SURFconext',
         'password': 'wachtwoord',
@@ -96,6 +97,7 @@ translations: dict[str, dict[str, str]] = {
         'Invalid invite code': 'Ongeldige uitnodigingscode',
         'Invitation code': 'Uitnodigingscode',
         'Mobile number': 'Mobiel nummer',
+        "No - I don't have an eduID yet": 'Nee - ik heb nog geen eduID',
         "No - I don't have a (test!) eduID yet": 'Nee - ik heb nog geen (test!) eduID',
         'No matching alumni record found — check your details and try again.': 'Geen alumnigegevens gevonden — controleer je gegevens en probeer het opnieuw.',
         'Please contact the sender of your invitation.': 'Neem contact op met de afzender van je uitnodiging.',
@@ -111,6 +113,7 @@ translations: dict[str, dict[str, str]] = {
         'Welcome': 'Welkom',
         'Welcome{suffix}': 'Welkom{suffix}',
         'YES! I already have a (test!) eduID': 'JA! Ik heb al een (test!) eduID',
+        'YES! I already have an eduID': 'JA! Ik heb al een eduID',
         'Your onboarding has been completed successfully.': 'Je onboarding is succesvol afgerond.',
 
         # Registration (routes/register.py)
@@ -120,11 +123,13 @@ translations: dict[str, dict[str, str]] = {
         'First name': 'voornaam',
         'Last name': 'achternaam',
         "Leave your details if you want to try out eduPersona.nl for yourself. We'll e-mail you an invitation to onboard with your (test-)eduID.": 'Wil je eduPersona.nl zelf proberen? Vul je gegevens in, dan mailen we je een uitnodiging om je aan te melden met je (test-)eduID.',
+        "Leave your details if you want to try out eduPersona.nl for yourself. We'll e-mail you an invitation to onboard with your eduID.": 'Wil je eduPersona.nl zelf proberen? Vul je gegevens in, dan mailen we je een uitnodiging om je aan te melden met je eduID.',
         'Please fill in all fields with a valid email': 'Vul alle velden in met een geldig mailadres',
         'Register for PoC access': 'Registreer hier voor toegang naar de eduPersona PoC',
         'Send': 'Versturen',
         'Thank you!': 'Bedankt!',
         "We've sent you an invitation by e-mail. Open the link to onboard with your (test-)eduID and get access to this PoC environment.": 'We hebben je een uitnodiging gemaild. Open de link om je aan te melden met je (test-)eduID en toegang te krijgen tot deze PoC-omgeving.',
+        "We've sent you an invitation by e-mail. Open the link to onboard with your eduID and get access to this PoC environment.": 'We hebben je een uitnodiging gemaild. Open de link om je aan te melden met je eduID en toegang te krijgen tot deze PoC-omgeving.',
 
         # Errors (services/ui_errors.py)
         'Something went wrong. Please try again.': 'Er is iets misgegaan. Probeer het opnieuw.',

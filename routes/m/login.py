@@ -108,9 +108,9 @@ async def admin_login_page(client: Client, tenant: str, next_url: str | None = N
             with ui.card().tight().classes('login-card'):
                 # Primary: SURFconext
                 Button(
-                    _('Login with (test!) eduID'),
+                    _('Login with eduID'),
                     on_click=try_oidc_login,
-                ).style('width:100%;')
+                ).style('width:100%; align-items: start;')
 
                 # Secondary: Local account
                 if show_fallback:
