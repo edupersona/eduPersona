@@ -32,10 +32,6 @@ class OIDCLoginStep(StepCard):
         # Completion arrives asynchronously via result_handler; no immediate result.
         return None
 
-    def _secondary_button_handler(self):
-        if self.secondary_button:
-            ui.navigate.to(self.secondary_button['url'], new_tab=True)
-
     def render_enabled(self) -> None:
         self.render_help()
         with Row().classes('button-row'):
@@ -43,8 +39,11 @@ class OIDCLoginStep(StepCard):
                 Button(_(self.primary_button_label), on_click=self._handle_click).classes('step-primary-button')
             if self.secondary_button:
                 with Col(style='align-items: center; gap: 8px;'):
-                    Button(_(self.secondary_button['label']), on_click=self._secondary_button_handler).classes(
-                        'step-secondary-button')
+                    # Native <a target="_blank"> (via Quasar href) so the browser opens the
+                    # tab on the click gesture itself — a Python handler calling
+                    # ui.navigate.to(new_tab=True) round-trips and trips the popup blocker.
+                    Button(_(self.secondary_button['label'])).props(
+                        f'href="{self.secondary_button["url"]}" target="_blank"').classes('step-secondary-button')
                     if self.secondary_button.get('hint'):
                         ui.label(_(self.secondary_button['hint'])).classes('step-secondary-hint')
 
