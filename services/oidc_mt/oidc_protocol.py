@@ -42,7 +42,7 @@ def build_auth_url(
     state: str | None = None,
     acr_values: str | None = None,
     prompt: str | None = None,
-    login_hint: str | None = None
+    login_hint: str | None = None,
 ) -> str:
     """
     Build OIDC authorization URL.
@@ -54,7 +54,7 @@ def build_auth_url(
         code_challenge: PKCE code challenge
         scope: OAuth2 scopes
         state: OAuth2 state parameter (CSRF token, round-tripped via the IdP)
-        acr_values: Authentication Context Class Reference values
+        acr_values: Authentication Context Class Reference values (requested LoA)
         prompt: OIDC prompt parameter (e.g., 'login' to force re-authentication)
         login_hint: Login hint for directing authentication to specific identity provider
 
@@ -214,7 +214,7 @@ def prepare_oidc_login(config: dict, state: str | None = None) -> tuple[str, str
             - authorization_endpoint: OIDC authorization endpoint
             - CLIENT_ID: OAuth2 client ID
             - REDIRECT_URI: Callback URL
-            - Optional: acr_values, force_login, login_hint
+            - Optional: acr_value, force_login, login_hint
         state: OAuth2 state parameter, minted by the caller (single source of truth)
 
     Returns:
@@ -222,14 +222,13 @@ def prepare_oidc_login(config: dict, state: str | None = None) -> tuple[str, str
     """
     code_verifier, code_challenge = generate_pkce()
 
-    # Build authorization URL
     auth_url = build_auth_url(
         authorization_endpoint=config['authorization_endpoint'],
         client_id=config['CLIENT_ID'],
         redirect_uri=config['REDIRECT_URI'],
         code_challenge=code_challenge,
         state=state,
-        acr_values=config.get('acr_values'),
+        acr_values=config.get('acr_value'),
         prompt="login" if config.get('force_login') else None,
         login_hint=config.get('login_hint'),
     )

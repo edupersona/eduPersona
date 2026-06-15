@@ -632,8 +632,13 @@ a.btn-primary:hover {
   }
 
   .step-card {
-    .step-primary-button, .step-secondary-button, .step-expansion {
+    .step-primary-button, .step-secondary-button {
       margin-top: 0.5rem;
+      width: 20rem;
+    }
+    .step-expansion {
+      margin-top: 0.5rem;
+      width: 100%
     }
     .step-secondary-hint {
       font-size: 0.95rem;

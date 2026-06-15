@@ -49,7 +49,7 @@ Content-Type: application/json
   "persona_params": { "faculteit": "FNWI" },
   "verifications": {
     "eduid_login": { "sub": "…", "given_name": "…", "family_name": "…", "email": "…" },
-    "verify_mfa": { "acr": "https://refeds.org/profile/mfa" }
+    "verify_mfa": { "sub": "…", "email": "…", "acr": "https://refeds.org/profile/mfa" }
   }
 }
 ```

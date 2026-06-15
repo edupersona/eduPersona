@@ -5,6 +5,6 @@ from steps.cards.collect_intake import CollectIntakeStep
 from steps.cards.oidc_login import OIDCLoginStep
 from steps.cards.verify_alumni_db import VerifyAlumniDb
 from steps.cards.verify_mobile import VerifyMobileStep
-from steps.cards.verify_mfa import VerifyMfaStep
+from steps.cards.dummy_verify import DummyVerifyStep
 
-__all__ = ['CollectIntakeStep', 'OIDCLoginStep', 'VerifyAlumniDb', 'VerifyMobileStep', 'VerifyMfaStep']
+__all__ = ['CollectIntakeStep', 'OIDCLoginStep', 'VerifyAlumniDb', 'VerifyMobileStep', 'DummyVerifyStep']

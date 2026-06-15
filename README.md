@@ -1,6 +1,6 @@
 # eduPersona onboarding 
 
-> **NIEUWS -- van rollen naar persona's (juni 2026):** ik heb eduPersona omgebouwd van een rol-/gastgebaseerd model naar
+> **NIEUWS -- van rollen naar persona's (juni 2026):** ik heb eduPersona omgebouwd van een rol- en gast-gebaseerd model naar
 > &ldquo;persona's&rdquo;, met de **uitnodiging** als centrale entiteit. Dat sluit beter aan op de plek van eduPersona in de levensyclus van de gast. 
 > Zie [CHANGELOG.md](CHANGELOG.md) voor het volledige overzicht. -PK
 
@@ -67,7 +67,7 @@ We hebben een demo/PoC-omgeving draaien op [https://edupersona.nl/](https://edup
 
 * **Persona's** worden in `settings.json` gedefinieerd (onder `tenants.<tenant>.personas.<key>`). Elke persona heeft o.a. een naam ('alumnus'), een stappenplan (`steps`), definitie van de uitgaande en op te halen gegevens en een template voor de uitnodigingsmail.
 
-* Het **onboarding stappenplan** voor elke persona wordt gedefinieerd door de combinatie van ***configuratie*** (steps in `settings.json`) en ***kaarten*** die (in Python) zijn gedefinieerd in `steps/cards/` (o.a. `OIDCLoginStep`, `VerifyMfaStep`, `VerifyMobileStep`, `VerifyAlumniDb`). Een kaart registreert zichzelf automatisch zodra je hem toevoegt; dit is dé uitbreidingslaag van eduPersona.
+* Het **onboarding stappenplan** voor elke persona wordt gedefinieerd door de combinatie van ***configuratie*** (steps in `settings.json`) en ***kaarten*** die (in Python) zijn gedefinieerd in `steps/cards/` (o.a. `OIDCLoginStep`, `DummyVerifyStep`, `VerifyMobileStep`, `VerifyAlumniDb`). Een kaart registreert zichzelf automatisch zodra je hem toevoegt; dit is dé uitbreidingslaag van eduPersona.
 
 * Voor het **verzenden van de uitnodiging** wordt ondersteuning van SMTP en Postmark geboden. Mailberichten worden opgesteld via Jinja2 HTML-templates (een per-persona body in een per-tenant layout). Afzenders kunnen per persona of per uitnodiging worden geconfigureerd.
 
@@ -88,9 +88,9 @@ In de repo zijn drie voorbeeld-persona's opgenomen (gedefinieerd in `settings.js
 
 | **GASTDOCENT** | bezoekende docent met een account bij een andere instelling |
 |:---|:---|
-| **Stappenplan** | 1. Inloggen met eduID, zonodig eerst aanmaken (OIDCLoginStep)<br>2. Verificatie van sterke authenticatie (VerifyMfaStep), eventueel eduID-app laten installeren (*)<br>3. Verificatie van een instellings-account via de DIY-IDP van SURFconext (OIDCLoginStep) |
+| **Stappenplan** | 1. Inloggen met eduID, zonodig eerst aanmaken (OIDCLoginStep)<br>2. Verificatie van sterke authenticatie via een geforceerde MFA-herlogin bij eduID (OIDCLoginStep met `acr_value`), eventueel eduID-app laten installeren (*)<br>3. Verificatie van een instellings-account via de DIY-IDP van SURFconext (OIDCLoginStep) |
 | **Gegevens in uitnodiging** (expected_params) | faculteit, personal_message |
-| **Terug naar IAM** (callback_outputs) | eduID-pseudoniem (bijv. sub, uit de eduid_login-stap)<br>acr (authenticatieniveau, door VerifyMfaStep opgehaald) |
+| **Terug naar IAM** (callback_outputs) | eduID-pseudoniem (bijv. sub, uit de eduid_login-stap)<br>acr (authenticatieniveau, geverifieerd in de verify_mfa-stap) |
 
 | **ALUMNUS** | oud-student, geverifieerd via een alumni-database |
 |:---|:---|
