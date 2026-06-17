@@ -23,7 +23,7 @@ class OIDCLoginStep(StepCard):
     def __init__(self, config: dict):
         super().__init__(config)
         self.idp: str = config['idp']
-        self.primary_button_label: str = config['primary_button_label']
+        self.primary_button: dict | None = config.get('primary_button')
         self.secondary_button: dict | None = config.get('secondary_button')
         # Optional ACR step-up: a single ACR to request and verify (OIDC `acr_values`).
         self.acr_value: str | None = config.get('acr_value')
@@ -49,8 +49,12 @@ class OIDCLoginStep(StepCard):
             ui.label(_(self.acr_failed_text)).classes('text-error')
         self.render_help()
         with Row().classes('button-row'):
-            with Col():
-                Button(_(self.primary_button_label), on_click=self._handle_click).classes('step-primary-button')
+            if self.primary_button:
+                with Col():
+                    Button(_(self.primary_button.get('label', '')),
+                           on_click=self._handle_click).classes('step-primary-button')
+                    if self.primary_button.get('hint'):
+                        ui.label(_(self.primary_button['hint'])).classes('step-primary-hint step-hint')
             if self.secondary_button:
                 with Col(style='align-items: center; gap: 8px;'):
                     # Native <a target="_blank"> (via Quasar href) so the browser opens the
@@ -59,7 +63,7 @@ class OIDCLoginStep(StepCard):
                     Button(_(self.secondary_button['label'])).props(
                         f'href="{self.secondary_button["url"]}" target="_blank"').classes('step-secondary-button')
                     if self.secondary_button.get('hint'):
-                        ui.label(_(self.secondary_button['hint'])).classes('step-secondary-hint')
+                        ui.label(_(self.secondary_button['hint'])).classes('step-secondary-hint step-hint')
 
     def render_completed(self) -> None:
         ui.label(_(self.completed_text)).classes('text-success')
@@ -67,7 +71,9 @@ class OIDCLoginStep(StepCard):
 
     async def result_handler(self, userinfo: dict, id_token_claims: dict, token_data: dict, next_url: str = "") -> None:
         returned_acr = id_token_claims.get('acr')
-        logger.debug(f"{self.idp} login completed (acr={returned_acr!r}) with userinfo: {userinfo}")
+        logger.debug(f"{self.idp} login completed (acr={returned_acr!r})")
+        logger.debug(f"{self.idp} all id_token claims: {id_token_claims}")
+        logger.debug(f"{self.idp} userinfo: {userinfo}")
         if self.acr_value and returned_acr != self.acr_value:
             logger.warning(f"{self.idp} ACR check failed: requested {self.acr_value!r}, got {returned_acr!r}")
             self.state['acr_failed'] = True

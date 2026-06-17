@@ -11,12 +11,12 @@ from steps import Steps
 
 
 def test_missing_step_config_key_raises_clear_valueerror():
-    """OIDCLoginStep without primary_button_label → ValueError naming the key (not KeyError)."""
+    """OIDCLoginStep without its required `idp` → ValueError naming the key (not KeyError)."""
     steps_cfg = {"steps": [{
         "class": "OIDCLoginStep", "id": "eduid_login",
-        "config": {"title": "t", "completed_text": "c", "idp": "eduid"},  # no primary_button_label
+        "config": {"title": "t", "completed_text": "c"},  # no idp
     }]}
-    with pytest.raises(ValueError, match="primary_button_label"):
+    with pytest.raises(ValueError, match="idp"):
         Steps("hvh", {}, steps_cfg)
 
 

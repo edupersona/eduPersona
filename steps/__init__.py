@@ -14,9 +14,9 @@ from steps.base import (
 )
 from steps.orchestrator import Steps, render_welcome
 from steps.cards import (
-    DummyVerifyStep,
     OIDCLoginStep,
     VerifyAlumniDb,
+    VerifyConsentStep,
     VerifyMobileStep,
 )
 
@@ -28,8 +28,8 @@ __all__ = [
     'expandable_info',
     'Steps',
     'render_welcome',
-    'DummyVerifyStep',
     'OIDCLoginStep',
     'VerifyAlumniDb',
+    'VerifyConsentStep',
     'VerifyMobileStep',
 ]

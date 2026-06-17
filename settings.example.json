@@ -113,7 +113,9 @@
                 "idp": "eduid",
                 "title": "Stap 1. Inloggen met eduID (let op: gebruik je TEST eduID)",
                 "completed_text": "✓ Ingelogd met (test-)eduID",
-                "primary_button_label": "YES! I already have a (test!) eduID",
+                "primary_button": {
+                  "label": "YES! I already have a (test!) eduID"
+                },
                 "secondary_button": {
                   "label": "No - I don't have a (test!) eduID yet",
                   "url": "https://test.eduid.nl/home",
@@ -122,16 +124,20 @@
               }
             },
             {
-              "class": "VerifyMfaStep",
+              "class": "DummyVerifyStep",
               "id": "verify_mfa",
               "config": {
-                "primary_button_label": "eduID app testen...",
+                "primary_button": {
+                  "label": "eduID app testen..."
+                },
                 "title": "Stap 2. Inloggen met eduID app (simulatie van MFA-controle)",
                 "completed_text": "✓ eduID app is correct geïnstalleerd",
                 "disabled_text": "Voltooi eerst stap 1",
                 "dialog_title": "Dummy MFA test",
                 "confirm_button_label": "JA, ik heb de eduID app geïnstalleerd",
-                "acr_value": "https://refeds.org/profile/mfa"
+                "output": {
+                  "acr": "https://refeds.org/profile/mfa"
+                }
               }
             },
             {
@@ -139,7 +145,9 @@
               "id": "institutional_login",
               "config": {
                 "idp": "institutional",
-                "primary_button_label": "Inloggen bij instelling...",
+                "primary_button": {
+                  "label": "Inloggen bij instelling..."
+                },
                 "title": "Stap 3. Verificatie met instellingsaccount (tip: professor5/professor5)",
                 "completed_text": "✓ Institutioneel ingelogd",
                 "disabled_text": "Voltooi eerst stap 2"
@@ -171,7 +179,9 @@
                 "idp": "eduid",
                 "title": "Stap 1. Inloggen met eduID (let op: gebruik je TEST eduID)",
                 "completed_text": "✓ Ingelogd met (test-)eduID",
-                "primary_button_label": "YES! I already have a (test!) eduID",
+                "primary_button": {
+                  "label": "YES! I already have a (test!) eduID"
+                },
                 "secondary_button": {
                   "label": "No - I don't have a (test!) eduID yet",
                   "url": "https://test.eduid.nl/home",
@@ -232,11 +242,13 @@
                 "idp": "eduid",
                 "title": "Stap 1. Inloggen met je TEST eduID",
                 "completed_text": "✓ Ingelogd met (test-)eduID",
-                "primary_button_label": "Ik heb al een (test!) eduID",
+                "primary_button": {
+                  "label": "Ik heb al een (test!) eduID"
+                },
                 "secondary_button": {
                   "label": "Nog geen test-eduID",
                   "url": "https://test.eduid.nl/home",
-                  "hint": "Kom hierna terug om verder te gaan!"
+                  "hint": "Kom daarna hier terug!"
                 }
               }
             },

@@ -112,7 +112,9 @@
                 "title": "Stap 2. Inloggen met eduID (let op: gebruik je TEST eduID)",
                 "completed_text": "✓ Ingelogd met (test-)eduID",
                 "disabled_text": "Voltooi eerst stap 1",
-                "primary_button_label": "YES! I already have a (test!) eduID",
+                "primary_button": {
+                  "label": "YES! I already have a (test!) eduID"
+                },
                 "secondary_button": {
                   "label": "No - I don't have a (test!) eduID yet",
                   "url": "https://test.eduid.nl/home",
@@ -125,7 +127,9 @@
               "id": "institutional_login",
               "config": {
                 "idp": "institutional",
-                "primary_button_label": "Inloggen met instellingsaccount",
+                "primary_button": {
+                  "label": "Inloggen met instellingsaccount"
+                },
                 "title": "Stap 2. Inloggen met instellingsaccount",
                 "completed_text": "✓ Institutioneel ingelogd",
                 "disabled_text": "Voltooi eerst stap 1"
@@ -167,7 +171,9 @@
                 "title": "Stap 2. Inloggen met eduID (let op: gebruik je TEST eduID)",
                 "completed_text": "✓ Ingelogd met (test-)eduID",
                 "disabled_text": "Voltooi eerst stap 1",
-                "primary_button_label": "YES! I already have a (test!) eduID",
+                "primary_button": {
+                  "label": "YES! I already have a (test!) eduID"
+                },
                 "secondary_button": {
                   "label": "No - I don't have a (test!) eduID yet",
                   "url": "https://test.eduid.nl/home",
@@ -228,7 +234,9 @@
                 "idp": "eduid",
                 "title": "Stap 1. Inloggen met je TEST eduID",
                 "completed_text": "✓ Ingelogd met (test-)eduID",
-                "primary_button_label": "Ik heb al een (test!) eduID"
+                "primary_button": {
+                  "label": "Ik heb al een (test!) eduID"
+                }
               }
             },
             {
