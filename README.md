@@ -54,7 +54,7 @@ Je hebt nu de code waarmee een gast de onboarding kan starten:
 * voer de code in en volg de aangegeven stappen;
 * na succesvolle afronding is het eduID-pseudoniem geregistreerd, vindt de terugkoppeling plaats en wordt de gast doorgeleid naar zijn/haar welkomstscherm.
 
-<img src="docs/screenshot4.png" alt="screenshot" width="650"/>
+<img src="docs/gastdocent_ok.png" alt="screenshot" width="650"/>
 
 Als je eduID en/of instellings-logins echt wilt testen zul je de benodigde OIDC client_id's en secrets moeten configureren in settings.json en het eduPersona portal registreren bij SURFconext en/of de betrokken IDP. (Dit kan óók met een dev omgeving op localhost.)
 
@@ -88,7 +88,7 @@ In de repo zijn drie voorbeeld-persona's opgenomen (gedefinieerd in `settings.js
 
 | **GASTDOCENT** | bezoekende docent met een account bij een andere instelling |
 |:---|:---|
-| **Stappenplan** | 1. Inloggen met eduID, zonodig eerst aanmaken (OIDCLoginStep)<br>2. Verificatie van sterke authenticatie via een geforceerde MFA-herlogin bij eduID (OIDCLoginStep met `acr_value`), eventueel eduID-app laten installeren (*)<br>3. Verificatie van een instellings-account via de DIY-IDP van SURFconext (OIDCLoginStep) |
+| **Stappenplan** | 1. Inloggen met eduID, zonodig eerst aanmaken (OIDCLoginStep)<br>2. Verificatie van sterke authenticatie via een geforceerde MFA-herlogin bij eduID (OIDCLoginStep met `acr_value`), eventueel eduID-app laten installeren<br>3. Verificatie van een instellings-account via de DIY-IDP van SURFconext (OIDCLoginStep)<br>4. Akkoord gedragscode en gegevensbescherming |
 | **Gegevens in uitnodiging** (expected_params) | faculteit, personal_message |
 | **Terug naar IAM** (callback_outputs) | eduID-pseudoniem (bijv. sub, uit de eduid_login-stap)<br>acr (authenticatieniveau, geverifieerd in de verify_mfa-stap) |
 
@@ -106,7 +106,7 @@ In de repo zijn drie voorbeeld-persona's opgenomen (gedefinieerd in `settings.js
 
 De bijbehorende mailtemplates staan in `services/postmark/templates/personas/` (bijv. `gastdocent.jinja2`).
 
-(*) Echte MFA-verificatie vereist een koppeling aan eduID-productie.
+Voor je eigen instelling zul je persona's en stappenplannen willen aanpassen. Als beginpunt kun je [dit document](/docs/customisation.md) gebruiken.
 
 
 ### API

@@ -15,7 +15,6 @@
     "message_stream": "your-message-stream-name"
   },
   "cleanup_api_key": "your-cleanup-api-key-here",
-  "default_tenant": "hvh",
   "tenants": {
     "hvh": {
       "api_key": "your-tenant-api-key-here",
@@ -29,24 +28,26 @@
       "scim": {
         "scim_enabled": false,
         "scim_base_url": "http://localhost:8000",
-        "bearer_token": "your-scim-bearer-token"
+        "bearer_token": "your-scim-bearer-token",
+        "provision_groups": true
       },
       "admins": [
         {
           "display_name": "Your Name",
           "user": "your-user-id-hash-here",
           "authz": [
-            "invitations"
+            "invitations",
+            "simulator"
           ]
         }
       ],
       "fallback_admins": [
         {
-          "display_name": "Your Name",
           "user": "your_username",
           "password": "your_password",
           "authz": [
-            "invitations"
+            "invitations",
+            "simulator"
           ]
         }
       ],
@@ -55,12 +56,21 @@
           "label": "eduID",
           "CLIENT_ID": "your-client-id",
           "CLIENT_SECRET": "your-client-secret",
+          "DOTWELLKNOWN": "https://connect.surfconext.nl/.well-known/openid-configuration",
+          "REDIRECT_URI": "http://localhost:8080/oidc_callback",
+          "login_hint": "https://login.eduid.nl",
+          "force_login": true
+        },
+        "eduid_test": {
+          "label": "eduID",
+          "CLIENT_ID": "your-client-id",
+          "CLIENT_SECRET": "your-client-secret",
           "DOTWELLKNOWN": "https://connect.test.surfconext.nl/.well-known/openid-configuration",
           "REDIRECT_URI": "http://localhost:8080/oidc_callback",
           "login_hint": "https://login.test.eduid.nl",
           "force_login": true
         },
-        "institutional": {
+        "diy_surfconext": {
           "label": "instellingsaccount",
           "CLIENT_ID": "your-client-id",
           "CLIENT_SECRET": "your-client-secret",
@@ -68,18 +78,13 @@
           "REDIRECT_URI": "http://localhost:8080/oidc_callback",
           "login_hint": "https://idp.diy.surfconext.nl",
           "force_login": true
-        },
-        "admin": {
-          "label": "admin-account (via test eduID)",
-          "CLIENT_ID": "your-client-id",
-          "CLIENT_SECRET": "your-client-secret",
-          "DOTWELLKNOWN": "https://connect.test.surfconext.nl/.well-known/openid-configuration",
-          "REDIRECT_URI": "http://localhost:8080/oidc_callback",
-          "login_hint": "https://idp.diy.surfconext.nl",
-          "auto_provision_users": false,
-          "force_login": true
         }
       },
+      "mail": {
+        "sender_email": "noreply@edupersona.nl",
+        "sender_name": "eduPersona"
+      },
+      "callback_secret": "your-callback-secret-here",
       "personas": {
         "gastdocent": {
           "display_name": "Gastdocent",
@@ -101,7 +106,7 @@
             "eduid_login",
             "verify_mfa"
           ],
-          "success_redirect_url": "https://example.org/lms/welcome",
+          "success_redirect_url": "https://login.canvas.uva.nl/?referrer=canvas.uva.nl",
           "callback_url": null,
           "completion_message": "Je hebt nu als gastdocent toegang tot de leeromgeving.",
           "cta_label": "Naar de leeromgeving",
@@ -111,46 +116,65 @@
               "id": "eduid_login",
               "config": {
                 "idp": "eduid",
-                "title": "Stap 1. Inloggen met eduID (let op: gebruik je TEST eduID)",
-                "completed_text": "✓ Ingelogd met (test-)eduID",
+                "title": "Stap 1. Inloggen met eduID",
+                "completed_text": "✓ Ingelogd met eduID",
                 "primary_button": {
-                  "label": "YES! I already have a (test!) eduID"
+                  "label": "YES! I already have an eduID"
                 },
                 "secondary_button": {
-                  "label": "No - I don't have a (test!) eduID yet",
-                  "url": "https://test.eduid.nl/home",
+                  "label": "No - I don't have an eduID yet",
+                  "url": "https://mijn.eduid.nl/",
                   "hint": "Come back here after you've created it!"
                 }
               }
             },
             {
-              "class": "DummyVerifyStep",
+              "class": "OIDCLoginStep",
               "id": "verify_mfa",
               "config": {
+                "idp": "eduid",
+                "title": "Stap 2. Verificatie tweede factor",
                 "primary_button": {
-                  "label": "eduID app testen..."
+                  "label": "Inloggen met eduID app"
                 },
-                "title": "Stap 2. Inloggen met eduID app (simulatie van MFA-controle)",
+                "acr_value": "https://refeds.org/profile/mfa",
+                "acr_failed_text": "De vereiste tweede factor (MFA) is niet voltooid. Probeer het opnieuw.",
                 "completed_text": "✓ eduID app is correct geïnstalleerd",
-                "disabled_text": "Voltooi eerst stap 1",
-                "dialog_title": "Dummy MFA test",
-                "confirm_button_label": "JA, ik heb de eduID app geïnstalleerd",
-                "output": {
-                  "acr": "https://refeds.org/profile/mfa"
-                }
+                "disabled_text": "Voltooi eerst stap 1"
               }
             },
             {
               "class": "OIDCLoginStep",
               "id": "institutional_login",
               "config": {
-                "idp": "institutional",
+                "idp": "diy_surfconext",
                 "primary_button": {
-                  "label": "Inloggen bij instelling..."
+                  "label": "Inloggen bij instelling...",
+                  "hint": "Tip: gebruik professor5/professor5"
                 },
-                "title": "Stap 3. Verificatie met instellingsaccount (tip: professor5/professor5)",
+                "title": "Stap 3. Verificatie instellingsaccount",
                 "completed_text": "✓ Institutioneel ingelogd",
                 "disabled_text": "Voltooi eerst stap 2"
+              }
+            },
+            {
+              "class": "VerifyConsentStep",
+              "id": "consent",
+              "config": {
+                "title": "Stap 4: Gedragscode en toestemming",
+                "primary_button": {
+                  "label": "Openen..."
+                },
+                "dialog_title": "Gedragscode en toestemming",
+                "consent_text": "static/hvh/docs/gedragscode.md",
+                "consent_link": {
+                  "label": "Lees het volledige privacybeleid",
+                  "url": "https://www.surf.nl/en/about-surf/privacy"
+                },
+                "consent_label": "Ik heb het bovenstaande gelezen en geef toestemming",
+                "confirm_button_label": "Bevestig toestemming",
+                "completed_text": "✓ Toestemming gegeven",
+                "disabled_text": "Voltooi eerst stap 3"
               }
             }
           ]
@@ -164,8 +188,8 @@
           "expected_params": {},
           "callback_outputs": [
             "eduid_login",
-            "verify_mobile",
-            "alumni_db"
+            "alumni_db",
+            "verify_mobile"
           ],
           "success_redirect_url": "https://example.org/alumni/welcome",
           "callback_url": null,
@@ -177,14 +201,14 @@
               "id": "eduid_login",
               "config": {
                 "idp": "eduid",
-                "title": "Stap 1. Inloggen met eduID (let op: gebruik je TEST eduID)",
-                "completed_text": "✓ Ingelogd met (test-)eduID",
+                "title": "Stap 1. Inloggen met eduID",
+                "completed_text": "✓ Ingelogd met eduID",
                 "primary_button": {
-                  "label": "YES! I already have a (test!) eduID"
+                  "label": "YES! I already have an eduID"
                 },
                 "secondary_button": {
-                  "label": "No - I don't have a (test!) eduID yet",
-                  "url": "https://test.eduid.nl/home",
+                  "label": "No - I don't have an eduID yet",
+                  "url": "https://eduid.nl/home",
                   "hint": "Come back here after you've created it!"
                 }
               }
@@ -216,7 +240,7 @@
           ]
         },
         "admin": {
-          "display_name": "Beheerder",
+          "display_name": "Admin",
           "mail": {
             "layout": "layouts/hvh.jinja2",
             "body": "personas/admin.jinja2"
@@ -224,7 +248,7 @@
           "expected_params": {},
           "callback_url": null,
           "success_redirect_url": "/m/hvh/login",
-          "completion_message": "Je bent nu aangemeld als beheerder. Log in met je test-eduID.",
+          "completion_message": "Je bent aangemeld als admin/beheerder. Log in op eduPersona met je eduID.",
           "cta_label": "Naar de login",
           "completion": {
             "action": "admin_onboarding",
@@ -240,16 +264,13 @@
               "id": "eduid_login",
               "config": {
                 "idp": "eduid",
-                "title": "Stap 1. Inloggen met je TEST eduID",
-                "completed_text": "✓ Ingelogd met (test-)eduID",
+                "title": "Stap 1. Inloggen met je eduID app",
                 "primary_button": {
-                  "label": "Ik heb al een (test!) eduID"
+                  "label": "Log in..."
                 },
-                "secondary_button": {
-                  "label": "Nog geen test-eduID",
-                  "url": "https://test.eduid.nl/home",
-                  "hint": "Kom daarna hier terug!"
-                }
+                "acr_value": "https://refeds.org/profile/mfa",
+                "acr_failed_text": "De vereiste tweede factor (MFA) is niet voltooid. Probeer het opnieuw.",
+                "completed_text": "✓ Ingelogd met eduID"
               }
             },
             {
@@ -258,10 +279,7 @@
               "config": {
                 "title": "Stap 2. Vertel ons iets over je context",
                 "completed_text": "✓ Gegevens ontvangen",
-                "disabled_text": "Voltooi eerst stap 1",
-                "org_label": "Organisatie",
-                "scenario_label": "Heb je al een toepassingsscenario voor eduPersona in gedachten?",
-                "submit_label": "Verder"
+                "disabled_text": "Voltooi eerst stap 1"
               }
             }
           ]

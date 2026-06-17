@@ -431,11 +431,13 @@ a.btn-primary:hover {
 /* Consent dialog body (VerifyConsentStep) — scrollable read-only consent text,
    external link, and the gating checkbox. Position/size come from panel-dialog. */
 .consent-dialog {
-  .consent-text { width: 100%; }
-  .consent-text textarea {
-    max-height: 240px;
+  .consent-text {
+    width: 100%;
+    max-height: 320px;
     overflow-y: auto;
-    resize: none;
+    padding: 0 var(--rdm-spacing-md);
+    border: 1px solid var(--rdm-border, #e0e0e0);
+    border-radius: var(--rdm-radius, 4px);
   }
   .consent-link { display: block; margin: var(--rdm-spacing-sm) 0; }
 }

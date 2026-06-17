@@ -4,6 +4,11 @@ The **persona** is the organising concept of edupersona: the *kind* of guest bei
 onboarded (e.g. `gastdocent`, `alumnus`). This doc is a map into the code — the
 contract lives in the code, not here.
 
+> For the **functional, how-to** side — configuring a persona step by step, the
+> available step cards and their config/result, customizing or adding cards — see
+> [`customisation.md`](customisation.md). This doc keeps the technical contract; that
+> one keeps the recipes.
+
 ## What a persona owns
 
 A persona holds only what makes it differ from another persona. The typed contract

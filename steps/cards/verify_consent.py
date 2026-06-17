@@ -3,6 +3,7 @@ link, ticks a checkbox, and confirms. The only fact recorded is `consent_given` 
 ISO-8601 UTC timestamp of when Confirm was pressed. No backend round-trip, but the
 StepCard contract (prerequisite gating, output keyed by step_id, callback delivery) is real."""
 from datetime import datetime, timezone
+from pathlib import Path
 
 from ng_rdm.components import Button, Dialog
 from nicegui import ui
@@ -17,13 +18,23 @@ class VerifyConsentStep(StepCard):
         self.primary_button: dict | None = config.get('primary_button', {})
         self.dialog_title: str = config['dialog_title']
         self.confirm_button_label: str = config['confirm_button_label']
-        self.consent_text: str | None = config.get('consent_text')
+        # consent_text is a path to a Markdown file (e.g. under static/); read once at
+        # construction so a missing file fails fast via the startup persona validator.
+        consent_path: str | None = config.get('consent_text')
+        self.consent_md: str | None = self._read_consent(consent_path) if consent_path else None
         self.consent_link: dict | None = config.get('consent_link')
         self.consent_label: str = config.get('consent_label', 'I agree')
         self.state['consent_checked'] = False
         # Built once, lazily, on first render: Dialog mounts its backdrop on the client
         # root layout, so it survives render() rebuilds — rebuilding would leak backdrops.
         self._dialog: Dialog | None = None
+
+    @staticmethod
+    def _read_consent(path: str) -> str:
+        file = Path(path)
+        if not file.is_file():
+            raise ValueError(f"consent_text file not found: {path}")
+        return file.read_text(encoding='utf-8')
 
     def _open(self) -> None:
         self.state['consent_checked'] = False  # reset the gate each time the dialog opens
@@ -38,8 +49,9 @@ class VerifyConsentStep(StepCard):
         if self._dialog is None:
             self._dialog = Dialog(title=_(self.dialog_title), dialog_class="panel-dialog consent-dialog")
             with self._dialog:
-                if self.consent_text:
-                    ui.textarea(value=_(self.consent_text)).props('readonly autogrow=false').classes('consent-text')
+                if self.consent_md:
+                    with ui.element('div').classes('consent-text'):
+                        ui.markdown(self.consent_md, extras=['fenced-code-blocks', 'tables'])
                 if self.consent_link and self.consent_link.get('url'):
                     ui.link(_(self.consent_link.get('label') or self.consent_link['url']),
                             self.consent_link['url'], new_tab=True).classes('consent-link')

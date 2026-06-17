@@ -57,14 +57,14 @@ async def register_page() -> None:
                         ui.label(_('Thank you!')).classes('section-heading')
                         ui.label(_(
                             "We've sent you an invitation by e-mail. Open the link to onboard "
-                            "with your (test-)eduID and get access to this PoC environment."
+                            "with your eduID and get access to this PoC environment."
                         )).classes('text')
                     return
 
                 with ui.card().tight().classes('register-card'):
                     ui.label(_(
                         'Leave your details if you want to try out eduPersona.nl for yourself. '
-                        "We'll e-mail you an invitation to onboard with your (test-)eduID."
+                        "We'll e-mail you an invitation to onboard with your eduID."
                     )).classes('text register-intro')
                     ui.input(_('First name')).bind_value(state, 'first_name').classes('form-input')
                     ui.input(_('Last name')).bind_value(state, 'last_name').classes('form-input')
