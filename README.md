@@ -1,6 +1,6 @@
 # eduPersona onboarding 
 
-> **NIEUWS -- van rollen naar persona's (juni 2026):** ik heb eduPersona omgebouwd van een rol- en gast-gebaseerd model naar
+> **Juni 2026 -- van rollen naar persona's:** ik heb eduPersona omgebouwd van een rol- en gast-gebaseerd model naar
 > &ldquo;persona's&rdquo;, met de **uitnodiging** als centrale entiteit. Dat sluit beter aan op de plek van eduPersona in de levensyclus van de gast. 
 > Zie [CHANGELOG.md](CHANGELOG.md) voor het volledige overzicht. -PK
 
@@ -26,7 +26,11 @@ De nummering volgt de figuur hierboven:
 
 Bij die laatste stap kan het wenselijk zijn om weliswaar *in te loggen* met eduID, maar naar de applicaties toe gebruik te blijven maken van een instellingsidentiteit. Daarvoor kun je denken aan het anyID/keyring-scenario van Aventus (gebaseerd op Keycloak) en/of de <a href="https://servicedesk.surf.nl/wiki/spaces/IAM/pages/222462401/Ondersteuning+voor+applicaties+zonder+multi-identifier+functionaliteit">instellings-informatie API</a> van SURFconext. Zo'n voorziening kan dan in stap 6 worden voorzien van de afbeelding van `eduID` op `guest_id`.
 
-### Getting started
+### Probeer het op edupersona.nl
+
+We hebben een demo/PoC-omgeving draaien op [https://edupersona.nl/](https://edupersona.nl/) <br>[Registreer je daar](https://edupersona.nl/register) als je tijdelijke admin credentials wilt hebben om e.e.a. in de praktijk te proberen. Je wordt dan via edupersona uitgenodigd - en daarna log je dus ook in met je eduID.
+
+### Zelf installeren
 
 Eventueel eerst een conda env of venv met Python 3.12+ maken en activeren, daarna:
 ```
@@ -36,6 +40,7 @@ pip install -r requirements.txt
 cp settings.example.json settings.json
 ```
 Edit je settings.json, pas in elk geval het userid en wachtwoord voor `tenants.hvh.fallback_admins` aan. De SQLite-database (`edupersona.db`) wordt bij de eerste start automatisch aangemaakt.
+Om eduID of andere IDP's te gebruiken moet je de benodigde OIDC client_id's en secrets configureren in settings.json en deze registreren bij SURFconext (SP dashboard) en/of de betrokken IDP. 
 
 Start een lokale dev server met:
 ```
@@ -55,31 +60,6 @@ Je hebt nu de code waarmee een gast de onboarding kan starten:
 * na succesvolle afronding is het eduID-pseudoniem geregistreerd, vindt de terugkoppeling plaats en wordt de gast doorgeleid naar zijn/haar welkomstscherm.
 
 <img src="docs/gastdocent_ok.png" alt="screenshot" width="650"/>
-
-Als je eduID en/of instellings-logins echt wilt testen zul je de benodigde OIDC client_id's en secrets moeten configureren in settings.json en het eduPersona portal registreren bij SURFconext en/of de betrokken IDP. (Dit kan óók met een dev omgeving op localhost.)
-
-
-### edupersona.nl
-
-We hebben een demo/PoC-omgeving draaien op [https://edupersona.nl/](https://edupersona.nl/) <br>[Registreer je daar](https://edupersona.nl/register) als je tijdelijke admin credentials wilt hebben om e.e.a. in de praktijk te proberen. Je wordt dan via edupersona uitgenodigd - en daarna log je dus ook in met je eduID.
-
-### Inrichting, features, configuratie
-
-* **Persona's** worden in `settings.json` gedefinieerd (onder `tenants.<tenant>.personas.<key>`). Elke persona heeft o.a. een naam ('alumnus'), een stappenplan (`steps`), definitie van de uitgaande en op te halen gegevens en een template voor de uitnodigingsmail.
-
-* Het **onboarding stappenplan** voor elke persona wordt gedefinieerd door de combinatie van ***configuratie*** (steps in `settings.json`) en ***kaarten*** die (in Python) zijn gedefinieerd in `steps/cards/` (o.a. `OIDCLoginStep`, `DummyVerifyStep`, `VerifyMobileStep`, `VerifyAlumniDb`). Een kaart registreert zichzelf automatisch zodra je hem toevoegt; dit is dé uitbreidingslaag van eduPersona.
-
-* Voor het **verzenden van de uitnodiging** wordt ondersteuning van SMTP en Postmark geboden. Mailberichten worden opgesteld via Jinja2 HTML-templates (een per-persona body in een per-tenant layout). Afzenders kunnen per persona of per uitnodiging worden geconfigureerd.
-
-* eduPersona is fundamenteel **multi-tenant**, ook als je dat niet gebruikt. De default tenant die je overal tegenkomt is 'hvh': de beruchte Hogeschool van Harderwijk. Je kunt in settings.json je eigen tenant-string als key opnemen onder de `tenants` key. Je kunt je eigen 'branding' meegeven aan de uitnodingsmails (`services/postmark/templates/layouts/{tenant}`).
-
-* **Callback API**: bij afronding POST eduPersona de verzamelde gegevens naar de ingestelde callback_url. De `callback_outputs` in de persona-configuratie bepalen welke geverifieerde gegevens daarbij worden meegestuurd. Zie [`docs/callback_api.md`](docs/callback_api.md) voor de volledige documentatie (gegevens, auth, afleversemantiek, statuscontrole). Er is voorzien in een retry-mechanisme. In plaats van deze API kan ook **SCIM** worden gebruikt; dit is per tenant in te schakelen. Beide interfaces beperken zich tot de &lsquo;bare user&rsquo; en de verzamelde verificatiegegevens; er worden geen rollen of groepen gesynchroniseerd &ndash; die horen in IAM thuis.
-
-* **IDP instellingen** vind je in settings.json: de `admin` IDP wordt gebruikt om in te loggen op de beheersfuncties. De overige IDP's onder de `oidc` key worden gebruikt in het stappenplan dat de gast bij onboarding moet doorlopen. Uiteraard moet je jouw eduPersona SP/RP bij elke IDP (c.q. SURFconext, Entra ID) als zodanig registreren met een client_id en client_secret.
-
-* **Meertalig**: alle strings zijn Engels met als default een vertaling naar het Nederlands actief. Andere talen kunnen worden toegevoegd in `services.i18n`.
-
-* **Verloop & cleanup**: uitnodigingen hebben default een geldigheidsduur van 14 dagen (instelbaar in settings.json). Er is een endpoint `POST /maintenance` (met de header `X-Cleanup-Key`) dat verlopen uitnodigingen over alle tenants opruimt. Zorg dat dit endpoint ten minste één keer per dag wordt aangeroepen, bijv. via crontab.
 
 
 ### Voorbeeld-persona's: gastdocent, alumnus en admin
@@ -106,7 +86,7 @@ In de repo zijn drie voorbeeld-persona's opgenomen (gedefinieerd in `settings.js
 
 De bijbehorende mailtemplates staan in `services/postmark/templates/personas/` (bijv. `gastdocent.jinja2`).
 
-Voor je eigen instelling zul je persona's en stappenplannen willen aanpassen. Als beginpunt kun je [dit document](/docs/customisation.md) gebruiken.
+Voor je eigen instelling zul je persona's en stappenplannen willen aanpassen. Als beginpunt kun je [**dit document**](/docs/customisation.md) gebruiken.
 
 
 ### API
