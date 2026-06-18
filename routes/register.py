@@ -12,7 +12,7 @@ from nicegui import ui
 
 from domain.invitations import create_invitation
 from services.i18n import _
-from services.postmark.postmark import send_invitation_mail
+from services.postmark.postmark import send_invitation_mail, send_register_notification
 from services.tenant import get_default_tenant
 from services.theme import frame
 from services.ui_errors import ui_guard
@@ -24,7 +24,7 @@ ADMIN_PERSONA = "admin"
 async def register_page() -> None:
     """Public form for prospective users to request PoC access."""
     tenant = get_default_tenant()
-    state = {"first_name": "", "last_name": "", "email": "", "sent": False}
+    state = {"first_name": "", "last_name": "", "email": "", "keep_informed": True, "sent": False}
 
     with frame('register', tenant):
         with Col(classes='centered-content'):
@@ -37,14 +37,17 @@ async def register_page() -> None:
                     return
 
                 email = state['email'].strip()
+                name = f"{state['first_name'].strip()} {state['last_name'].strip()}"
                 with ui_guard(_('Could not start your registration — please try again later')):
                     inv = await create_invitation(
                         tenant, ADMIN_PERSONA, email, guest_id=email,
                         given_name=state['first_name'].strip(),
                         family_name=state['last_name'].strip(),
                     )
+                    if not await send_register_notification(name, email, state['keep_informed']):
+                        logger.warning(f"register notification mail failed for {email}")
                     if await send_invitation_mail(tenant, inv):
-                        logger.info(f"PoC admin invite created+sent for {email}")
+                        logger.info(f"PoC admin invite created+sent for {email} (newsletter={state['keep_informed']})")
                         state['sent'] = True
                         card.refresh()
                     else:
@@ -62,14 +65,15 @@ async def register_page() -> None:
                     return
 
                 with ui.card().tight().classes('register-card'):
-                    ui.label(_(
-                        'Leave your details if you want to try out eduPersona.nl for yourself. '
-                        "We'll e-mail you an invitation to onboard with your eduID."
-                    )).classes('text register-intro')
+                    ui.label('Wil je eduPersona.nl zelf proberen? Vul je gegevens in, dan mailen we je (via eduPersona, uiteraard) een uitnodiging om je aan te melden met je eduID.',
+
+                             ).classes('text register-intro')
                     ui.input(_('First name')).bind_value(state, 'first_name').classes('form-input')
                     ui.input(_('Last name')).bind_value(state, 'last_name').classes('form-input')
                     ui.input(_('Email address')).props('type=email') \
-                        .bind_value(state, 'email').classes('form-input-last')
+                        .bind_value(state, 'email').classes('form-input')
+                    ui.checkbox('stuur mij de eduPersona nieuwsbrief (max. eenmaal per maand)') \
+                        .bind_value(state, 'keep_informed').classes('form-input-last')
                     Button(_('Send'), on_click=submit)
 
             card()

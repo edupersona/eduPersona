@@ -4,7 +4,7 @@ Renders a per-persona body wrapped in a per-tenant layout and sends it via the
 Postmark API. Sender identity resolves invitation-override > tenant default.
 """
 import re
-from html import unescape
+from html import escape, unescape
 from pathlib import Path
 
 import httpx
@@ -96,6 +96,8 @@ async def send_postmark_email(email_data: dict) -> bool:
         "TextBody": email_data['text_body'],
         "MessageStream": message_stream,
     }
+    if email_data.get("reply_to"):
+        postmark_data["ReplyTo"] = email_data["reply_to"]
 
     async with httpx.AsyncClient() as client:
         try:
@@ -122,3 +124,50 @@ async def send_invitation_mail(tenant: str, invitation: dict) -> bool:
     """Compose and send the persona invite via Postmark. Returns success bool."""
     email_data = await prepare_invite_message(invitation, tenant)
     return await send_postmark_email(email_data)
+
+
+CONTACT_RECIPIENT = "peter.kleynjan@quantis.nl"
+
+
+async def send_contact_mail(name: str, email: str, message: str, keep_informed: bool) -> bool:
+    """E-mail a contact-form submission to the eduPersona team. Reply-To is the sender."""
+    informed = "Ja" if keep_informed else "Nee"
+    text_body = (
+        f"Naam: {name}\nE-mail: {email}\nHou me op de hoogte: {informed}\n\nBericht:\n{message}\n"
+    )
+    html_body = (
+        f"<p><strong>Naam:</strong> {escape(name)}<br>"
+        f"<strong>E-mail:</strong> {escape(email)}<br>"
+        f"<strong>Hou me op de hoogte:</strong> {informed}</p>"
+        f"<p><strong>Bericht:</strong><br>{escape(message).replace(chr(10), '<br>')}</p>"
+    )
+    return await send_postmark_email({
+        "from_email": "noreply@edupersona.nl",
+        "from_name": "eduPersona contact",
+        "to_email": CONTACT_RECIPIENT,
+        "reply_to": email,
+        "subject": f"eduPersona contact: {name}",
+        "html_body": html_body,
+        "text_body": text_body,
+    })
+
+
+async def send_register_notification(name: str, email: str, keep_informed: bool) -> bool:
+    """E-mail an admin-access request (register form) to the eduPersona team. Reply-To is the requester."""
+    informed = "Ja" if keep_informed else "Nee"
+    text_body = f"Naam: {name}\nE-mail: {email}\nNieuwsbrief: {informed}\n"
+    html_body = (
+        f"<p>Iemand vroeg PoC-admintoegang aan:</p>"
+        f"<p><strong>Naam:</strong> {escape(name)}<br>"
+        f"<strong>E-mail:</strong> {escape(email)}<br>"
+        f"<strong>Nieuwsbrief:</strong> {informed}</p>"
+    )
+    return await send_postmark_email({
+        "from_email": "noreply@edupersona.nl",
+        "from_name": "eduPersona aanmelding",
+        "to_email": CONTACT_RECIPIENT,
+        "reply_to": email,
+        "subject": f"eduPersona aanmelding: {name}",
+        "html_body": html_body,
+        "text_body": text_body,
+    })

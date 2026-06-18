@@ -4,6 +4,7 @@ from nicegui import app, ui
 # register routes
 import routes.accept
 import routes.api
+import routes.contact
 from routes.api import api_router
 import routes.landing
 import routes.m  # all /m routes

@@ -2,8 +2,9 @@ from ng_rdm.components import Col, Icon, Row, rdm_init, set_language
 from ng_rdm.utils import logger
 from nicegui import ui
 
-from services.i18n import _
 from services.tenant import get_default_tenant
+
+GITHUB_URL = 'https://github.com/edupersona/eduPersona'
 
 
 @ui.page('/')
@@ -12,7 +13,7 @@ def landing_page():
 
     The end-user route (/accept) is tenant-less; tenant is derived from the
     invitation code or session. The admin link uses the derived default tenant
-    for `/m/{tenant}/invitations`.
+    for `/m/{tenant}/invitations`. Copy is Dutch-only (this PoC's audience).
     """
     logger.debug("Landing page accessed")
     rdm_init()
@@ -23,28 +24,49 @@ def landing_page():
 
     default_tenant = get_default_tenant()
 
-    # Main container
     with Col(classes='landing-page'):
-        # Layout: logo + cards (responsive via CSS)
-        with ui.row().classes('landing-layout'):
-            with ui.link(target='https://github.com/edupersona/eduPersona', new_tab=True).classes('github-link'):
+        with Col(classes='landing-layout page-content'):
+            with ui.link(target=GITHUB_URL, new_tab=True).classes('github-link'):
                 Icon('github')
 
-            # Logo
-            ui.image('/static/img/edupersona.png').classes('landing-logo')
+            # Hero: logo + tagline + one-line intro
+            with Col(classes='landing-hero'):
+                ui.image('/static/img/edupersona.png').classes('landing-logo')
+                ui.label('De brug tussen eduID en instellingsidentiteit').classes('landing-tagline')
 
-            ui.label(_('Bridging eduID and institution identity')).classes('landing-tagline')
-
-            # Cards container
+            # Primary call-to-action
             with Row().classes('landing-cards'):
                 with ui.card().classes('card-clickable') as accept_card:
                     with Col(classes='card-content'):
                         Icon('envelope').classes('icon-success')
-                        ui.label(_('Accept an invitation')).classes('card-title')
-                        ui.label(_("Click here if you've received an invitation")).classes('text')
+                        ui.label('Accepteer een uitnodiging').classes('card-title')
+                        ui.label('Klik hier als je een uitnodiging hebt ontvangen').classes('text')
 
-            with Row().classes('admin-link'):
-                ui.link(_('Admin access'), f'/m/{default_tenant}/invitations')
+            # What is eduPersona?
+            with Col(classes='landing-section'):
+                ui.label('Wat is eduPersona?').classes('section-heading')
+                ui.html(
+                    'Een self-service pagina die de eduID van verschillende soorten gastgebruikers betrouwbaar '
+                    'koppelt aan een instellingsidentiteit. '
+                    'Je kunt het zien als een <i>flexibele verificatiefabriek</i>.'
+                ).classes('text')
 
-        # Make entire card clickable
+            # How does it work? — overview graphic links through to the README
+            with Col(classes='landing-section'):
+                ui.label('Hoe werkt het?').classes('section-heading')
+                ui.label(
+                    'Voor elk type gast — de persona — configureer je een stappenplan dat de gast moet doorlopen. '
+                    'Bij het accepteren van de uitnodiging wordt de gast stap voor stap begeleid, tot aan alle onboarding-eisen is voldaan. Bij afronding '
+                    'koppelt eduPersona de geverifieerde gastgegevens terug naar het IAM- of integratiesysteem van de instelling. '
+                ).classes('text')
+
+                with ui.link(target=GITHUB_URL, new_tab=True):
+                    ui.image('/static/img/edupersona_overview.png').classes('landing-diagram')
+
+            # Footer: secondary links
+            with Row().classes('landing-footer'):
+                ui.link('Contact', '/contact')
+                ui.link('Broncode en documentatie', GITHUB_URL, new_tab=True)
+                ui.link('Toegang als beheerder', f'/m/{default_tenant}/invitations')
+
         accept_card.on('click', lambda: ui.navigate.to('/accept'))

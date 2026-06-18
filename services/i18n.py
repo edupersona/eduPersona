@@ -122,11 +122,11 @@ translations: dict[str, dict[str, str]] = {
         'Email address': 'mailadres',
         'First name': 'voornaam',
         'Last name': 'achternaam',
-        "Leave your details if you want to try out eduPersona.nl for yourself. We'll e-mail you an invitation to onboard with your eduID.": 'Wil je eduPersona.nl zelf proberen? Vul je gegevens in, dan mailen we je een uitnodiging om je aan te melden met je eduID.',
         'Please fill in all fields with a valid email': 'Vul alle velden in met een geldig mailadres',
         'Register for PoC access': 'Registreer hier voor toegang naar de eduPersona PoC',
         'Send': 'Versturen',
         'Thank you!': 'Bedankt!',
+        "We've sent you an invitation by e-mail. Open the link to onboard with your (test-)eduID and get access to this PoC environment.": 'We hebben je een uitnodiging gemaild. Open de link om je aan te melden met je (test-)eduID en toegang te krijgen tot deze PoC-omgeving.',
         "We've sent you an invitation by e-mail. Open the link to onboard with your eduID and get access to this PoC environment.": 'We hebben je een uitnodiging gemaild. Open de link om je aan te melden met je eduID en toegang te krijgen tot deze PoC-omgeving.',
 
         # Errors (services/ui_errors.py)
