@@ -62,9 +62,11 @@ def run(fastapi_app) -> None:
     )
     app.on_startup(run_migrations)
     app.on_startup(lambda: asyncio.create_task(webhook_retry_loop()))
-    ui.run_with(fastapi_app, storage_secret=STORAGE_SECRET, title='eduPersona')
+    ui.run_with(fastapi_app, storage_secret=STORAGE_SECRET, title='eduPersona',
+                favicon='static/img/favicons/favicon.ico')
 
 
 if __name__ in {"__main__", "__mp_main__"}:
-    ui.run(storage_secret=STORAGE_SECRET, title='eduPersona')
+    ui.run(storage_secret=STORAGE_SECRET, title='eduPersona',
+           favicon='static/img/favicons/favicon.ico')
 

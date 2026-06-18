@@ -30,9 +30,19 @@ def main_menu(navtitle: str, tenant: str) -> None:
             ui.link(page['label'], path).classes(f"main-menu {key}").classes("selected" if navtitle == key else "")
 
 
+_FAVICON_HEAD = (
+    '<link rel="icon" href="/static/img/favicons/favicon.ico" sizes="any">'
+    '<link rel="icon" type="image/png" sizes="32x32" href="/static/img/favicons/favicon-32x32.png">'
+    '<link rel="icon" type="image/png" sizes="16x16" href="/static/img/favicons/favicon-16x16.png">'
+    '<link rel="apple-touch-icon" sizes="180x180" href="/static/img/favicons/apple-touch-icon.png">'
+    '<link rel="manifest" href="/static/img/favicons/site.webmanifest">'
+)
+
+
 def _apply_theme(page_name: str, tenant: str) -> dict:
     """Apply CSS, colors, and page title. Returns theme config."""
     ui.add_css('static/css/base.css')
+    ui.add_head_html(_FAVICON_HEAD)
 
     # Get tenant-specific theme configuration
     tenant_config = get_tenant_config(tenant)
