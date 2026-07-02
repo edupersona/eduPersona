@@ -17,6 +17,7 @@ from domain.invitations import accept_invitation
 from domain.models import Invitation
 
 from steps.base import StepCard, StepResult, STEP_CARD_CLASSES
+from steps.matching import evaluate_matches
 
 
 def render_welcome(tenant: str | None, persona_key: str | None, given_name: str | None = None) -> None:
@@ -127,13 +128,39 @@ class Steps:
                 self.outcomes[step.step_id] = 'skipped'
 
     async def record(self, step_id: str, result: StepResult) -> None:
-        """The single state-mutation funnel."""
+        """The single state-mutation funnel. A completed step whose output fails its
+        verification gate (match rules) is downgraded to 'failed' and its output dropped —
+        the specific differences are stashed for render_match_failed to surface."""
+        slot = self.state.setdefault('step_state', {}).setdefault(step_id, {})
+        if result.outcome == 'completed' and result.output is not None:
+            step = next((s for s in self.step_instances if s.step_id == step_id), None)
+            failures = evaluate_matches(step.match_rules, self.state, result.output) if step else []
+            if failures:
+                slot['match_failures'] = [vars(f) for f in failures]
+                result = StepResult('failed', error='verification mismatch')  # drop the rejected output
+            else:
+                slot.pop('match_failures', None)
+
         self.outcomes[step_id] = result.outcome
         if result.output is not None:  # output lives in the step's own state slot (= card.state)
-            self.state.setdefault('step_state', {}).setdefault(step_id, {})['outputs'] = result.output
+            slot['outputs'] = result.output
         # No auto-finalize: once every step is done the render shows a review gate
         # with a 'Register' button; finalization happens on that explicit click.
         # Refresh if a live render exists; OIDC callback context has no live render.
+        try:
+            self.render.refresh()
+        except Exception:
+            pass
+
+    async def restart(self) -> None:
+        """Start the flow over from step 1 within this session — the retry affordance for a
+        blocked (match-failed) step. Clears progress and rebuilds the cards; the invitation is
+        never touched, so it stays pending. Mirrors apply_invite_to_state's reset-on-change."""
+        self.state['outcomes'] = {}
+        self.state['step_state'] = {}
+        self.state.pop('completed', None)
+        self.state.pop('finalize_failed', None)
+        self.step_instances = self._create_steps()
         try:
             self.render.refresh()
         except Exception:

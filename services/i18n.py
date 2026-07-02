@@ -109,6 +109,12 @@ translations: dict[str, dict[str, str]] = {
         'No matching alumni record found — check your details and try again.': 'Geen alumnigegevens gevonden — controleer je gegevens en probeer het opnieuw.',
         'Please contact the sender of your invitation.': 'Neem contact op met de afzender van je uitnodiging.',
         'Register': 'Registreren',
+        # Verification gate (steps/base.py render_match_failed)
+        "We couldn't verify that this matches your invitation.": 'We konden niet vaststellen dat dit overeenkomt met je uitnodiging.',
+        '{label}: invitation shows “{expected}”, we found “{found}”.': '{label}: uitnodiging vermeldt “{expected}”, wij vonden “{found}”.',
+        'If your details are wrong, contact the sender of your invitation.': 'Kloppen je gegevens niet? Neem contact op met de afzender van je uitnodiging.',
+        'Start over': 'Opnieuw beginnen',
+        'Authentication level': 'Authenticatieniveau',
         'Send code': 'Code versturen',
         'Student number': 'Studentnummer',
         'This invitation cannot be processed right now.': 'Deze uitnodiging kan op dit moment niet worden verwerkt.',

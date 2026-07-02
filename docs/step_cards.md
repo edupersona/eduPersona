@@ -93,9 +93,48 @@ A step card is a free-form NiceGUI canvas: a multi-part *transaction* (enter a v
 
 **Async external providers (poll, don't redirect).** For a third-party verification that hands off to another device or site, prefer a `ui.timer` that **polls** the provider over a browser redirect back into the app. Polling keeps everything in one live NiceGUI session (so tenant/context is just `self.tenant` / `self.steps.context`), needs no public inbound URL (works on `localhost`, dev == prod), and preserves the single-session invariant — no callback route or CSRF/pending-token registry to maintain. `VerifyIdDiditStep` is the worked example (create session → show QR → phone captures → poll decision → `complete`); see [`didit.md`](didit.md).
 
+## Verification gate (field matching)
+
+Any step can require that selected **expected values** match selected **output fields** before it
+counts as completed — a declarative, per-step check that needs no card code. Declare a `match`
+list on the step's `config`:
+
+```json
+"match": [
+  {"source": "family_name", "field": "last_name", "label": "Achternaam"},
+  {"source": "given_name",  "field": "first_name"}
+]
+```
+
+- **`source`** — the expected value. `given_name` / `family_name` / `guest_email` (invitation
+  fields, read from session state), `param:<key>` (a `persona_params` entry), or `const:<value>`
+  (a fixed literal).
+- **`field`** — the key in the step's output dict (the actual value).
+- **`label`** — optional human field name for the message (defaults to `field`).
+- **`exact`** — optional; `true` compares raw strings, `false` (default) normalizes first
+  (casefold + trim + collapse whitespace + strip diacritics). Use `exact` for security literals
+  (e.g. an `acr` URL) that must not be casefolded.
+
+**Semantics.** The rules are parsed in `StepCard.__init__` (`self.match_rules`,
+[`steps/matching.py`](../steps/matching.py)) and evaluated centrally in `Steps.record` when a step
+reports `completed` with output. A rule whose **source is empty/absent is skipped** (nothing to
+enforce); a rule whose **output field is missing/empty or differs fails**. On any failure the step
+is **downgraded to `failed`, its output is dropped** (a rejected value never reaches
+`Steps.outputs`/the webhook), and the differences are stashed on the step slot as `match_failures`.
+The base class renders a generic block (`StepCard.render_match_failed`) — the field diffs plus a
+**Start over** button (`Steps.restart`) that clears this session's progress and rebuilds from step 1.
+The invitation is never mutated, so it stays `pending` and the guest can retry from the top.
+
+`OIDCLoginStep`'s ACR step-up uses this: with `acr_value` set it *requests* the ACR and appends a
+derived `const:` rule (`exact: true`) on the output's `acr`, so verification runs through the same
+gate as every other step rather than a bespoke inline check.
+
 ## State keys (per-session, `app.storage.tab`)
 
 - `invite_code`, `invitation_id`, `persona_key`, `persona_params`, `given_name`, `family_name`, `guest_email` — scenario context, written by `apply_invite_to_state`.
 - `outcomes: dict[step_id, str]` — orchestrator-owned completion map.
 - `step_state: dict[step_id, dict]` — per-card state, exposed to each card as `self.state`; holds working/transient values and the step's recorded `outputs` payload. The orchestrator derives the `{step_id: output}` map from it (`Steps.outputs`) — there is no separate top-level `outputs` key.
+- `step_state[step_id]['match_failures']` — set by the verification gate when a step's output
+  fails its `match` rules; drives the generic block (`render_match_failed`). Cleared on a pass or on
+  `Steps.restart`.
 - `oidc_state` — internal to `services.oidc_mt`.

@@ -3,6 +3,46 @@
 eduPersona kent nog geen formele releases. In dit bestand noteren we de
 noemenswaardige wijzigingen, met de meest recente bovenaan.
 
+## v0.3 — juli 2026 - verificatie van identiteitsbewijzen
+
+Verificatie van een **identiteitsbewijs** (paspoort of Nederlandse ID-kaart) kan nu direct
+vanuit eduPersona, via een integratie met **[Didit](https://didit.me)**. Daarmee komen ook
+geverifieerde naam- en documentgegevens (documentnummer, geboortedatum, ...) beschikbaar in de
+terugkoppeling. Tegelijk is een **generiek verificatie-slot** toegevoegd waarmee een persona kan
+afdwingen dat stap-uitkomsten overeenkomen met de uitnodiging (bijv. de naam op het ID-bewijs
+tegen de naam in de uitnodiging).
+
+### Toegevoegd
+
+- **Didit ID-verificatie** (`VerifyIdDiditStep`, `services/didit/`): document-OCR + liveness +
+  gezichtsvergelijking. De gast scant een QR-code met de telefoon en doorloopt de controle daar;
+  de desktop-app blijft leidend en **pollt** de uitkomst — géén browser-redirect en géén publieke
+  inbound-URL, dus dev == prod en het werkt lokaal. De geëxtraheerde ID-velden worden de output
+  van de stap en gaan mee in de callback. Config in het tenant-blok `didit`. Zie
+  [`docs/didit.md`](docs/didit.md). Nieuwe runtime-afhankelijkheid: **`segno`** (QR-codes).
+- **Generiek verificatie-slot / veldmatching** (`steps/matching.py`): per stap declaratieve
+  `match`-regels in `settings.json` die een *verwachte* waarde (uitnodigingsveld,
+  `persona_param` of vaste constante) vergelijken met een *output*-veld. Genormaliseerd
+  (hoofdletter-/accent-ongevoelig) of exact. Bij een verschil wordt de stap **niet** afgerond
+  maar geblokkeerd met de concrete afwijking en een **Opnieuw beginnen**-knop; de uitnodiging
+  blijft ondertussen open. Zie de sectie *Verification gate* in
+  [`docs/step_cards.md`](docs/step_cards.md).
+
+### Gewijzigd
+
+- De **gastdocent**-persona toont ID-verificatie nu als stap 3 (showcase van de beschikbare
+  stappen); de matching bewaakt dat de achternaam op het document overeenkomt met de uitnodiging.
+- De **ACR-controle** van `OIDCLoginStep` (geforceerde MFA) loopt voortaan via hetzelfde
+  verificatie-slot in plaats van een eigen, stap-specifieke controle.
+- **Fix (accept-flow):** de uitnodiging wordt nu toegepast *vóór* het bouwen van `Steps`, zodat
+  de per-kaart state gekoppeld blijft aan de sessie — voorheen konden bij de eerste laadbeurt
+  outputs en mismatch-meldingen onzichtbaar blijven.
+
+### Verwijderd
+
+- De losse demo-persona **`id_verificatie`** (opgegaan in de gastdocent-showcase) en de nu
+  ongebruikte `acr_failed_text`-config (ACR-mismatch loopt via het verificatie-slot).
+
 ## v0.2 — juni 2026 - pivot naar 'persona'
 
 eduPersona is omgebouwd van een **rol-/gastgebaseerd** model naar **persona's**, met de **uitnodiging** als centrale entiteit. Het

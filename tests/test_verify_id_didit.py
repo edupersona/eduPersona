@@ -172,6 +172,26 @@ async def test_poll_approved_completes_with_id_fields(test_tenant, monkeypatch):
     assert "portrait_image" not in out
 
 
+async def test_poll_approved_blocked_when_name_mismatches_invitation(test_tenant, monkeypatch):
+    """Approved by Didit, but the OCR'd name differs from the invitation → the gate blocks:
+    step is not completed, output is dropped, the difference is surfaced for the block panel."""
+    created = await create_invitation(test_tenant, "id_verificatie", "id@example.org", "EMP-9",
+                                      given_name="Elena", family_name="Kleynjan")
+    state: dict = {}
+    await apply_invite_to_state(test_tenant, state, created["code"])
+    cfg = get_persona_config(test_tenant, "id_verificatie")
+    steps = Steps(test_tenant, state, {"steps": cfg.steps})
+    step = next(s for s in steps.step_instances if s.step_id == "id_document")
+    assert isinstance(step, VerifyIdDiditStep)
+    step.state.update(phase="awaiting", session_id="sess-1")
+    _fake_decision(monkeypatch, {"status": "Approved", "id_verification": _ID_BLOCK,  # last_name Martinez
+                                 "liveness": {"score": 90}, "face_match": {"score": 80}})
+    await step._poll()
+    assert steps.outcomes["id_document"] == "failed"
+    assert "id_document" not in steps.outputs
+    assert [f["field"] for f in step.state["match_failures"]] == ["last_name"]
+
+
 async def test_poll_declined_moves_to_declined_phase(test_tenant, monkeypatch):
     steps, step = await _id_step(test_tenant)
     step.state.update(phase="awaiting", session_id="sess-1")

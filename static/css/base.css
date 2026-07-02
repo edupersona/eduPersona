@@ -717,6 +717,9 @@ a.btn-primary:hover {
       .text-muted {
         font-size: 110%;
       }
+      .text-error {
+        font-size: 1.25rem;
+      }
       .button-row {
         margin-top: 0.6rem;
         align-items: start;

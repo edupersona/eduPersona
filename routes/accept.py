@@ -84,8 +84,14 @@ async def accept_invitation_page(invite_code: str = ""):
                 return
 
             # Session state lives in app.storage.user (survives the OIDC redirect),
-            # namespaced by invite code; resolved now that the code is valid.
+            # namespaced by invite code; resolved now that the code is valid. Apply the
+            # invitation BEFORE building Steps: on a first visit apply_invite_to_state resets
+            # step_state, and Steps captures each card's state slot at construction — building
+            # it first would leave the cards pointing at orphaned slots, so writes via record()
+            # (outputs, match_failures) would be invisible to the cards.
             state = session_state(code)
+            if await apply_invite_to_state(t, state, code):
+                store_tenant_in_session(t)
 
             steps = None
             with ui_guard(notify=False):  # default catch=ValueError (unknown persona / bad step config)
@@ -96,8 +102,6 @@ async def accept_invitation_page(invite_code: str = ""):
                                 _('Please contact the sender of your invitation.'))
                 return
 
-            if await apply_invite_to_state(t, state, code):
-                store_tenant_in_session(t)
             await steps.startup()
             steps.render()  # type: ignore
 

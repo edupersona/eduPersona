@@ -263,7 +263,7 @@
           "display_name": "ID-verificatie",
           "mail": {
             "layout": "layouts/hvh.jinja2",
-            "body": "personas/id_verificatie.jinja2"
+            "body": "personas/gastdocent.jinja2"
           },
           "expected_params": {},
           "callback_outputs": [
@@ -284,7 +284,11 @@
                 "primary_button": {
                   "label": "Start ID-verificatie"
                 },
-                "declined_text": "De verificatie is niet gelukt. Probeer het opnieuw."
+                "declined_text": "De verificatie is niet gelukt. Probeer het opnieuw.",
+                "match": [
+                  {"source": "family_name", "field": "last_name", "label": "Achternaam"},
+                  {"source": "given_name", "field": "first_name", "label": "Voornaam"}
+                ]
               }
             }
           ]

@@ -85,6 +85,12 @@
         "sender_name": "eduPersona"
       },
       "callback_secret": "your-callback-secret-here",
+      "didit": {
+        "api_key": "your-didit-api-key",
+        "workflow_id": "your-didit-workflow-id",
+        "base_url": "https://verification.didit.me/v3",
+        "language": "nl"
+      },
       "personas": {
         "gastdocent": {
           "display_name": "Gastdocent",
@@ -104,7 +110,8 @@
           },
           "callback_outputs": [
             "eduid_login",
-            "verify_mfa"
+            "verify_mfa",
+            "id_document"
           ],
           "success_redirect_url": "https://login.canvas.uva.nl/?referrer=canvas.uva.nl",
           "callback_url": null,
@@ -138,9 +145,25 @@
                   "label": "Inloggen met eduID app"
                 },
                 "acr_value": "https://refeds.org/profile/mfa",
-                "acr_failed_text": "De vereiste tweede factor (MFA) is niet voltooid. Probeer het opnieuw.",
                 "completed_text": "✓ eduID app is correct geïnstalleerd",
                 "disabled_text": "Voltooi eerst stap 1"
+              }
+            },
+            {
+              "class": "VerifyIdDiditStep",
+              "id": "id_document",
+              "config": {
+                "title": "Stap 3. Verificatie identiteitsbewijs",
+                "completed_text": "✓ Identiteit geverifieerd",
+                "help_text": "Houd je paspoort of Nederlandse ID-kaart bij de hand. Je maakt een foto van je document en een selfie; deze worden automatisch gecontroleerd.",
+                "primary_button": {
+                  "label": "Start ID-verificatie"
+                },
+                "declined_text": "De verificatie is niet gelukt. Probeer het opnieuw.",
+                "disabled_text": "Voltooi eerst stap 2",
+                "match": [
+                  {"source": "family_name", "field": "last_name", "label": "Achternaam"}
+                ]
               }
             },
             {
@@ -152,16 +175,16 @@
                   "label": "Inloggen bij instelling...",
                   "hint": "Tip: gebruik professor5/professor5"
                 },
-                "title": "Stap 3. Verificatie instellingsaccount",
+                "title": "Stap 4. Verificatie instellingsaccount",
                 "completed_text": "✓ Institutioneel ingelogd",
-                "disabled_text": "Voltooi eerst stap 2"
+                "disabled_text": "Voltooi eerst stap 3"
               }
             },
             {
               "class": "VerifyConsentStep",
               "id": "consent",
               "config": {
-                "title": "Stap 4: Gedragscode en toestemming",
+                "title": "Stap 5: Gedragscode en toestemming",
                 "primary_button": {
                   "label": "Openen..."
                 },
@@ -174,7 +197,7 @@
                 "consent_label": "Ik heb het bovenstaande gelezen en geef toestemming",
                 "confirm_button_label": "Bevestig toestemming",
                 "completed_text": "✓ Toestemming gegeven",
-                "disabled_text": "Voltooi eerst stap 3"
+                "disabled_text": "Voltooi eerst stap 4"
               }
             }
           ]
@@ -269,7 +292,6 @@
                   "label": "Log in..."
                 },
                 "acr_value": "https://refeds.org/profile/mfa",
-                "acr_failed_text": "De vereiste tweede factor (MFA) is niet voltooid. Probeer het opnieuw.",
                 "completed_text": "✓ Ingelogd met eduID"
               }
             },

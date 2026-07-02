@@ -16,23 +16,24 @@ class OIDCLoginStep(StepCard):
     userinfo so the callback always carries it.
 
     With an optional `acr_value`, the step additionally *requests* that ACR (e.g.
-    `https://refeds.org/profile/mfa` to force MFA step-up) and *verifies* the returned
-    `acr` matches before completing. On mismatch the step fails (non-fatal) and stays
-    retryable, showing `acr_failed_text`."""
+    `https://refeds.org/profile/mfa` to force MFA step-up); verification is handled by the
+    generic gate — a derived exact match rule on the output's `acr` (see steps/matching.py).
+    A mismatch blocks the step via render_match_failed, like any other gate failure."""
 
     def __init__(self, config: dict):
         super().__init__(config)
         self.idp: str = config['idp']
         self.primary_button: dict | None = config.get('primary_button')
         self.secondary_button: dict | None = config.get('secondary_button')
-        # Optional ACR step-up: a single ACR to request and verify (OIDC `acr_values`).
+        # Optional ACR step-up: a single ACR to request (OIDC `acr_values`). Verified via a
+        # derived exact match rule so the check goes through the same gate as every other step.
         self.acr_value: str | None = config.get('acr_value')
-        self.acr_failed_text: str = config.get('acr_failed_text') or \
-            'Required authentication level not met. Please try again.'
+        if self.acr_value:
+            self.match_rules.append({'source': f'const:{self.acr_value}', 'field': 'acr',
+                                     'label': 'Authentication level', 'exact': True})
 
     async def act(self) -> StepResult | None:
         assert self.tenant and self.steps
-        self.state.pop('acr_failed', None)  # clear a prior mismatch on retry
         await start_oidc_login(
             tenant=self.tenant,
             idp=self.idp,
@@ -45,8 +46,6 @@ class OIDCLoginStep(StepCard):
         return None
 
     def render_enabled(self) -> None:
-        if self.state.get('acr_failed'):
-            ui.label(_(self.acr_failed_text)).classes('text-error')
         self.render_help()
         with Row().classes('button-row'):
             if self.primary_button:
@@ -74,11 +73,7 @@ class OIDCLoginStep(StepCard):
         logger.debug(f"{self.idp} login completed (acr={returned_acr!r})")
         logger.debug(f"{self.idp} all id_token claims: {id_token_claims}")
         logger.debug(f"{self.idp} userinfo: {userinfo}")
-        if self.acr_value and returned_acr != self.acr_value:
-            logger.warning(f"{self.idp} ACR check failed: requested {self.acr_value!r}, got {returned_acr!r}")
-            self.state['acr_failed'] = True
-            await self.fail(error=f"acr mismatch: requested {self.acr_value!r}, got {returned_acr!r}")
-            return
         if returned_acr is not None:
             userinfo['acr'] = returned_acr  # acr is an id_token claim; surface it in the output
+        # ACR is verified by the gate (derived match rule); a mismatch blocks in record().
         await self.complete(userinfo)

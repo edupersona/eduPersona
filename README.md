@@ -1,8 +1,9 @@
 # eduPersona onboarding 
 
-> **Juni 2026 -- van rollen naar persona's:** ik heb eduPersona omgebouwd van een rol- en gast-gebaseerd model naar
-> &ldquo;persona's&rdquo;, met de **uitnodiging** als centrale entiteit. Dat sluit beter aan op de plek van eduPersona in de levensyclus van de gast. 
-> Zie [CHANGELOG.md](CHANGELOG.md) voor het volledige overzicht. -PK
+> **Juli 2026 -- verificatie identiteitsbewijs:** Dankzij integratie van **didit.me** 
+> is het nu mogelijk om verificatie van identiteitsbewijzen 
+> (en dus van bijvoorbeeld naamgegevens en geboortedatum) direct vanuit eduPersona te doen.  
+> Zie [CHANGELOG.md](CHANGELOG.md) voor het volledige overzicht.
 
 ### Wat is eduPersona?
 
@@ -19,7 +20,7 @@ De nummering volgt de figuur hierboven:
 1. **Primaire registratie** van een gast vindt plaats in een bronsysteem en/of IAM. Dit leidt tot het toekennen van een `guest_id` in IAM. Meestal zal ook worden vastgelegd om wat voor *soort* gast het gaat: dat bepaalt de *persona*.
 2. **De uitnodiging wordt aangemaakt**  via de API: in de regel zal dat vanuit IAM of gastregistratie gebeuren, maar het kan ook interactief via de simulator-pagina, zie *Getting started*.
 3. **eduPersona stuurt een uitnodiging met code** naar de gast. Voor uitgaande mail kun je een SMTP-stekker of Postmark gebruiken, met templates en gegevens die per persona verschillend kunnen zijn.
-4. **De gast accepteert en volgt het stappenplan** op de self-service-pagina `/accept/{invitation_id}`. Per persona kan dat plan verschillen: inloggen met eduID, een MFA-controle, verificatie met een tweede instelling of Entra ID, een check tegen een alumni-DB, identiteitsverificatie (iDIN), enzovoort. Voor elke IDP kunnen we controleren op attributen (naam, mailadres e.d.) en op meegegeven ACR's (bijv. tweede factor), en de gebruiker bijsturen als nadere verificatie of configuratie nodig is. 
+4. **De gast accepteert en volgt het stappenplan** op de self-service-pagina `/accept/{invitation_id}`. Per persona kan dat plan verschillen: inloggen met eduID, een MFA-controle, verificatie met een tweede instelling of Entra ID, een check tegen een alumni-DB, verificatie van een paspoort of ID-kaart via Didit (document + liveness + gezichtsvergelijking), enzovoort. Voor elke stap kunnen we de teruggeleverde attributen controleren &ndash; op meegegeven ACR's (bijv. tweede factor) én tegen de uitnodiging zelf (bijv. de naam op het ID-bewijs tegen de naam in de uitnodiging) &ndash; en de gebruiker bijsturen als nadere verificatie of configuratie nodig is. 
 5. **Als onboarding is afgerond** verrijkt eduPersona de gastgegevens met het eduID-pseudoniem en/of overige verzamelde gegevens. Dat kan met een **POST naar een callback API** &ndash; of via **SCIM** (zie hieronder.
 6. Vanuit IAM zal nu **provisioning** van accounts en autorisaties naar doelsystemen plaatsvinden. 
 7. **De gast kan nu inloggen met eduID** op zijn/haar applicaties &ndash; hetzij doordat het eduID-pseudoniem in de applicatie zelf is opgenomen, hetzij door de eduID af te beelden op de instellingsidentiteit. 
@@ -64,13 +65,13 @@ Je hebt nu de code waarmee een gast de onboarding kan starten:
 
 ### Voorbeeld-persona's: gastdocent, alumnus en admin
 
-In de repo zijn drie voorbeeld-persona's opgenomen (gedefinieerd in `settings.json`). De drie tabellen hieronder vatten per persona het stappenplan, de gegevens in de uitnodiging en de terugkoppeling naar IAM samen.
+In de repo zijn drie voorbeeld-persona's opgenomen (gedefinieerd in `settings.json`). De drie tabellen hieronder vatten per persona het stappenplan, de gegevens in de uitnodiging en de terugkoppeling naar IAM samen. De gastdocent is een soort showcase van de belangrijkste beschikbare stappen.
 
 | **GASTDOCENT** | bezoekende docent met een account bij een andere instelling |
 |:---|:---|
-| **Stappenplan** | 1. Inloggen met eduID, zonodig eerst aanmaken (OIDCLoginStep)<br>2. Verificatie van sterke authenticatie via een geforceerde MFA-herlogin bij eduID (OIDCLoginStep met `acr_value`), eventueel eduID-app laten installeren<br>3. Verificatie van een instellings-account via de DIY-IDP van SURFconext (OIDCLoginStep)<br>4. Akkoord gedragscode en gegevensbescherming |
+| **Stappenplan** | 1. Inloggen met eduID, zonodig eerst aanmaken (OIDCLoginStep)<br>2. Verificatie van sterke authenticatie via een geforceerde MFA-herlogin bij eduID (OIDCLoginStep met `acr_value`), eventueel eduID-app laten installeren<br>3. Verificatie van het identiteitsbewijs (paspoort of NL ID-kaart) met document-, liveness- en gezichtscontrole via Didit; de achternaam op het document wordt gematcht tegen de uitnodiging (VerifyIdDiditStep)<br>4. Verificatie van een instellings-account via de DIY-IDP van SURFconext (OIDCLoginStep)<br>5. Akkoord gedragscode en gegevensbescherming |
 | **Gegevens in uitnodiging** (expected_params) | faculteit, personal_message |
-| **Terug naar IAM** (callback_outputs) | eduID-pseudoniem (bijv. sub, uit de eduid_login-stap)<br>acr (authenticatieniveau, geverifieerd in de verify_mfa-stap) |
+| **Terug naar IAM** (callback_outputs) | eduID-pseudoniem (bijv. sub, uit de eduid_login-stap)<br>acr (authenticatieniveau, geverifieerd in de verify_mfa-stap)<br>geverifieerde ID-gegevens (naam, documentnummer, geboortedatum e.d., uit de id_document-stap) |
 
 | **ALUMNUS** | oud-student, geverifieerd via een alumni-database |
 |:---|:---|
@@ -103,6 +104,8 @@ eduPersona biedt een REST API, met `invitations` als enige first-class entiteit:
 
 * [nicegui-rdm](https://github.com/kleynjan/nicegui-rdm) is een bibliotheek om snel 'CRUD' apps te bouwen met NiceGUI. Het biedt een reactief store/observer-model dat wordt gebruikt om de user interface bij te werken zonder dat een page reload nodig is.
 
+* [Didit](https://didit.me) levert de identiteitsverificatie (document-OCR + liveness + gezichtsvergelijking) achter `VerifyIdDiditStep`. De gast scant een QR-code met de telefoon en doorloopt de controle daar; de desktop-app blijft leidend en pollt de uitkomst, zodat de flow zonder redirect of publieke inbound-URL werkt (ook lokaal). De QR-code wordt gegenereerd met [segno](https://segno.readthedocs.io/). Zie [docs/didit.md](docs/didit.md) voor de configuratie en het ontwerp.
+
 * [Uvicorn](https://uvicorn.dev/) is de ASGI server die we gebruiken om de eduPersona app stabiel te ontsluiten. In dev richt je je browser rechtstreeks op het uvicorn proces (zie `start.sh`); in productie zul je er meestal een Nginx reverse proxy (of vergelijkbaar) voor zetten, al is het alleen maar voor de TLS/SSL-afhandeling.  
 
 ### Requirements
@@ -113,6 +116,7 @@ eduPersona biedt een REST API, met `invitations` als enige first-class entiteit:
 - PyJWT
 - pytz
 - httpx
+- segno
 - scim2-client[httpx]
 - scim2-models
 - aiosmtplib

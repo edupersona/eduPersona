@@ -104,6 +104,25 @@ a session is `Approved` but nothing extracts — keep those if Didit changes the
 `verifications.id_document` (see [`callback_api.md`](callback_api.md)). The completed card
 shows the fields in a "View attributes" pulldown (`expandable_info`), like the other cards.
 
+## Matching the ID against the invitation
+
+Name-matching (the OCR'd `first_name`/`last_name` vs the invitation's `given_name`/`family_name`)
+is done by the **generic verification gate**, not Didit's `expected_details` — one mechanism that
+works for every step. The demo persona declares it on the step `config`:
+
+```json
+"match": [
+  {"source": "family_name", "field": "last_name", "label": "Achternaam"},
+  {"source": "given_name",  "field": "first_name", "label": "Voornaam"}
+]
+```
+
+Comparison is normalized-exact (casefold + trim + strip accents), so an OCR variant that differs by
+*letters* (e.g. `Kleijnjan` vs `Kleynjan`) legitimately blocks — the guest is shown the difference
+and told to contact the sender. The gate lives in [`steps/matching.py`](../steps/matching.py) /
+`Steps.record`; see the "Verification gate" section of [`step_cards.md`](step_cards.md). Because the
+invitation is optional-name, the gate only enforces when the invitation carries a given/family name.
+
 ## Testing without a real ID
 
 Didit documents a **sandbox** mode (`sandbox_scenario: "approve" | "decline_aml_hit" | …`

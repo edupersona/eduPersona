@@ -15,9 +15,10 @@ from typing import TYPE_CHECKING, Literal
 
 from nicegui import ui
 
-from ng_rdm.components import Col, Row
+from ng_rdm.components import Button, Col, Row
 
 from services.i18n import _
+from steps.matching import parse_rules
 
 if TYPE_CHECKING:
     from steps.orchestrator import Steps
@@ -69,6 +70,8 @@ class StepCard:
         self.completed_text = config['completed_text']
         self.disabled_text = config.get('disabled_text') or ''
         self.help_text: str | None = config.get('help_text')
+        # Declarative verification gate: expected-value → output-field rules (see steps/matching.py).
+        self.match_rules = parse_rules(config.get('match'))
         self.state: dict = {}
         # assigned by Steps._create_steps:
         self.step_id: str = ''
@@ -130,7 +133,10 @@ class StepCard:
                     if is_completed:
                         self.render_completed()
                     elif is_enabled:
-                        self.render_enabled()
+                        if self.state.get('match_failures'):
+                            self.render_match_failed()
+                        else:
+                            self.render_enabled()
                     else:
                         self.render_disabled()
 
@@ -163,3 +169,17 @@ class StepCard:
 
     def render_disabled(self) -> None:
         ui.label(_(self.disabled_text)).classes('text')
+
+    def render_match_failed(self) -> None:
+        """Generic block shown when a verification-gate rule fails: the offending fields
+        (expected vs found) plus a Start-over button that restarts the flow from step 1.
+        The invitation is untouched (stays pending), so restarting is a clean retry."""
+        with Col(style='gap: 0.5rem;'):
+            ui.label(_("We couldn't verify that this matches your invitation.")).classes('text-error')
+            for f in self.state.get('match_failures', []):
+                ui.label(_('{label}: invitation shows “{expected}”, we found “{found}”.',
+                          label=_(f.get('label', '')), expected=f.get('expected', ''),
+                          found=f.get('found', ''))).classes('text')
+            ui.label(_('If your details are wrong, contact the sender of your invitation.')).classes('text')
+            if self.steps:
+                Button(_('Start over'), on_click=self.steps.restart).classes('step-primary-button')

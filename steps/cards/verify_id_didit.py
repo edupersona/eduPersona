@@ -90,9 +90,8 @@ class VerifyIdDiditStep(StepCard):
         finally:
             self._polling = False
 
-        # Log the shape so we can confirm/adjust extract_id_fields against real payloads.
         logger.info(f"Didit decision status={decision.get('status')!r} keys={list(decision)}")
-        logger.debug(f"Didit decision payload: {decision}")
+        # logger.debug(f"Didit decision payload: {decision}")
 
         status = (decision.get('status') or '').lower()
         if status == 'approved':
