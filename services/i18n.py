@@ -83,6 +83,10 @@ translations: dict[str, dict[str, str]] = {
         # Accept page & Step cards (routes/accept.py, steps/)
         'Accept invitation': 'Uitnodiging accepteren',
         'as': 'als',
+        'Back': 'Terug',
+        'Could not start ID verification. Please try again later.': 'ID-verificatie kon niet worden gestart. Probeer het later opnieuw.',
+        'Processing your verification...': 'Je verificatie wordt verwerkt...',
+        'Your verification could not be processed.': 'Je verificatie kon niet worden verwerkt.',
         'Change number / resend': 'Ander nummer / opnieuw versturen',
         "Come back here after you've created it!": "Kom hier terug als je 'm hebt aangemaakt!",
         'Confirm code': 'Code bevestigen',

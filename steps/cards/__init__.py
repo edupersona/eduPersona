@@ -4,7 +4,9 @@ card: drop a module here defining a StepCard subclass and add it below."""
 from steps.cards.collect_intake import CollectIntakeStep
 from steps.cards.oidc_login import OIDCLoginStep
 from steps.cards.verify_alumni_db import VerifyAlumniDb
+from steps.cards.verify_id_didit import VerifyIdDiditStep
 from steps.cards.verify_mobile import VerifyMobileStep
 from steps.cards.verify_consent import VerifyConsentStep
 
-__all__ = ['CollectIntakeStep', 'OIDCLoginStep', 'VerifyAlumniDb', 'VerifyMobileStep', 'VerifyConsentStep']
+__all__ = ['CollectIntakeStep', 'OIDCLoginStep', 'VerifyAlumniDb', 'VerifyIdDiditStep',
+           'VerifyMobileStep', 'VerifyConsentStep']

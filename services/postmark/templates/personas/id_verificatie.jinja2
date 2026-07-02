@@ -1,0 +1,24 @@
+<p style="font-size:16px; margin:0 0 16px;">Beste {{ given_name or "gast" }},</p>
+
+<p style="font-size:15px; line-height:1.5; margin:0 0 16px;">
+  Je bent uitgenodigd om je identiteit te verifiëren als <strong>{{ persona }}</strong>.
+  Houd je paspoort of Nederlandse ID-kaart bij de hand en volg de knop hieronder;
+  je maakt een foto van je document en een selfie.
+</p>
+
+<p style="margin:0 0 24px;">
+  <a href="{{ accept_url }}"
+     style="display:inline-block; background:#0a4d8c; color:#ffffff; text-decoration:none;
+            padding:12px 22px; border-radius:6px; font-size:15px;">Accepteer je uitnodiging</a>
+</p>
+
+{% if expiry_date %}
+<p style="font-size:13px; color:#777; margin:0 0 16px;">Deze uitnodiging verloopt op {{ expiry_date.split(' / ')[0] }}.</p>
+{% endif %}
+
+<p style="font-size:13px; color:#777; margin:0;">
+  Alternatief: ga naar <strong>edupersona.nl</strong>, kies voor 'Accepteer een uitnodiging'
+  en kopieer en plak daar deze uitnodigingscode:<br>
+  <span style="display:inline-block; margin-top:6px; font-family:monospace; font-size:15px;
+               color:#0a4d8c; background:#f4f7fb; padding:6px 10px; border-radius:4px;">{{ invite_code }}</span>
+</p>

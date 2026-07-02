@@ -79,6 +79,11 @@
           "force_login": true
         }
       },
+      "didit": {
+        "api_key": "test-didit-api-key",
+        "workflow_id": "test-didit-workflow-id",
+        "base_url": "https://verification.didit.me/v3"
+      },
       "personas": {
         "gastdocent": {
           "display_name": "Gastdocent",
@@ -249,6 +254,36 @@
                 "org_label": "Organisatie",
                 "scenario_label": "Heb je al een toepassingsscenario voor eduPersona in gedachten?",
                 "submit_label": "Verder"
+              }
+            }
+          ]
+        },
+        "id_verificatie": {
+          "display_name": "ID-verificatie",
+          "mail": {
+            "layout": "layouts/hvh.jinja2",
+            "body": "personas/id_verificatie.jinja2"
+          },
+          "expected_params": {},
+          "callback_outputs": [
+            "id_document"
+          ],
+          "success_redirect_url": "https://example.org/id/welcome",
+          "callback_url": null,
+          "completion_message": "Je identiteit is geverifieerd.",
+          "cta_label": "Verder",
+          "steps": [
+            {
+              "class": "VerifyIdDiditStep",
+              "id": "id_document",
+              "config": {
+                "title": "Verifieer je identiteit met je paspoort of ID-kaart",
+                "completed_text": "✓ Identiteit geverifieerd",
+                "help_text": "Houd je paspoort of Nederlandse ID-kaart bij de hand.",
+                "primary_button": {
+                  "label": "Start ID-verificatie"
+                },
+                "declined_text": "De verificatie is niet gelukt. Probeer het opnieuw."
               }
             }
           ]

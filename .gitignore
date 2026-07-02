@@ -29,10 +29,12 @@ db_test/
 *.ipynb
 
 # AI assistant working files
+.agents/
 cline_docs/
 .clinerules
 CLAUDE.md
 .claude/
+skills-lock.json
 
 # Logs
 *.log
