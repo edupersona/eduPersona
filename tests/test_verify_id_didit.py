@@ -1,8 +1,8 @@
-"""Didit ID-verification: the client's field extraction + the step card's decision handling.
+"""Didit ID-verification: field extraction, session create, QR, and the polling card.
 
 Network is never touched — `services.didit.client._http_request` is the patchable seam
-(like the webhook tests patch `_http_post`), and the card's `result_handler_didit` is
-driven directly with a decision dict (like the OIDC/mobile tests drive their handlers).
+(like the webhook tests patch `_http_post`), and the card's `_poll` is driven with a
+monkeypatched `get_decision` (the decision the phone would have produced at Didit).
 """
 import pytest
 from nicegui import ui
@@ -12,11 +12,11 @@ from domain.invitations import apply_invite_to_state, create_invitation
 from services.persona_loader import get_persona_config
 from services.didit import client as didit_client
 from services.didit.client import create_session, extract_id_fields
+from services.didit.qr import qr_data_uri
 from steps import Steps
+from steps.cards import verify_id_didit
 from steps.cards.verify_id_didit import VerifyIdDiditStep
 
-
-# ── extract_id_fields ─────────────────────────────────────────────────────
 
 _ID_BLOCK = {
     "first_name": "Elena",
@@ -34,6 +34,8 @@ _ID_BLOCK = {
 }
 
 
+# ── extract_id_fields ─────────────────────────────────────────────────────
+
 def test_extract_top_level_shape():
     decision = {"status": "Approved", "id_verification": _ID_BLOCK,
                 "liveness": {"score": 95}, "face_match": {"score": 88}}
@@ -43,7 +45,6 @@ def test_extract_top_level_shape():
     assert out["document_number"] == "YZA123456"
     assert out["liveness_score"] == 95
     assert out["face_match_score"] == 88
-    # image blobs are stripped
     assert "portrait_image" not in out
     assert "front_document_image" not in out
 
@@ -68,9 +69,45 @@ def test_extract_unknown_shape_is_empty():
     assert extract_id_fields({"status": "Declined"}) == {}
 
 
-# ── create_session ────────────────────────────────────────────────────────
+def test_extract_real_didit_shape():
+    """Regression against a real Didit decision (2026-07): top-level plural LIST features,
+    `features` is a list of strings, image/video URLs and None fields must be dropped."""
+    decision = {
+        "status": "Approved",
+        "features": ["ID_VERIFICATION", "LIVENESS", "FACE_MATCH"],
+        "id_verifications": [{
+            "status": "Approved", "document_type": "Identity Card", "document_subtype": None,
+            "document_number": "IY7911P49", "personal_number": None, "portrait_image": None,
+            "front_image": None, "back_image": None, "date_of_birth": "1959-09-16", "age": None,
+            "expiration_date": "2035-01-28", "date_of_issue": "2025-01-28", "issuing_state": "NLD",
+            "issuing_state_name": None, "first_name": "Peter", "last_name": "Kleijnjan",
+            "full_name": "Peter Kleijnjan", "gender": None, "address": None,
+            "formatted_address": None, "nationality": "NLD", "mrz": None, "warnings": [],
+        }],
+        "liveness_checks": [{"status": "Approved", "method": "PASSIVE", "score": 98.92}],
+        "face_matches": [{"status": "Approved", "score": 76.97}],
+    }
+    out = extract_id_fields(decision)
+    assert out == {
+        "document_type": "Identity Card", "document_number": "IY7911P49",
+        "date_of_birth": "1959-09-16", "expiration_date": "2035-01-28",
+        "date_of_issue": "2025-01-28", "issuing_state": "NLD", "first_name": "Peter",
+        "last_name": "Kleijnjan", "full_name": "Peter Kleijnjan", "nationality": "NLD",
+        "liveness_score": 98.92, "face_match_score": 76.97,
+    }
+    assert "portrait_image" not in out and "front_image" not in out
 
-async def test_create_session_builds_payload(test_tenant, monkeypatch):
+
+# ── QR ─────────────────────────────────────────────────────────────────────
+
+def test_qr_data_uri_is_svg_data_uri():
+    uri = qr_data_uri("https://verify.didit.me/session/tok")
+    assert uri.startswith("data:image/svg+xml")
+
+
+# ── create_session ──────────────────────────────────────────────────────────
+
+async def test_create_session_builds_payload_without_callback(test_tenant, monkeypatch):
     seen: dict = {}
 
     async def fake_request(method, url, api_key, *, json=None):
@@ -78,23 +115,23 @@ async def test_create_session_builds_payload(test_tenant, monkeypatch):
         return 201, {"session_id": "sess-1", "url": "https://verify.didit.me/session/tok"}
 
     monkeypatch.setattr(didit_client, "_http_request", fake_request)
-    result = await create_session(test_tenant, "hvh:CODE:id_document", "http://localhost:8080/didit_callback?state=x")
+    result = await create_session(test_tenant, "hvh:CODE:id_document")
 
     assert result["session_id"] == "sess-1"
     assert seen["method"] == "POST" and seen["url"].endswith("/session/")
     assert seen["api_key"] == "test-didit-api-key"
-    assert seen["json"]["workflow_id"] == "test-didit-workflow-id"
-    assert seen["json"]["vendor_data"] == "hvh:CODE:id_document"
-    assert seen["json"]["callback"].endswith("state=x")
+    assert seen["json"] == {"workflow_id": "test-didit-workflow-id",
+                            "vendor_data": "hvh:CODE:id_document", "language": "nl"}
+    assert "callback" not in seen["json"]  # in-app polling → no redirect
 
 
 async def test_create_session_raises_on_error(test_tenant, monkeypatch):
     monkeypatch.setattr(didit_client, "_http_request", AsyncMock(return_value=(403, {"detail": "no credits"})))
     with pytest.raises(ValueError):
-        await create_session(test_tenant, "vd", "http://cb")
+        await create_session(test_tenant, "vd")
 
 
-# ── the step card ─────────────────────────────────────────────────────────
+# ── the polling card ─────────────────────────────────────────────────────────
 
 @pytest.fixture(autouse=True)
 def _silence_notify(monkeypatch):
@@ -112,25 +149,51 @@ async def _id_step(test_tenant) -> tuple[Steps, VerifyIdDiditStep]:
     return steps, step
 
 
+def _fake_decision(monkeypatch, decision: dict):
+    monkeypatch.setattr(verify_id_didit, "get_decision", AsyncMock(return_value=decision))
+
+
 async def test_persona_loads_with_single_step(test_tenant):
-    _steps, step = await _id_step(test_tenant)
-    assert step.step_id == "id_document"
-    assert len(_steps.step_instances) == 1
-
-
-async def test_approved_decision_completes_with_id_fields(test_tenant):
     steps, step = await _id_step(test_tenant)
-    await step.result_handler_didit({"status": "Approved", "id_verification": _ID_BLOCK,
-                                     "liveness": {"score": 90}, "face_match": {"score": 80}})
+    assert step.step_id == "id_document"
+    assert len(steps.step_instances) == 1
+    assert step.state["phase"] == "start"
+
+
+async def test_poll_approved_completes_with_id_fields(test_tenant, monkeypatch):
+    steps, step = await _id_step(test_tenant)
+    step.state.update(phase="awaiting", session_id="sess-1")
+    _fake_decision(monkeypatch, {"status": "Approved", "id_verification": _ID_BLOCK,
+                                 "liveness": {"score": 90}, "face_match": {"score": 80}})
+    await step._poll()
     assert steps.outcomes["id_document"] == "completed"
     out = steps.outputs["id_document"]
     assert out["first_name"] == "Elena" and out["last_name"] == "Martinez"
     assert "portrait_image" not in out
 
 
-async def test_declined_decision_fails_and_flags(test_tenant):
+async def test_poll_declined_moves_to_declined_phase(test_tenant, monkeypatch):
     steps, step = await _id_step(test_tenant)
-    await step.result_handler_didit({"status": "Declined"})
-    assert steps.outcomes["id_document"] == "failed"
-    assert step.state.get("declined") is True
-    assert "id_document" not in steps.outputs
+    step.state.update(phase="awaiting", session_id="sess-1")
+    _fake_decision(monkeypatch, {"status": "Declined"})
+    await step._poll()
+    assert step.state["phase"] == "declined"
+    assert "id_document" not in steps.outcomes
+    assert step.state.get("status_message")
+
+
+async def test_poll_in_progress_keeps_waiting(test_tenant, monkeypatch):
+    steps, step = await _id_step(test_tenant)
+    step.state.update(phase="awaiting", session_id="sess-1")
+    _fake_decision(monkeypatch, {"status": "In Progress"})
+    await step._poll()
+    assert step.state["phase"] == "awaiting"
+    assert "id_document" not in steps.outcomes
+
+
+async def test_poll_noop_when_not_awaiting(test_tenant, monkeypatch):
+    steps, step = await _id_step(test_tenant)
+    called = AsyncMock(return_value={"status": "Approved"})
+    monkeypatch.setattr(verify_id_didit, "get_decision", called)
+    await step._poll()  # phase is still 'start'
+    called.assert_not_awaited()

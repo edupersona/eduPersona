@@ -1,20 +1,11 @@
 """Didit ID-verification integration.
 
 `client` talks to Didit's hosted-session API (create session, poll decision, extract
-ID fields); `pending` is the in-flight session registry that binds a verification
-transaction to one browser (mirrors the OIDC pending-login registry). See
-`steps/cards/verify_id_didit.py` for the step card and `routes/didit_callback.py`
-for the return-redirect route.
+ID fields); `qr` renders the session URL as a QR the user scans with their phone. The
+step card (`steps/cards/verify_id_didit.py`) shows the QR and polls the decision in its
+own live session — there is no browser redirect back, so no callback route is needed.
 """
 from services.didit.client import create_session, extract_id_fields, get_decision
-from services.didit.pending import (
-    bind_pending_state,
-    consume_pending_state,
-    new_state,
-    register_pending_session,
-)
+from services.didit.qr import qr_data_uri
 
-__all__ = [
-    'create_session', 'get_decision', 'extract_id_fields',
-    'new_state', 'register_pending_session', 'bind_pending_state', 'consume_pending_state',
-]
+__all__ = ['create_session', 'get_decision', 'extract_id_fields', 'qr_data_uri']

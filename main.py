@@ -3,7 +3,6 @@ from nicegui import app, ui
 # from tortoise import Tortoise
 # register routes
 import routes.accept
-import routes.didit_callback
 import routes.api
 import routes.contact
 from routes.api import api_router

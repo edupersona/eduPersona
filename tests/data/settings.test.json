@@ -82,7 +82,8 @@
       "didit": {
         "api_key": "test-didit-api-key",
         "workflow_id": "test-didit-workflow-id",
-        "base_url": "https://verification.didit.me/v3"
+        "base_url": "https://verification.didit.me/v3",
+        "language": "nl"
       },
       "personas": {
         "gastdocent": {

@@ -20,9 +20,10 @@ DEFAULT_BASE_URL = "https://verification.didit.me/v3"
 # don't need. Every field is optional; documents vary by type and country.
 _ID_FIELDS = (
     'first_name', 'last_name', 'full_name', 'document_number', 'personal_number',
-    'date_of_birth', 'age', 'gender', 'nationality', 'document_type',
-    'issuing_state', 'issuing_state_name', 'date_of_issue', 'expiration_date',
-    'place_of_birth', 'address', 'parsed_address', 'mrz',
+    'date_of_birth', 'age', 'gender', 'marital_status', 'nationality',
+    'document_type', 'document_subtype', 'issuing_state', 'issuing_state_name',
+    'date_of_issue', 'expiration_date', 'place_of_birth', 'address',
+    'formatted_address', 'parsed_address', 'mrz',
 )
 
 
@@ -45,21 +46,17 @@ async def _http_request(method: str, url: str, api_key: str, *, json: dict | Non
         return resp.status_code, body
 
 
-async def create_session(tenant: str, vendor_data: str, callback_url: str) -> dict:
+async def create_session(tenant: str, vendor_data: str) -> dict:
     """Create a verification session against the tenant's configured workflow.
 
-    `callback_url` is where Didit redirects the browser when the user finishes;
-    `vendor_data` is our own correlation string (sent outbound, never trusted inbound).
+    `vendor_data` is our own correlation string. No `callback` is set: the desktop card
+    polls the decision in place (in-app QR + polling), so there is no browser redirect.
     Returns the session object (`session_id`, `url`, ...).
     """
     cfg = _didit_config(tenant)
     base = cfg.get("base_url") or DEFAULT_BASE_URL
-    payload = {
-        "workflow_id": cfg["workflow_id"],
-        "vendor_data": vendor_data,
-        "callback": callback_url,
-        "callback_method": "both",
-    }
+    payload = {"workflow_id": cfg["workflow_id"], "vendor_data": vendor_data,
+               "language": cfg.get("language") or "nl"}  # Didit-hosted UI language
     status, body = await _http_request("POST", f"{base}/session/", cfg["api_key"], json=payload)
     if status not in (200, 201):
         raise ValueError(f"Didit session create failed ({status}): {body}")

@@ -2,6 +2,7 @@ nicegui==3.*
 PyJWT
 pytz
 httpx
+segno
 scim2-client[httpx]
 scim2-models
 aiosmtplib

@@ -91,6 +91,8 @@ Today every tenant has a single scenario keyed `"default"`. The structure (`tena
 
 A step card is a free-form NiceGUI canvas: a multi-part *transaction* (enter a value → trigger an action → confirm → done) can live entirely inside `render_enabled`, driven by reactive bindings — `bind_value` for inputs, `bind_visibility` off a `self.state` flag to reveal/hide parts as it progresses — and completes with a single `self.complete()`. No sub-step machinery; the whole exchange is one orchestrator step. `VerifyMobileStep` is the worked example (number → simulated code via `ui.notify` → verify), keeping transient values (`state['code_sent']`, the generated code) in the card's own `self.state`, separate from the `output` it finally records.
 
+**Async external providers (poll, don't redirect).** For a third-party verification that hands off to another device or site, prefer a `ui.timer` that **polls** the provider over a browser redirect back into the app. Polling keeps everything in one live NiceGUI session (so tenant/context is just `self.tenant` / `self.steps.context`), needs no public inbound URL (works on `localhost`, dev == prod), and preserves the single-session invariant — no callback route or CSRF/pending-token registry to maintain. `VerifyIdDiditStep` is the worked example (create session → show QR → phone captures → poll decision → `complete`); see [`didit.md`](didit.md).
+
 ## State keys (per-session, `app.storage.tab`)
 
 - `invite_code`, `invitation_id`, `persona_key`, `persona_params`, `given_name`, `family_name`, `guest_email` — scenario context, written by `apply_invite_to_state`.

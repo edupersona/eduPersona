@@ -76,7 +76,7 @@ read verbatim from the invitation's `step_outputs`:
 
 - The persona config decides *which* outputs are exposed (`callback_outputs: ["eduid_login", …]`).
 - Every step keys its output by its **`step_id`** (e.g. `eduid_login`, `verify_mfa`,
-  `verify_mobile`) — `callback_outputs` lists step ids.
+  `verify_mobile`, `id_document`) — `callback_outputs` lists step ids.
 - A `callback_outputs` key with no matching `step_outputs` entry is **logged and omitted**
   — a missing source never breaks delivery, so always treat each key as optional.
 

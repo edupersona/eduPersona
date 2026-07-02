@@ -130,6 +130,22 @@ to the webhook when the `id` is listed in `callback_outputs`).
 - **Optional:** `submit_label` (default "Verder").
 - **Result:** `{"organisatie": str|null, "toepassingsscenario": str|null}`.
 
+### `VerifyIdDiditStep`
+
+- **Intent:** verify a government ID (passport / Dutch ID card) via Didit's hosted flow —
+  document OCR + liveness + face-match. The user scans a QR with their phone to capture;
+  the card polls Didit and advances the desktop when approved. No browser redirect.
+- **Required:** none card-specific; only the shared fields (§3). The Didit credentials live
+  in a **tenant-level** `tenants.<tenant>.didit` block (`api_key`, `workflow_id`,
+  `base_url?`, `language?` — default `nl`), *not* in this step's `config`.
+- **Optional:** `primary_button: {label, hint?}` (the Start button), `declined_text`,
+  `timeout_text`, `review_text` (retry/terminal messages, all through `_()`).
+- **Result:** the extracted ID fields (`first_name`, `last_name`, `document_number`,
+  `date_of_birth`, `nationality`, `document_type`, `expiration_date`, …) plus
+  `liveness_score` / `face_match_score`; base64 image blobs are stripped.
+- **See:** [`didit.md`](didit.md) for the config, the polling-vs-redirect architecture, and
+  the decision-shape caveat.
+
 ---
 
 ## 3. Shared config of every step card
