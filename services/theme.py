@@ -10,13 +10,13 @@ from services.settings import get_tenant_config
 pages = {
     # possible menu entries, depending on authz.
     # `tenanted=True` → URL becomes /m/{tenant}/<path>; otherwise <path> is used as-is.
-    'invitations': {'path': 'invitations', 'label': 'uitnodigingen',  'tenanted': True},
-    'simulator':   {'path': 'simulator',   'label': 'simulator',      'tenanted': True},
-    'accept':      {'path': '/accept',     'label': 'accepteren',     'tenanted': False},
-    'login':       {'path': 'login',       'label': 'inloggen',       'tenanted': True},
-    'register':    {'path': '/register',   'label': 'aanmelden',      'tenanted': False},
-    'contact':     {'path': '/contact',    'label': 'contact',        'tenanted': False},
-    'home':        {'path': '/',           'label': 'home',           'tenanted': False},
+    'invitations': {'path': 'invitations', 'label': 'uitnodigingen', 'tenanted': True},
+    'simulator': {'path': 'simulator', 'label': 'simulator', 'tenanted': True},
+    'accept': {'path': '/accept', 'label': 'accepteren', 'tenanted': False},
+    'login': {'path': 'login', 'label': 'inloggen', 'tenanted': True},
+    'register': {'path': '/register', 'label': 'aanmelden', 'tenanted': False},
+    'contact': {'path': '/contact', 'label': 'contact', 'tenanted': False},
+    'home': {'path': '/', 'label': 'home', 'tenanted': False},
 }
 
 def _nav_entries(tenant: str) -> Iterator[tuple[str, str, str]]:
@@ -97,7 +97,8 @@ def _hamburger_menu(tenant: str, authenticated: bool, show_user: bool) -> None:
         with ui.menu().props(remove="no-parent-event"):
             if authenticated:
                 for _key, label, path in _nav_entries(tenant):
-                    ui.menu_item(label, lambda p=path: ui.navigate.to(p))
+                    # default-arg captures the loop value; NiceGUI calls it with no args
+                    ui.menu_item(label, lambda p=path: ui.navigate.to(p))  # type: ignore
             if show_user:
                 _auth_menu_item(tenant)
 
@@ -118,8 +119,12 @@ def frame(page_name: str, tenant: str):
                 # Your page content here
     """
 
-    _apply_theme(page_name, tenant)
+    # rdm_init() first so ng_rdm.css is injected before base.css — app CSS then wins
+    # ties (both are inlined into the head in call order). It also lets _apply_theme's
+    # tenant `ui.colors(...)` run last, so a tenant's primary colour isn't clobbered by
+    # rdm_init's own `ui.colors(primary=...)`.
     rdm_init()
+    _apply_theme(page_name, tenant)
     set_language('nl_nl')
 
     # Create header with navigation

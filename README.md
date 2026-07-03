@@ -1,9 +1,6 @@
 # eduPersona onboarding 
 
-> **Juli 2026 -- verificatie identiteitsbewijs:** Dankzij integratie van **didit.me** 
-> is het nu mogelijk om verificatie van identiteitsbewijzen 
-> (en dus van bijvoorbeeld naamgegevens en geboortedatum) direct vanuit eduPersona te doen.  
-> Zie [CHANGELOG.md](CHANGELOG.md) voor het volledige overzicht.
+> **Juli 2026 -- verificatie identiteitsbewijs:** Dankzij integratie van **didit.me** is het nu mogelijk om verificatie van identiteitsbewijzen (en dus van bijvoorbeeld naamgegevens en geboortedatum) direct vanuit eduPersona te doen. Zie [CHANGELOG.md](CHANGELOG.md) voor meer details.
 
 ### Wat is eduPersona?
 

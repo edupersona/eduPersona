@@ -35,6 +35,17 @@ configure_logging(
 app.add_static_files('/static', 'static')
 app.include_router(api_router)
 
+
+@app.middleware('http')
+async def _no_cache_html(request, call_next):
+    """iOS Safari aggressively caches the page HTML — and since base.css / ng_rdm.css are
+    inlined into that HTML (ui.add_css reads + injects them), a cached page = stale CSS.
+    Mark only the HTML document non-cacheable; /static assets keep their normal caching."""
+    response = await call_next(request)
+    if response.headers.get('content-type', '').startswith('text/html'):
+        response.headers['Cache-Control'] = 'no-store'
+    return response
+
 register_exception_handlers(app)
 init_edupersona_oidc()
 initialize_multitenancy()
