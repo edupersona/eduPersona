@@ -264,6 +264,14 @@ a.btn-primary:hover {
    Forms
    ======================================== */
 
+/* iOS Safari zooms into a focused input whose font-size is < 16px and never zooms
+   back out. Quasar fields default to ~14px, so pin the native text to 16px — the
+   accept-code entry (and every other field) then never triggers the auto-zoom. */
+.q-field__native,
+.q-field__input {
+  font-size: 16px;
+}
+
 .form-input {
   width: 100%;
   /* margin-bottom: 0.75rem; */
