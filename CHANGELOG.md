@@ -1,8 +1,5 @@
 # Changelog
 
-eduPersona kent nog geen formele releases. In dit bestand noteren we de
-noemenswaardige wijzigingen, met de meest recente bovenaan.
-
 ## v0.3 — juli 2026 - verificatie van identiteitsbewijzen
 
 Verificatie van een **identiteitsbewijs** (paspoort of Nederlandse ID-kaart) kan nu direct
@@ -37,11 +34,6 @@ tegen de naam in de uitnodiging).
 - **Fix (accept-flow):** de uitnodiging wordt nu toegepast *vóór* het bouwen van `Steps`, zodat
   de per-kaart state gekoppeld blijft aan de sessie — voorheen konden bij de eerste laadbeurt
   outputs en mismatch-meldingen onzichtbaar blijven.
-
-### Verwijderd
-
-- De losse demo-persona **`id_verificatie`** (opgegaan in de gastdocent-showcase) en de nu
-  ongebruikte `acr_failed_text`-config (ACR-mismatch loopt via het verificatie-slot).
 
 ## v0.2 — juni 2026 - pivot naar 'persona'
 

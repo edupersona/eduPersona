@@ -1,6 +1,6 @@
 [project]
 name = "edupersona"
-version = "0.2.3"
+version = "0.3.0"
 description = "Bridging the gap between eduID and IAM systems in education"
 readme = "README.md"
 requires-python = ">=3.12"

@@ -1,6 +1,8 @@
 from contextlib import contextmanager
 
-from ng_rdm.components import Col, rdm_init, set_language
+from collections.abc import Iterator
+
+from ng_rdm.components import Col, IconButton, rdm_init, set_language
 from nicegui import app, ui
 
 from services.settings import get_tenant_config
@@ -17,17 +19,23 @@ pages = {
     'home':        {'path': '/',           'label': 'home',           'tenanted': False},
 }
 
-@ui.refreshable
-def main_menu(navtitle: str, tenant: str) -> None:
-    """Create main navigation menu with authorization checking."""
+def _nav_entries(tenant: str) -> Iterator[tuple[str, str, str]]:
+    """Yield (key, label, path) for each nav page the current user may see."""
     authz = app.storage.user.get("authz", [])
     if app.storage.user.get("user_type") != "guest":
-        authz.append('accept')
+        authz = [*authz, 'accept']
 
     for key, page in pages.items():
         if key in authz:
             path = f"/m/{tenant}/{page['path']}" if page['tenanted'] else page['path']
-            ui.link(page['label'], path).classes(f"main-menu {key}").classes("selected" if navtitle == key else "")
+            yield key, page['label'], path
+
+
+@ui.refreshable
+def main_menu(navtitle: str, tenant: str) -> None:
+    """Create main navigation menu with authorization checking."""
+    for key, label, path in _nav_entries(tenant):
+        ui.link(label, path).classes(f"main-menu {key}").classes("selected" if navtitle == key else "")
 
 
 _FAVICON_HEAD = (
@@ -63,20 +71,35 @@ def _apply_theme(page_name: str, tenant: str) -> dict:
 
     return theme
 
+def _auth_menu_item(tenant: str) -> None:
+    """The login/logout menu entry, shared by the user dropdown and the hamburger."""
+    is_guest = app.storage.user.get("user_type") == "guest"
+    if app.storage.user.get("authenticated", False) and not is_guest:
+        ui.menu_item("uitloggen", lambda: ui.navigate.to(f"/m/{tenant}/logout"))
+    else:
+        ui.menu_item("inloggen", lambda: ui.navigate.to(f"/m/{tenant}/login"))
+
+
 def _user_link(tenant: str):
     display_name = app.storage.user.get("display_name") or app.storage.user.get("username", "gast")
-    is_guest = app.storage.user.get("user_type") == "guest"
 
     # User info with dropdown menu
     with ui.label(display_name).classes("username"):
         ui.icon("person", color="background")
-
         with ui.menu().props(remove="no-parent-event"):
-            if app.storage.user.get("authenticated", False) and not is_guest:
-                ui.menu_item("uitloggen", lambda: ui.navigate.to(f"/m/{tenant}/logout"))
-            else:
-                login_path = f"/m/{tenant}/login"
-                ui.menu_item("inloggen", lambda: ui.navigate.to(login_path))
+            _auth_menu_item(tenant)
+
+
+def _hamburger_menu(tenant: str, authenticated: bool, show_user: bool) -> None:
+    """Mobile-only nav: a hamburger button anchoring a dropdown of the same
+    entries as the desktop nav + the login/logout item (CSS-hidden on desktop)."""
+    with IconButton('list', tooltip='menu').classes('header-hamburger'):
+        with ui.menu().props(remove="no-parent-event"):
+            if authenticated:
+                for _key, label, path in _nav_entries(tenant):
+                    ui.menu_item(label, lambda p=path: ui.navigate.to(p))
+            if show_user:
+                _auth_menu_item(tenant)
 
 
 @contextmanager
@@ -106,12 +129,20 @@ def frame(page_name: str, tenant: str):
             with ui.link("", target="/").style('height:60px;'):
                 ui.element('div').classes('appname-logo')
 
-            # Navigation menu (only show if user is authenticated)
-            if app.storage.user.get("authenticated", False):
-                main_menu(page_name, tenant)
+            authenticated = app.storage.user.get("authenticated", False)
+            show_user = page_name not in ['login', 'accept'] and app.storage.user.get("user_type") != "guest"
 
-            if page_name not in ['login', 'accept'] and app.storage.user.get("user_type") != "guest":
-                _user_link(tenant)
+            # Desktop nav — `display:contents` so links + user dropdown lay out
+            # directly in .header-div; the wrapper only exists to hide them on mobile.
+            with ui.element('div').classes('header-nav-desktop'):
+                if authenticated:
+                    main_menu(page_name, tenant)
+                if show_user:
+                    _user_link(tenant)
+
+            # Mobile-only collapsed nav
+            if authenticated or show_user:
+                _hamburger_menu(tenant, authenticated, show_user)
 
     # Main content area
     with Col(classes=f"{page_name}-page page-content"):

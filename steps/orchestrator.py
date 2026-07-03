@@ -242,7 +242,16 @@ class Steps:
             return
 
         self._render_heading()
+        # First not-yet-passed step — the one the guest acts on now. `len` (past the
+        # end) means every step is done, so the review gate below is the active target.
+        active_index = next(
+            (i for i, s in enumerate(self.step_instances)
+             if self.outcomes.get(s.step_id) not in ('completed', 'skipped')),
+            len(self.step_instances),
+        )
         for i, step in enumerate(self.step_instances):
+            if i == active_index:
+                ui.element('div').classes('accept-active-anchor')
             outcome = self.outcomes.get(step.step_id, 'pending')
             is_enabled = all(
                 self.outcomes.get(self.step_instances[j].step_id) in ('completed', 'skipped')
@@ -253,5 +262,16 @@ class Steps:
         # Review gate: every step is verified, but nothing is sent yet. The guest
         # reviews the data above, then registers to fire the callback + accept.
         if self.all_steps_done:
+            ui.element('div').classes('accept-active-anchor')
             with Col(classes='accept-register'):
                 Button(_('Register'), on_click=self.register).classes('step-primary-button')
+
+        # Narrow screens only: after a step completes the next card is below the fold —
+        # bring it to the top. Mirrors ui.sub_pages' own scroll-into-view. Skipped on a
+        # fresh start (active_index 0, heading stays visible) and on desktop (media guard).
+        if active_index > 0:
+            ui.run_javascript(
+                "if (window.matchMedia('(max-width: 768px)').matches) requestAnimationFrame(() => "
+                "document.querySelector('.accept-active-anchor')"
+                "?.scrollIntoView({behavior: 'smooth', block: 'start'}))"
+            )

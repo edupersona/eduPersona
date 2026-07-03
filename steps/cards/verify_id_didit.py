@@ -126,7 +126,7 @@ class VerifyIdDiditStep(StepCard):
             awaiting.element.bind_visibility_from(self.state, 'phase', value='awaiting')
             with awaiting:
                 ui.label(_('Scan this QR code with your phone to start:')).classes('text')
-                ui.image().bind_source_from(self.state, 'qr').style('width: 220px; height: 220px;')
+                ui.image().bind_source_from(self.state, 'qr').classes('step-qr')
                 ui.html().bind_content_from(self.state, 'link_html')
                 with Row().classes('items-center'):
                     ui.spinner(size='sm')

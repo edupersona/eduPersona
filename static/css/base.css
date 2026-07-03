@@ -74,6 +74,34 @@ body {
   margin-left: auto;
 }
 
+/* Desktop nav: transparent wrapper so links + user dropdown lay out directly in
+   .header-div (identical to pre-hamburger layout); hidden as a unit on mobile. */
+.header-nav-desktop {
+  display: contents;
+}
+
+/* Hamburger: hidden on desktop, revealed < 768px (see Responsive section) */
+.header-hamburger {
+  display: none;
+  font-size: 1.5rem;
+}
+
+/* White on the blue header in every state. ng_rdm's icon-button default is grey
+   (--rdm-text-secondary) and its hover flips to primary (invisible on blue), so
+   pin white here — the `.header-div` prefix outweighs those rules without !important. */
+.header-div .header-hamburger,
+.header-div .header-hamburger:hover:not(:disabled),
+.header-div .header-hamburger:focus {
+  color: white;
+  background-color: transparent;
+}
+
+/* Suppress Quasar's hover/focus/active background overlay — its light fill under
+   the white icon (on focus or while the menu is open) reads as a white square. */
+.header-div .header-hamburger .q-focus-helper {
+  display: none;
+}
+
 /* ========================================
    Typography
    ======================================== */
@@ -450,7 +478,8 @@ a.btn-primary:hover {
 .login-page, .no_account-page {
   margin: 0 auto;
   .login-card {
-    width: 400px;
+    width: 100%;
+    max-width: 400px;
     padding: 1.5rem;
 
     &.login-card-wide {
@@ -512,7 +541,8 @@ a.btn-primary:hover {
   margin: 0 auto;
 
   .register-card {
-    width: 600px;
+    width: 100%;
+    max-width: 600px;
     padding: 1.5rem;
   }
 
@@ -525,8 +555,8 @@ a.btn-primary:hover {
   margin: 0 auto;
 
   .contact-card {
-    width: 760px;
-    max-width: 100%;
+    width: 100%;
+    max-width: 760px;
     padding: 1.5rem;
   }
 
@@ -661,6 +691,12 @@ a.btn-primary:hover {
 }
 
 .accept-page {
+  /* Zero-height marker at the active step; scroll-into-view target (see orchestrator).
+     The margin keeps the card off the very top edge when scrolled to. */
+  .accept-active-anchor {
+    scroll-margin-top: 1rem;
+  }
+
   /* Content blocks share the step-card footprint: full width up to 800px.
      The code-entry gate overrides max-width — a single input reads better narrow. */
   .accept-form, .accept-terminal, .step-card {
@@ -689,7 +725,19 @@ a.btn-primary:hover {
   .step-card {
     .step-primary-button, .step-secondary-button {
       margin-top: 0.5rem;
-      width: 20rem;
+      width: 100%;
+      max-width: 20rem;
+    }
+    /* Scan-QR (VerifyIdDiditStep): square, scales down on narrow screens */
+    .step-qr {
+      width: 100%;
+      max-width: 220px;
+      height: auto;
+      aspect-ratio: 1;
+    }
+    /* Horizontal button rows (oidc_login, verify_mobile) wrap; stacked < 768px below */
+    .button-row {
+      flex-wrap: wrap;
     }
     .step-expansion {
       margin-top: 0.5rem;
@@ -764,7 +812,7 @@ textarea.q-field__native {
   min-height: 180px !important;
 }
 
-.dialog-card { width: 48rem; }
+.dialog-card { width: 48rem; max-width: 100%; }
 
 /* ========================================
    Responsive
@@ -794,12 +842,53 @@ textarea.q-field__native {
   .rdm-dialog-backdrop:has(.panel-dialog) {
     padding-left: 0;
   }
+
+  /* Header: collapse the inline nav into the hamburger dropdown */
+  .header-nav-desktop { display: none; }
+  .header-hamburger {
+    display: flex;
+    margin-left: auto;
+  }
+
+  /* Step-card button rows stack vertically, full width */
+  .accept-page .step-card .button-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .accept-page .step-card .button-row > .rdm-col {
+    width: 100%;
+  }
+  /* buttons already width:100% max-width:20rem — let them fill narrow cards */
+  .accept-page .step-card .step-primary-button,
+  .accept-page .step-card .step-secondary-button {
+    max-width: none;
+  }
+
+  /* ng_rdm table: keep all columns, scroll sideways instead of crushing */
+  .rdm-table-card {
+    overflow-x: auto;
+  }
+  .rdm-table {
+    min-width: 720px;
+  }
+  /* Invitation detail: stack the two columns */
+  .rdm-detail-column {
+    width: 100%;
+  }
+
+  /* Landing: let hero/footer wrap; keep github icon from overlapping */
+  .landing-page .landing-footer {
+    flex-wrap: wrap;
+  }
 }
 
-/* small screens < 600px: logo shrinks */
+/* small screens < 600px: logos shrink */
 @media (max-width: 599px) {
   .landing-logo {
     width: 80px;
+  }
+  .appname-logo {
+    width: 110px;
   }
 }
 
