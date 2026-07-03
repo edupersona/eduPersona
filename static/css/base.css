@@ -643,6 +643,20 @@ a.btn-primary:hover {
       }
     }
 
+    .landing-news {
+      border-left: 4px solid var(--rdm-primary);
+      background: var(--rdm-bg-hover, #f9fafb);
+      border-radius: var(--rdm-radius, 4px);
+      padding: 1rem 1.25rem;
+      font-size: 1.1rem;
+      line-height: 1.5;
+      color: var(--rdm-text-secondary);
+
+      strong {
+        color: var(--rdm-text);
+      }
+    }
+
     .landing-section {
       gap: 0.5rem;
 

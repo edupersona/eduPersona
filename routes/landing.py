@@ -51,6 +51,14 @@ def landing_page():
                     'Je kunt het zien als een <i>flexibele verificatiefabriek</i>.'
                 ).classes('text')
 
+            # News flash — latest release highlight
+            with Col(classes='landing-news'):
+                ui.html(
+                    '<strong>Juli 2026 — verificatie identiteitsbewijs:</strong> Dankzij integratie '
+                    'van didit.me is het nu mogelijk om verificatie van identiteitsbewijzen (en dus '
+                    'van bijvoorbeeld naamgegevens en geboortedatum) direct vanuit eduPersona te doen.'
+                )
+
             # How does it work? — overview graphic links through to the README
             with Col(classes='landing-section'):
                 ui.label('Hoe werkt het?').classes('section-heading')
