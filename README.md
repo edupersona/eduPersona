@@ -104,7 +104,7 @@ eduPersona biedt een REST API, met `invitations` als enige first-class entiteit:
 
 * [nicegui-rdm](https://github.com/kleynjan/nicegui-rdm) is een bibliotheek om snel 'CRUD' apps te bouwen met NiceGUI. Het biedt een reactief store/observer-model dat wordt gebruikt om de user interface bij te werken zonder dat een page reload nodig is.
 
-* [Didit](https://didit.me) levert de identiteitsverificatie (document-OCR + liveness + gezichtsvergelijking) achter `VerifyIdDiditStep`. De gast scant een QR-code met de telefoon en doorloopt de controle daar; de desktop-app blijft leidend en pollt de uitkomst, zodat de flow zonder redirect of publieke inbound-URL werkt (ook lokaal). De QR-code wordt gegenereerd met [segno](https://segno.readthedocs.io/). Zie [docs/didit.md](docs/didit.md) voor de configuratie en het ontwerp.
+* [Didit](https://didit.me) levert de identiteitsverificatie (document-OCR + liveness + gezichtsvergelijking) achter `VerifyIdDiditStep`. 
 
 * [Uvicorn](https://uvicorn.dev/) is de ASGI server die we gebruiken om de eduPersona app stabiel te ontsluiten. In dev richt je je browser rechtstreeks op het uvicorn proces (zie `start.sh`); in productie zul je er meestal een Nginx reverse proxy (of vergelijkbaar) voor zetten, al is het alleen maar voor de TLS/SSL-afhandeling.  
 
@@ -133,7 +133,7 @@ Zie requirements.txt (en requirements-test.txt als je de tests wilt kunnen uitvo
 
 ### TODO / BACKLOG
 
-* Na didit ID verificatie op een mobiel device moet de gebruiker zelf terugschakelen naar de originele tab. TODO: didit callback gebruiken. 
+* Als een eduPersona uitnodiging wordt geaccepteerd op een mobiel device wordt eventuele didit ID verificatie gestart op een nieuw tabblad in dezelfde browser. Na afronding moet de gebruiker zelf terugschakelen naar het eerdere tabblad. TODO: didit callback gebruiken. 
 
 ### License
 This project is licensed under the GNU Affero General Public License (AGPL) version 3.
