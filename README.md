@@ -4,13 +4,13 @@
 
 ### Wat is eduPersona?
 
-<b>TL;DR:</b> Een self-service pagina die de eduID van gastgebruikers betrouwbaar koppelt aan instellingsidentiteiten. Het type gast &ndash;de **persona**&ndash; bepaalt het stappenplan dat de gast doorloopt, waarbij hij/zij stap voor stap begeleid wordt tot aan alle onboarding-eisen is voldaan. Bij afronding koppelt eduPersona de geverifieerde gastgegevens terug naar de instelling. Je kunt het ook zien als een flexibele **verificatiefabriek**.
+<b>TL;DR:</b> Een self-service pagina die de eduID van gastgebruikers betrouwbaar koppelt aan instellingsidentiteiten door op één moment alle benodigde controles uit te voeren. Het type gast &ndash;de **persona**&ndash; bepaalt het stappenplan dat de gast doorloopt, waarbij hij/zij stap voor stap begeleid wordt tot aan alle onboarding-eisen is voldaan. Bij afronding koppelt eduPersona de geverifieerde gastgegevens terug naar de instelling. Je kunt het ook zien als een flexibele **verificatiefabriek**.
 
 ### Hoe werkt het?
 
 ![eduPersona Diagram](docs/edupersona_diagram.png)
 
-Het centrale begrip is de **persona**: het *soort* gast (gastdocent, alumnus, promotor, ...). Voor elke persona kunnen er andere eisen gesteld worden aan de onboarding en verificatie. In eduPersona bepaalt de gekozen persona de verificatiestappen die moeten worden doorlopen, de mail templates en de gegevenssets die worden meegenomen in de uitnodiging en teruggeleverd aan IAM. Rollen en autorisaties zijn buiten sccope van eduPersona &ndash; dat hoort in de IAM-keten van de instelling. 
+Het centrale begrip is de **persona**: het *soort* gast (gastdocent, alumnus, promotor, ...). Voor elke persona kunnen er andere eisen gesteld worden aan de onboarding en verificatie. In eduPersona bepaalt de gekozen persona de verificatiestappen die moeten worden doorlopen, de mail templates en de gegevenssets die worden meegenomen in de uitnodiging en teruggeleverd aan IAM. 
 
 De nummering volgt de figuur hierboven:
 
@@ -18,11 +18,14 @@ De nummering volgt de figuur hierboven:
 2. **De uitnodiging wordt aangemaakt**  via de API: in de regel zal dat vanuit IAM of gastregistratie gebeuren, maar het kan ook interactief via de simulator-pagina, zie *Getting started*.
 3. **eduPersona stuurt een uitnodiging met code** naar de gast. Voor uitgaande mail kun je een SMTP-stekker of Postmark gebruiken, met templates en gegevens die per persona verschillend kunnen zijn.
 4. **De gast accepteert en volgt het stappenplan** op de self-service-pagina `/accept/{invitation_id}`. Per persona kan dat plan verschillen: inloggen met eduID, een MFA-controle, verificatie met een tweede instelling of Entra ID, een check tegen een alumni-DB, verificatie van een paspoort of ID-kaart via Didit (document + liveness + gezichtsvergelijking), enzovoort. Voor elke stap kunnen we de teruggeleverde attributen controleren &ndash; op meegegeven ACR's (bijv. tweede factor) én tegen de uitnodiging zelf (bijv. de naam op het ID-bewijs tegen de naam in de uitnodiging) &ndash; en de gebruiker bijsturen als nadere verificatie of configuratie nodig is. 
-5. **Als onboarding is afgerond** verrijkt eduPersona de gastgegevens met het eduID-pseudoniem en/of overige verzamelde gegevens. Dat kan met een **POST naar een callback API** &ndash; of via **SCIM** (zie hieronder.
+5. **Als onboarding is afgerond** verrijkt eduPersona de gastgegevens met het eduID-pseudoniem en/of overige verzamelde gegevens. Dat kan met een **POST naar een callback API** &ndash; of via **SCIM** (zie hieronder).
 6. Vanuit IAM zal nu **provisioning** van accounts en autorisaties naar doelsystemen plaatsvinden. 
 7. **De gast kan nu inloggen met eduID** op zijn/haar applicaties &ndash; hetzij doordat het eduID-pseudoniem in de applicatie zelf is opgenomen, hetzij door de eduID af te beelden op de instellingsidentiteit. 
 
-Bij die laatste stap kan het wenselijk zijn om weliswaar *in te loggen* met eduID, maar naar de applicaties toe gebruik te blijven maken van een instellingsidentiteit. Daarvoor kun je denken aan het anyID/keyring-scenario van Aventus (gebaseerd op Keycloak) en/of de <a href="https://servicedesk.surf.nl/wiki/spaces/IAM/pages/222462401/Ondersteuning+voor+applicaties+zonder+multi-identifier+functionaliteit">instellings-informatie API</a> van SURFconext. Zo'n voorziening kan dan in stap 6 worden voorzien van de afbeelding van `eduID` op `guest_id`.
+*Buiten scope van eduPersona:* bij die laatste stap kan het wenselijk zijn om weliswaar *in te loggen* met eduID, maar naar de applicaties toe gebruik te blijven maken van een instellingsidentiteit. Je kunt hier denken aan het anyID/keyring-scenario van Aventus (gebaseerd op Keycloak) en/of de <a href="https://servicedesk.surf.nl/wiki/spaces/IAM/pages/222462401/Ondersteuning+voor+applicaties+zonder+multi-identifier+functionaliteit">instellings-informatie API</a> van SURFconext. Zo'n voorziening kan dan in stap 6 worden voorzien van de afbeelding van `eduID` op `guest_id`.
+
+Rollen en autorisaties worden aan de linkerkant toegekend, in de IAM-keten van de instelling: direct na de primaire registratie (1), na afronding van de onboarding (5) en/of decentraal in de applicatie, na provisioning (6). 
+ 
 
 ### Probeer het op edupersona.nl
 
