@@ -49,6 +49,8 @@ class VerifyAlumniDb(StepCard):
 
     def render_enabled(self) -> None:
         with self.form_column():
+            ui.label(f'tip: kies een geb.datum tussen {MIN_DOB_YEAR} en {MAX_DOB_YEAR}').classes(
+                'step-primary-hint step-hint')
             ui.input(label='geboortedatum', placeholder='YYYY-MM-DD') \
                 .bind_value(self.state, 'alumni_dob').props('type=date').classes('form-input')
             ui.input(

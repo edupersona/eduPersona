@@ -17,6 +17,7 @@ from domain.invitations import accept_invitation
 from domain.models import Invitation
 
 from steps.base import StepCard, StepResult, STEP_CARD_CLASSES
+from steps.collected_data import CollectedDataModal
 from steps.matching import evaluate_matches
 
 
@@ -61,6 +62,7 @@ class Steps:
         self.scenario_config = persona_config
         self.state.setdefault('outcomes', {})
         self.step_instances = self._create_steps()
+        self._modal: CollectedDataModal | None = None
 
     @property
     def outcomes(self) -> dict[str, str]:
@@ -166,12 +168,50 @@ class Steps:
         except Exception:
             pass
 
+    def _ensure_modal(self) -> None:
+        """Create the collected-data receipt modal once. The Dialog escapes to the
+        client root layout, so caching the instance keeps render() refreshes from leaking
+        backdrops."""
+        if self._modal is None:
+            self._modal = CollectedDataModal()
+
+    async def _collected_segments(self) -> list[tuple[str, dict]]:
+        """(segment_title, key→value) blocks for the receipt modal: a general
+        invitation-level block, optional persona parameters, then one block per step's
+        recorded output — mirroring the step cards."""
+        persona_key = self.state.get('persona_key')
+        persona_label = persona_key or ''
+        if persona_key and self.tenant:
+            try:
+                persona_label = _(get_persona_config(self.tenant, persona_key).display_name)
+            except Exception:
+                pass
+        inv = await Invitation.get_or_none(tenant=self.tenant, code=self.state.get('invite_code', ''))
+        name = f"{self.state.get('given_name') or ''} {self.state.get('family_name') or ''}".strip()
+        general = {
+            _('Persona'): persona_label,
+            _('Name'): name,
+            _('Email'): self.state.get('guest_email'),
+            _('Guest ID'): inv.guest_id if inv else None,
+            _('Code'): self.state.get('invite_code'),
+        }
+        segments: list[tuple[str, dict]] = [(_('General information'), {k: v for k, v in general.items() if v})]
+        params = self.state.get('persona_params') or {}
+        if params:
+            segments.append((_('Persona parameters'), params))
+        title_by_id = {s.step_id: _(s.title) for s in self.step_instances}
+        for step_id, output in self.outputs.items():
+            if output:
+                segments.append((title_by_id.get(step_id, step_id), output))
+        return segments
+
     async def register(self) -> None:
-        """User-confirmed finalize — the review step's 'Register' button. Persists
-        the `outputs` map to Invitation.step_outputs, accepts (firing the webhook
-        callback), then flips to the welcome screen. Gated on every step being done;
-        idempotent — guarded by the `completed`/`finalize_failed` flags within the
-        session and by the invitation's own status across sessions.
+        """The 'Register' button. Persists the `outputs` map to Invitation.step_outputs,
+        accepts (firing the webhook callback + any SCIM push), flips to the welcome
+        screen, then surfaces the collected-data receipt modal over it (the PoC stand-in
+        for a real listener). Gated on every step being done; idempotent — guarded by the
+        `completed`/`finalize_failed` flags within the session and by the invitation's own
+        status across sessions.
         """
         if self.state.get('completed') or self.state.get('finalize_failed'):
             return
@@ -188,6 +228,10 @@ class Steps:
             self.render.refresh()
         except Exception:
             pass
+        # Receipt: show what was just delivered, over the welcome screen. Only when a
+        # live render built the modal (headless callers — tests, OIDC — leave it None).
+        if self.state.get('completed') and self._modal is not None:
+            self._modal.open(await self._collected_segments())
 
     async def _finalize(self) -> bool:
         """Persist the `outputs` map to Invitation.step_outputs, then accept (fires the
@@ -262,6 +306,7 @@ class Steps:
         # Review gate: every step is verified, but nothing is sent yet. The guest
         # reviews the data above, then registers to fire the callback + accept.
         if self.all_steps_done:
+            self._ensure_modal()  # pre-build the receipt modal in the render slot; register() opens it
             ui.element('div').classes('accept-active-anchor')
             with Col(classes='accept-register'):
                 Button(_('Register'), on_click=self.register).classes('step-primary-button')

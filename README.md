@@ -125,5 +125,9 @@ Zie requirements.txt (en requirements-test.txt als je de tests wilt kunnen uitvo
 
 Aandachtspunt: eduID-pseudoniemen zijn per instelling (en desgewenst zelfs per applicatie) uniek. Om deze reden moet eduPersona (of de gebruikte eduPersona tenant) als SP/RP in dezelfde scope worden opgenomen als de instellingssystemen waarop (of waarmee) straks met eduID wordt ingelogd. 
 
+### TODO / BACKLOG
+
+* Na didit ID verificatie op een mobiel device moet de gebruiker zelf terugschakelen naar de originele tab. TODO: didit callback gebruiken. 
+
 ### License
 This project is licensed under the GNU Affero General Public License (AGPL) version 3.

@@ -18,7 +18,16 @@ translations: dict[str, dict[str, str]] = {
         'Email': 'mail',
         'Guest ID': 'guest_id',
         'Invitation parameters': 'Uitnodigingsgegevens',
+        'Name': 'naam',
         'Persona': 'persona',
+
+        # Collected-data confirmation modal (steps/collected_data.py)
+        'Collected data (delivery via SCIM and/or callback)':
+            'Verzamelde gegevens (levering via SCIM en/of callback)',
+        'Close': 'Sluiten',
+        'General information': 'Algemene gegevens',
+        'Persona parameters': 'Persona-parameters',
+        'No data collected.': 'Geen gegevens verzameld.',
 
         # Landing & Navigation (routes/landing.py)
         'Accept an invitation': 'Accepteer een uitnodiging',

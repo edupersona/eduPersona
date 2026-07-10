@@ -464,6 +464,12 @@ a.btn-primary:hover {
   .facts-kv-val { font-size: 14px; word-break: break-word; }
 }
 
+/* Collected-data confirmation modal (Register gate + /accept dev preview).
+   Fills the page band (large) and scrolls internally; reuses .facts-dialog kv grid. */
+.collected-dialog.rdm-dialog { width: 100%; }
+.collected-dialog .rdm-dialog-body { max-height: 70vh; overflow-y: auto; }
+.collected-dialog .collected-expansion { width: 100%; }
+
 /* Consent dialog body (VerifyConsentStep) — scrollable read-only consent text,
    external link, and the gating checkbox. Position/size come from panel-dialog. */
 .consent-dialog {
