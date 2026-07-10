@@ -121,9 +121,12 @@ eduPersona biedt een REST API, met `invitations` als enige first-class entiteit:
 
 Zie requirements.txt (en requirements-test.txt als je de tests wilt kunnen uitvoeren).
 
-### Constraints
+### Aandachtspunten
 
-Aandachtspunt: eduID-pseudoniemen zijn per instelling (en desgewenst zelfs per applicatie) uniek. Om deze reden moet eduPersona (of de gebruikte eduPersona tenant) als SP/RP in dezelfde scope worden opgenomen als de instellingssystemen waarop (of waarmee) straks met eduID wordt ingelogd. 
+* eduID-pseudoniemen zijn per instelling (en desgewenst zelfs per applicatie) uniek. Om deze reden moet eduPersona (of de gebruikte eduPersona tenant) als SP/RP in dezelfde scope worden opgenomen als de instellingssystemen waarop (of waarmee) straks met eduID wordt ingelogd. 
+
+* Voor demo-persona's als gastdocent wordt (ook in de PoC) nog geen dataminimalisatie van persoonsgegevens gedaan. Bij ID-verificatie wordt bijvoorbeeld behalve de naam ook de geboortedatum en het type en nummer van het identiteitsbewijs opgehaald; dit wordt overigens *niet* in de eduPersona database vastgelegd. Voorafgaand aan implementatie van eduPersona moet toetsing aan AVG-eisen plaatsvinden: doelbinding, toestemming, etc.   
+
 
 ### TODO / BACKLOG
 
